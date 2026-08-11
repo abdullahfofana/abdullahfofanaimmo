@@ -757,8 +757,10 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { t, language, setLanguage, toggleLanguage } = useLanguage();
   const { isDesktop, isMobile } = useResponsive();
+  const { activeTheme, setTheme } = useTheme();
+  const isDark = activeTheme === 'dark';
+  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
   const [activeTab, setActiveTab] = useState<DashTab>('overview');
-  const [isDark, setIsDark] = useState(true);
   const [period, setPeriod] = useState<'today' | '7d' | '30d' | '90d'>('30d');
 
   const theme = isDark ? dashboardDark : dashboardLight;
@@ -845,7 +847,7 @@ export default function DashboardScreen() {
         </TouchableOpacity>
 
         {/* Animated Dark/Light Toggle in Header */}
-        <ThemeTogglePill isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+        <ThemeTogglePill isDark={isDark} onToggle={toggleTheme} />
 
         {/* Bell */}
         <TouchableOpacity style={[ds.iconBtn, { backgroundColor: theme.surfaceAlt }]} activeOpacity={0.7}>
@@ -1099,7 +1101,7 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 1 } as any}>{isDark ? (language === 'en' ? 'Switch to light mode' : 'Passer au mode clair') : (language === 'en' ? 'Switch to dark mode' : 'Passer au mode sombre')}</Text>
             </View>
           </View>
-          <ThemeTogglePill isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+          <ThemeTogglePill isDark={isDark} onToggle={toggleTheme} />
         </View>
       </View>
 
@@ -1283,7 +1285,7 @@ export default function DashboardScreen() {
           theme={theme}
           t={t}
           isDark={isDark}
-          onToggleTheme={() => setIsDark(!isDark)}
+          onToggleTheme={toggleTheme}
         />
       )}
       <View style={[ds.main, { backgroundColor: theme.bg }]}>
