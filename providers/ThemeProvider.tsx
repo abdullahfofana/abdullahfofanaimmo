@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 
 const THEME_KEY = '@app_theme_mode';
 
@@ -15,6 +15,14 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   useEffect(() => {
     loadTheme();
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const { ThemeColors } = require('@/constants/colors');
+      const currentTheme = activeTheme === 'dark' ? ThemeColors.dark : ThemeColors.light;
+      document.body.style.backgroundColor = currentTheme.background;
+    }
+  }, [activeTheme]);
 
   const loadTheme = async () => {
     try {

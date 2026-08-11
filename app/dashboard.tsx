@@ -765,6 +765,12 @@ export default function DashboardScreen() {
 
   const theme = isDark ? dashboardDark : dashboardLight;
 
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.body.style.backgroundColor = theme.bg;
+    }
+  }, [theme.bg]);
+
   const greeting = useMemo(() => {
     const h = new Date().getHours();
     if (h < 12) return t('dash_greeting_morning');
