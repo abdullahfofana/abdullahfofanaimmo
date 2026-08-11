@@ -1,0 +1,22 @@
+
+## Supabase Connection Test
+========================================
+URL: https://uuyymkcidtcwfkiqjdrs.supabase.co
+Key: eyJhbGciOiJIUzI1NiIs...
+
+## Running tests...
+
+1##  Test: Query properties table
+   # FAILED: TypeError: fetch failed
+2##  Test: Query users table
+   # FAILED: TypeError: fetch failed
+3##  Test: Auth service (getSession)
+   # PASSED # Auth service is reachable
+4##  Test: Storage service (list buckets)
+   # FAILED: fetch failed
+
+========================================
+# Passed: 1  # Failed: 3
+
+##  Some tests failed. Check the errors above.
+

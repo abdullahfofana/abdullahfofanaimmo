@@ -1,0 +1,49 @@
+﻿node.exe : 
+(node:21332) 
+[DEP0040] 
+DeprecationWarning: 
+The `punycode` 
+module is 
+deprecated. Please 
+use a userland 
+alternative instead.
+At C:\Users\ab_mf\App
+Data\Roaming\npm\eas.
+ps1:24 char:5
++     & "node$exe"  "
+$basedir/node_modules
+/eas-cli/bin/run" 
+$args
++     ~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ((node:2   
+ 1332) [D...nativ    
+e instead.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+(Use `node 
+--trace-deprecation 
+...` to show where 
+the warning was 
+created)
+
+ΓÜá∩╕Å Detected that your app uses Expo Go for development, this is not recommended when building production apps.
+Learn more: https://expo.fyi/why-not-build-expo-go-for-production
+To suppress this warning, set EAS_BUILD_NO_EXPO_GO_WARNING=true.
+
+Failed to read the app config from the project using "npx expo config" command: npx expo config --json exited with non-zero code: 1.
+Falling back to the version of "@expo/config" shipped with the EAS CLI.
+Package "react-native-maps" does not contain a valid config plugin.
+Learn more: https://docs.expo.dev/guides/config-plugins/#creating-a-plugin
+
+Unexpected token '<'
+    Error: build 
+command failed.

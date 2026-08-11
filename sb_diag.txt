@@ -1,0 +1,6 @@
+URL:https://uuyymkcidtcwfkiqjdrs.supabase.co
+properties err:{"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND uuyymkcidtcwfkiqjdrs.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND uuyymkcidtcwfkiqjdrs.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)","hint":"","code":""}
+users err:{"message":"TypeError: fetch failed","details":"TypeError: fetch failed\n\nCaused by: Error: getaddrinfo ENOTFOUND uuyymkcidtcwfkiqjdrs.supabase.co (ENOTFOUND)\nError: getaddrinfo ENOTFOUND uuyymkcidtcwfkiqjdrs.supabase.co\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)","hint":"","code":""}
+auth err:null
+storage err:{"__isStorageError":true,"name":"StorageUnknownError","originalError":{}}
+buckets:undefined

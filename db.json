@@ -1,0 +1,219 @@
+{
+  "properties": [
+    {
+      "title": "TEST — Sample 3BR Apartment (Dev)",
+      "description": "Auto-created test property — ignore. For QA/dev verification of workflows.",
+      "price": 1000000,
+      "type": "apartment",
+      "status": "rent",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "area": 120,
+      "location": {
+        "address": "Test Street, Dev Area",
+        "city": "Abidjan",
+        "district": "Cocody",
+        "coordinates": {
+          "latitude": 5.345,
+          "longitude": -4.027
+        }
+      },
+      "photos": [
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "video": "https://www.w3schools.com/html/mov_bbb.mp4",
+      "document": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "features": [
+        "WiFi",
+        "Parking",
+        "AC",
+        "Security",
+        "Pool"
+      ],
+      "agent": {
+        "name": "Dev Test Agent",
+        "phone": "+225 0102030405"
+      },
+      "payment": {
+        "method": "orange_money",
+        "transactionId": "DEV-MODE-1771147366384",
+        "amount": 10000
+      },
+      "is_test": true,
+      "id": "1771147366934",
+      "submittedAt": "2026-02-15T09:22:46.934Z",
+      "submissionStatus": "pending"
+    },
+    {
+      "title": "bin",
+      "description": "dfytuyfgguy",
+      "price": 5455556,
+      "type": "apartment",
+      "status": "sale",
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "area": 1,
+      "location": {
+        "address": "Madina - abubakr alsadiq road -",
+        "city": "Abidjan",
+        "district": "Cocody"
+      },
+      "photos": [
+        "blob:http://localhost:8081/e2c341ef-107e-4a33-b812-70b9a881df9e",
+        "blob:http://localhost:8081/b5999179-05e9-43b4-98ac-1c4ea91051ba",
+        "blob:http://localhost:8081/08ac738c-6af6-433e-830a-3d0ac74ac4bb"
+      ],
+      "document": "blob:http://localhost:8081/cf4530d6-35b5-4018-9a6e-20e38c826782",
+      "features": [],
+      "agent": {
+        "name": "Abdullah Fofana",
+        "phone": "0549800881"
+      },
+      "payment": {
+        "method": "orange_money",
+        "transactionId": "59595959",
+        "amount": 10000
+      },
+      "id": "1769125789988",
+      "submittedAt": "2026-01-22T23:49:49.988Z",
+      "submissionStatus": "approved",
+      "reviewedAt": "2026-01-22T23:50:47.022Z"
+    },
+    {
+      "title": "rthrgdeg",
+      "description": "er",
+      "price": 56546596,
+      "type": "apartment",
+      "status": "sale",
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "area": 1,
+      "location": {
+        "address": "Madina - abubakr alsadiq road -",
+        "city": "Abidjan",
+        "district": "Cocody"
+      },
+      "photos": [
+        "blob:http://localhost:8081/22c82f9d-0b1e-4731-8884-5708d172b364",
+        "blob:http://localhost:8081/e83076e7-d1fc-4899-8365-5407d8b9617c",
+        "blob:http://localhost:8081/9088167d-576e-480a-bf1e-f378035d1a8b"
+      ],
+      "document": "blob:http://localhost:8081/184a65f1-4305-454c-b036-fafa09d4b132",
+      "features": [],
+      "agent": {
+        "name": "Abdullah Fofana",
+        "phone": "0549800881"
+      },
+      "payment": {
+        "method": "orange_money",
+        "transactionId": "854556265295",
+        "amount": 10000
+      },
+      "id": "1769124299804",
+      "submittedAt": "2026-01-22T23:24:59.804Z",
+      "submissionStatus": "rejected",
+      "reviewedAt": "2026-01-22T23:47:44.187Z",
+      "rejectionReason": "Document invalid"
+    }
+  ],
+  "users": [
+    {
+      "id": "1771147367149",
+      "name": "Dev Test Agent",
+      "email": "2250102030405@immoci.com",
+      "type": "Landlord",
+      "status": "Active",
+      "propertiesCount": 0,
+      "joined": "2026-02-15",
+      "lastActive": "Just now"
+    }
+  ],
+  "activities": [
+    {
+      "type": "property_listed",
+      "message": "New property submitted: TEST — Sample 3BR Apartment (Dev)",
+      "user": "Dev Test Agent",
+      "id": "1771147366938dk4xoq",
+      "timestamp": "2026-02-15T09:22:46.938Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property approved: bin",
+      "user": "Admin",
+      "id": "1769125847023pdugs",
+      "timestamp": "2026-01-22T23:50:47.023Z"
+    },
+    {
+      "type": "property_listed",
+      "message": "New property submitted: bin",
+      "user": "Abdullah Fofana",
+      "id": "17691257900050ztzc",
+      "timestamp": "2026-01-22T23:49:50.005Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property rejected: rthrgdeg",
+      "user": "Admin",
+      "id": "1769125664191vagbns",
+      "timestamp": "2026-01-22T23:47:44.191Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property approved: rthrgdeg",
+      "user": "Admin",
+      "id": "17691256640949avztu",
+      "timestamp": "2026-01-22T23:47:44.094Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property rejected: rthrgdeg",
+      "user": "Admin",
+      "id": "1769125663989crc4cm",
+      "timestamp": "2026-01-22T23:47:43.989Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property rejected: rthrgdeg",
+      "user": "Admin",
+      "id": "1769125663917b0q5kg",
+      "timestamp": "2026-01-22T23:47:43.917Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property rejected: rthrgdeg",
+      "user": "Admin",
+      "id": "1769125663858m6vcvo",
+      "timestamp": "2026-01-22T23:47:43.858Z"
+    },
+    {
+      "type": "property_verified",
+      "message": "Property rejected: rthrgdeg",
+      "user": "Admin",
+      "id": "1769125663808xljfv",
+      "timestamp": "2026-01-22T23:47:43.808Z"
+    },
+    {
+      "type": "property_listed",
+      "message": "New property submitted: rthrgdeg",
+      "user": "Abdullah Fofana",
+      "id": "1769124299809aodpvc",
+      "timestamp": "2026-01-22T23:24:59.809Z"
+    },
+    {
+      "id": "1",
+      "type": "property_listed",
+      "message": "New property listed",
+      "user": "John Doe",
+      "timestamp": "2026-01-06T23:03:38.293Z"
+    },
+    {
+      "id": "2",
+      "type": "user_registered",
+      "message": "User registered",
+      "user": "Jane Smith",
+      "timestamp": "2026-01-06T22:56:38.293Z"
+    }
+  ]
+}

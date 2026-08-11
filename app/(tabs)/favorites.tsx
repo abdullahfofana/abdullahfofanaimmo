@@ -1,0 +1,158 @@
+import React, { useMemo } from 'react';
+import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Heart, Search } from 'lucide-react-native';
+import { router } from 'expo-router';
+
+import { useColors } from '@/hooks/useColors';
+import Spacing from '@/constants/spacing';
+import PropertyCard from '@/components/PropertyCard';
+import { useLanguage } from '@/providers/LanguageProvider';
+import { useFavorites } from '@/providers/FavoritesProvider';
+
+export default function FavoritesScreen() {
+  const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+  const { favorites } = useFavorites();
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>{t('favorites_title')}</Text>
+          <Text style={styles.subtitle}>
+            {favorites.length > 0
+              ? `${favorites.length} ${t('favorites_properties')}`
+              : t('favorites_empty_title')}
+          </Text>
+        </View>
+        {favorites.length > 0 && (
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{favorites.length}</Text>
+          </View>
+        )}
+      </View>
+
+      <FlatList
+        data={favorites}
+        renderItem={({ item }) => <PropertyCard property={item} />}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconBox}>
+              <Heart size={40} color={colors.textLight} strokeWidth={1.5} />
+            </View>
+            <Text style={styles.emptyTitle}>{t('favorites_empty_title')}</Text>
+            <Text style={styles.emptyText}>{t('favorites_empty_text')}</Text>
+            <TouchableOpacity
+              style={[styles.exploreButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.push('/(tabs)/search')}
+              activeOpacity={0.88}
+            >
+              <Search size={16} color="#fff" strokeWidth={2.5} />
+              <Text style={styles.exploreButtonText}>Browse Properties</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
+const createStyles = (colors: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: colors.text,
+    letterSpacing: -0.5,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '400' as const,
+  },
+  countBadge: {
+    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countBadgeText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+  list: {
+    padding: Spacing.lg,
+    paddingBottom: 100,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: Spacing.xxl,
+    gap: 12,
+  },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: colors.text,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontWeight: '400' as const,
+  },
+  exploreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  exploreButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+});
