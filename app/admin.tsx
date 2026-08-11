@@ -1162,11 +1162,7 @@ const styles = StyleSheet.create({
   // Sidebar
   sidebar: {
     width: 260,
-    backgroundColor: 'rgba(15, 23, 42, 0.9)', // Slate 900 with transparency for glassmorphism
-    ...Platform.select({
-      web: { backdropFilter: 'blur(20px)' },
-      default: {},
-    }),
+    backgroundColor: 'rgba(15, 23, 42, 0.95)', // Slate 900 with transparency
     borderRightWidth: 0,
     borderTopRightRadius: 24,
     borderBottomRightRadius: 24,
