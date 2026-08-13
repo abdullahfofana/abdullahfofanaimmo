@@ -5,36 +5,42 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
-  PieChart,
-  Calendar,
   Search,
   Filter,
   MoreVertical,
   Download,
   CheckCircle,
   XCircle,
-  Menu,
   Plus,
   Shield,
   UserPlus,
   UserCheck,
-  FileText as FileIcon, // Renamed FileText to FileIcon to match the instruction's import style
+  FileText as FileIcon,
   Sparkles,
-  MessageCircle, // Added back MessageCircle as it was in the original and not in the provided snippet
-  ChevronLeft, // Added back ChevronLeft
-  Home, // Added back Home
-  LayoutDashboard, // Added back LayoutDashboard
-  Settings, // Added back Settings
-  Zap, // Added back Zap
-  CreditCard, // Added back CreditCard
-  Bell, // Added back Bell
-  MoreHorizontal, // Added back MoreHorizontal
-  X, // Added back X
-  Globe, // Added Globe for language
+  MessageCircle,
+  ChevronLeft,
+  Home,
+  LayoutDashboard,
+  Settings,
+  Zap,
+  CreditCard,
+  Bell,
+  MoreHorizontal,
+  X,
+  Globe,
   Moon,
   Sun,
+  Activity,
+  Layers,
+  BarChart3,
+  Check,
+  AlertCircle,
+  ArrowUpRight,
+  Eye,
+  Trash2,
+  ExternalLink,
 } from 'lucide-react-native';
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -46,6 +52,7 @@ import {
   Platform,
   Modal,
   Linking,
+  Dimensions,
 } from 'react-native';
 
 import Colors from '@/constants/colors';
@@ -71,7 +78,6 @@ import MonthlyGrowthChart from '@/components/admin/MonthlyGrowthChart';
 import PropertyDistributionChart from '@/components/admin/PropertyDistributionChart';
 import RevenueAnalyticsChart from '@/components/admin/RevenueAnalyticsChart';
 import PerformanceDistributionChart from '@/components/charts/PerformanceDistributionChart';
-// import AgentChatDashboard from '@/components/admin/AgentChatDashboard';
 
 export type AdminSection =
   | 'dashboard'
@@ -107,7 +113,7 @@ const mockStaff: StaffMember[] = [
     status: 'Active',
     hireDate: '2023-01-15',
     lastActive: '2024-06-16',
-    avatar: 'AJ'
+    avatar: 'AJ',
   },
   {
     id: '2',
@@ -118,7 +124,7 @@ const mockStaff: StaffMember[] = [
     status: 'Active',
     hireDate: '2023-03-20',
     lastActive: '2024-06-15',
-    avatar: 'BW'
+    avatar: 'BW',
   },
   {
     id: '3',
@@ -129,72 +135,9 @@ const mockStaff: StaffMember[] = [
     status: 'Inactive',
     hireDate: '2023-05-10',
     lastActive: '2024-05-30',
-    avatar: 'CD'
-  }
+    avatar: 'CD',
+  },
 ];
-
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  subtitle: string;
-  trend: string;
-  trendPositive: boolean;
-}
-
-function StatCard({ icon, title, value, subtitle, trend, trendPositive }: StatCardProps) {
-  return (
-    <View style={styles.statCard}>
-      <View style={styles.statHeader}>
-        <View style={styles.statIconContainer}>
-          {icon}
-        </View>
-        <View style={styles.statTrendContainer}>
-          <Text style={[styles.statTrend, trendPositive ? styles.statTrendPositive : styles.statTrendNegative]}>
-            {trend}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.statContent}>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statTitle}>{title}</Text>
-        <Text style={styles.statSubtitle}>{subtitle}</Text>
-      </View>
-    </View>
-  );
-}
-
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  title: string;
-  active?: boolean;
-  onPress: () => void;
-  count?: number;
-}
-
-function SidebarItem({ icon, title, active, onPress, count }: SidebarItemProps) {
-  return (
-    <TouchableOpacity
-      style={[styles.sidebarItem, active && styles.sidebarItemActive]}
-      onPress={onPress}
-    >
-      <View style={styles.sidebarItemLeft}>
-        <View style={styles.sidebarItemIcon}>
-          {icon}
-        </View>
-        <Text style={[styles.sidebarItemText, active && styles.sidebarItemTextActive]}>
-          {title}
-        </Text>
-      </View>
-      {count !== undefined && count > 0 && (
-        <View style={styles.sidebarCount}>
-          <Text style={styles.sidebarCountText}>{count}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-}
 
 export default function AdminDashboardWrapper() {
   return (
@@ -206,21 +149,41 @@ export default function AdminDashboardWrapper() {
 
 function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // Ensure we are always on desktop mode effectively for this view if it's web
-  // But we want to handle responsive layout still.
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const {
     submissions,
     getPendingSubmissions,
-    updateSubmissionStatus
+    updateSubmissionStatus,
   } = usePropertySubmissions();
-  
+
   const { t, language, setLanguage } = useLanguage();
   const { activeTheme, setTheme } = useTheme();
-  const ColorsLocal = useColors();
-  const colors = ColorsLocal;
   const isDark = activeTheme === 'dark';
-  
+
+  // Google Stitch Pro Theme Palette
+  const stitchTheme = useMemo(() => ({
+    bg: isDark ? '#0B0F19' : '#F6F8FC',
+    sidebarBg: isDark ? '#0F172A' : '#0F172A',
+    surface: isDark ? '#161F30' : '#FFFFFF',
+    surfaceHover: isDark ? '#1E293B' : '#F8FAFC',
+    cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    textPrimary: isDark ? '#F8FAFC' : '#0F172A',
+    textSecondary: isDark ? '#94A3B8' : '#64748B',
+    textMuted: isDark ? '#64748B' : '#94A3B8',
+    primary: '#059669', // Stitch Emerald
+    primaryLight: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+    indigo: '#6366F1',
+    indigoLight: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF',
+    amber: '#F59E0B',
+    amberLight: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
+    blue: '#3B82F6',
+    blueLight: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
+    rose: '#EF4444',
+    roseLight: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+    topBarBg: isDark ? '#111827' : '#FFFFFF',
+    divider: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+  }), [isDark]);
+
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -239,37 +202,38 @@ function AdminDashboard() {
   const [showStaffActionModal, setShowStaffActionModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
 
-  const [attachmentView, setAttachmentView] = useState<{ type: 'document' | 'media', submission: PropertySubmission } | null>(null);
+  const [attachmentView, setAttachmentView] = useState<{
+    type: 'document' | 'media';
+    submission: PropertySubmission;
+  } | null>(null);
 
-  const handleEditStaff = (staff: StaffMember) => {
-    // For now just console log or basic alert as full edit wasn't requested but we need action
-    console.log('Edit staff', staff.id);
+  const { kpis, charts } = useAnalytics();
+  const pendingSubmissions = getPendingSubmissions();
+
+  const handleEditStaff = (staffMember: StaffMember) => {
+    console.log('Edit staff', staffMember.id);
     setShowStaffActionModal(false);
   };
 
-  const handleStaffAction = (staff: StaffMember) => {
-    setSelectedStaff(staff);
+  const handleStaffAction = (staffMember: StaffMember) => {
+    setSelectedStaff(staffMember);
     setShowStaffActionModal(true);
   };
 
-  const { kpis, charts } = useAnalytics();
-
   const handleDeleteStaff = (id: string) => {
     if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to delete this staff member?')) {
-        setStaff(prev => prev.filter(s => s.id !== id));
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this staff member?')) {
+        setStaff((prev) => prev.filter((s) => s.id !== id));
         setShowStaffActionModal(false);
       }
     } else {
-      // Fallback for mobile if ever used there
-      setStaff(prev => prev.filter(s => s.id !== id));
+      setStaff((prev) => prev.filter((s) => s.id !== id));
       setShowStaffActionModal(false);
     }
   };
 
   const handleAddStaff = () => {
     if (!newStaff.name || !newStaff.email || !newStaff.department) {
-      // You might want to add proper validation/toast here
       return;
     }
 
@@ -281,8 +245,13 @@ function AdminDashboard() {
       department: newStaff.department,
       status: 'Active',
       hireDate: new Date().toISOString().split('T')[0],
-      lastActive: '-',
-      avatar: newStaff.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
+      lastActive: 'Just now',
+      avatar: newStaff.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2),
     };
 
     setStaff([...staff, newMember]);
@@ -295,179 +264,369 @@ function AdminDashboard() {
     });
   };
 
-  const pendingSubmissions = getPendingSubmissions();
-
-  // const handleBack = () => {
-  //   if (router.canGoBack()) {
-  //     router.back();
-  //   } else {
-  //     router.replace('/');
-  //   }
-  // };
-
-  // Web Only Restriction - REMOVED FOR MOBILE ADMIN ACCESS
-  /* 
-  if (Platform.OS !== 'web') {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Shield size={64} color={Colors.primary} />
-        <Text style={styles.mobileTitle}>Desktop Only</Text>
-        <Text style={styles.mobileSubtitle}>
-          The Admin Dashboard is only available on the web version of the application.
-        </Text>
-        <TouchableOpacity style={styles.mobileButton} onPress={handleBack}>
-          <Text style={styles.mobileButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-  */
-
   if (!isLoggedIn) {
     return <AdminLogin onLogin={() => setIsLoggedIn(true)} />;
   }
 
+  // Stitch Tonal Metric Cards
   const stats = [
     {
-      icon: <Building2 size={24} color={Colors.primary} />,
+      id: 'properties',
+      icon: <Building2 size={22} color={stitchTheme.primary} />,
+      iconBg: stitchTheme.primaryLight,
       title: 'Total Properties',
       value: kpis.totalProperties.toLocaleString(),
       subtitle: 'Active listings',
       trend: `+${kpis.propertyGrowth}%`,
-      trendPositive: kpis.propertyGrowth > 0,
+      trendPositive: kpis.propertyGrowth >= 0,
+      accentColor: stitchTheme.primary,
     },
     {
-      icon: <Users size={24} color={Colors.accent} />,
+      id: 'users',
+      icon: <Users size={22} color={stitchTheme.indigo} />,
+      iconBg: stitchTheme.indigoLight,
       title: 'Total Users',
       value: kpis.activeUsers.toLocaleString(),
-      subtitle: 'Active users',
+      subtitle: 'Active accounts',
       trend: `+${kpis.userGrowth}%`,
-      trendPositive: kpis.userGrowth > 0,
+      trendPositive: kpis.userGrowth >= 0,
+      accentColor: stitchTheme.indigo,
     },
     {
-      icon: <FileText size={24} color={Colors.warning} />,
+      id: 'docs',
+      icon: <FileText size={22} color={stitchTheme.amber} />,
+      iconBg: stitchTheme.amberLight,
       title: 'Pending Docs',
       value: kpis.pendingVerifications.toString(),
-      subtitle: 'Requires verification',
+      subtitle: 'Verification required',
       trend: kpis.pendingVerifications > 5 ? 'High' : 'Normal',
-      trendPositive: kpis.pendingVerifications < 10,
+      trendPositive: kpis.pendingVerifications <= 5,
+      accentColor: stitchTheme.amber,
     },
     {
-      icon: <DollarSign size={24} color={Colors.success} />,
+      id: 'revenue',
+      icon: <DollarSign size={22} color={stitchTheme.blue} />,
+      iconBg: stitchTheme.blueLight,
       title: 'Revenue',
       value: kpis.totalRevenue.toLocaleString(),
       subtitle: 'Total Revenue (FCFA)',
       trend: `+${kpis.revenueGrowth}%`,
-      trendPositive: kpis.revenueGrowth > 0,
+      trendPositive: kpis.revenueGrowth >= 0,
+      accentColor: stitchTheme.blue,
     },
   ];
 
+  const navItems: {
+    id: AdminSection;
+    icon: React.ReactNode;
+    title: string;
+    count?: number;
+  }[] = [
+    {
+      id: 'dashboard',
+      icon: <LayoutDashboard size={19} color={activeSection === 'dashboard' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_dashboard'),
+    },
+    {
+      id: 'analytics',
+      icon: <TrendingUp size={19} color={activeSection === 'analytics' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_analytics'),
+    },
+    {
+      id: 'properties',
+      icon: <Building2 size={19} color={activeSection === 'properties' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_properties'),
+    },
+    {
+      id: 'documents',
+      icon: <FileText size={19} color={activeSection === 'documents' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_documents'),
+      count: pendingSubmissions.length,
+    },
+    {
+      id: 'users',
+      icon: <Users size={19} color={activeSection === 'users' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_users'),
+    },
+    {
+      id: 'staff',
+      icon: <UserCheck size={19} color={activeSection === 'staff' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_staff'),
+    },
+    {
+      id: 'support',
+      icon: <MessageCircle size={19} color={activeSection === 'support' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_support'),
+    },
+    {
+      id: 'reports',
+      icon: <BarChart3 size={19} color={activeSection === 'reports' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_reports'),
+    },
+    {
+      id: 'integrations',
+      icon: <Zap size={19} color={activeSection === 'integrations' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_integrations'),
+    },
+    {
+      id: 'settings',
+      icon: <Settings size={19} color={activeSection === 'settings' ? '#10B981' : '#94A3B8'} />,
+      title: t('admin_nav_settings'),
+    },
+  ];
+
+  // ── Render Views ───────────────────────────────────────────────────────────
   const renderDashboard = () => (
     <View style={styles.animateView}>
+      {/* 4 Top Tonal Metric KPI Cards */}
       <View style={styles.statsGrid}>
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
+        {stats.map((stat) => (
+          <View
+            key={stat.id}
+            style={[
+              styles.statCard,
+              {
+                backgroundColor: stitchTheme.surface,
+                borderColor: stitchTheme.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.statHeader}>
+              <View style={[styles.statIconContainer, { backgroundColor: stat.iconBg }]}>
+                {stat.icon}
+              </View>
+              <View
+                style={[
+                  styles.statTrendPill,
+                  {
+                    backgroundColor: stat.trendPositive
+                      ? isDark
+                        ? 'rgba(16, 185, 129, 0.2)'
+                        : '#DCFCE7'
+                      : isDark
+                      ? 'rgba(239, 68, 68, 0.2)'
+                      : '#FEE2E2',
+                  },
+                ]}
+              >
+                {stat.trendPositive ? (
+                  <ArrowUpRight size={13} color={stat.trendPositive ? '#10B981' : '#EF4444'} />
+                ) : null}
+                <Text
+                  style={[
+                    styles.statTrendText,
+                    { color: stat.trendPositive ? (isDark ? '#34D399' : '#166534') : '#EF4444' },
+                  ]}
+                >
+                  {stat.trend}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statContent}>
+              <Text style={[styles.statValue, { color: stitchTheme.textPrimary }]}>
+                {stat.value}
+              </Text>
+              <Text style={[styles.statTitle, { color: stitchTheme.textSecondary }]}>
+                {stat.title}
+              </Text>
+              <Text style={[styles.statSubtitle, { color: stitchTheme.textMuted }]}>
+                {stat.subtitle}
+              </Text>
+            </View>
+
+            <View style={[styles.statCardIndicator, { backgroundColor: stat.accentColor }]} />
+          </View>
         ))}
       </View>
 
+      {/* Charts Section */}
       <View style={styles.dashboardGrid}>
-        <View style={[styles.chartsRow, { flexDirection: 'row', flexWrap: 'wrap', gap: 20 }]}>
-          <View style={{ flex: 1, minWidth: 300, maxWidth: 800 }}>
+        <View style={styles.chartsRow}>
+          <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
             <PerformanceDistributionChart
               title="Performance Distribution"
               subtitle="Q2 2026"
-              themeMode="dark"
+              themeMode={isDark ? 'dark' : 'light'}
               size={240}
             />
           </View>
-          <View style={{ flex: 1, minWidth: 300, maxWidth: 800 }}>
-            <PropertyDistributionChart data={charts.distribution} />
+          <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <PropertyDistributionChart
+              data={charts.distribution}
+              themeMode={isDark ? 'dark' : 'light'}
+            />
           </View>
         </View>
+
         <RevenueAnalyticsChart data={charts.revenue} />
         <MonthlyGrowthChart data={charts.userGrowth} />
       </View>
+
       <AIAnalyticsPanel data={{ kpis, charts }} />
-      {/* Agent 6 — AI-powered platform insights */}
       <AdminAIInsightsPanel />
       <RecentActivity />
       <QuickActions onNavigate={setActiveSection} />
     </View>
-
   );
 
   const renderProperties = () => (
     <View style={styles.animateView}>
       <View style={styles.filterBar}>
-        <View style={styles.searchContainer}>
-          <Search size={18} color={Colors.textSecondary} />
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: stitchTheme.surface,
+              borderColor: stitchTheme.cardBorder,
+            },
+          ]}
+        >
+          <Search size={18} color={stitchTheme.textSecondary} />
           <TextInput
             placeholder="Search properties..."
-            style={styles.searchInput}
-            placeholderTextColor={Colors.textSecondary}
+            style={[styles.searchInput, { color: stitchTheme.textPrimary }]}
+            placeholderTextColor={stitchTheme.textSecondary}
           />
         </View>
         <View style={styles.filterActions}>
-          <TouchableOpacity style={styles.filterButton}>
-            <Filter size={18} color={Colors.text} />
-            <Text style={styles.filterButtonText}>Filters</Text>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              {
+                backgroundColor: stitchTheme.surface,
+                borderColor: stitchTheme.cardBorder,
+              },
+            ]}
+          >
+            <Filter size={18} color={stitchTheme.textPrimary} />
+            <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>Filters</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/add-property')}>
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: stitchTheme.primary }]}
+            onPress={() => router.push('/add-property')}
+          >
+            <Plus size={18} color="#FFFFFF" />
             <Text style={styles.primaryButtonText}>Add Property</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.tableHead, { flex: 2.5 }]}>Property</Text>
-          <Text style={[styles.tableHead, { flex: 1.5 }]}>Location</Text>
-          <Text style={[styles.tableHead, { flex: 1 }]}>Price</Text>
-          <Text style={[styles.tableHead, { flex: 1 }]}>Type</Text>
-          <Text style={[styles.tableHead, { flex: 1 }]}>Status</Text>
-          <Text style={[styles.tableHead, { flex: 0.5 }]}>Action</Text>
+      <View
+        style={[
+          styles.tableContainer,
+          {
+            backgroundColor: stitchTheme.surface,
+            borderColor: stitchTheme.cardBorder,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.tableHeader,
+            {
+              backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+              borderBottomColor: stitchTheme.cardBorder,
+            },
+          ]}
+        >
+          <Text style={[styles.tableHead, { flex: 2.5, color: stitchTheme.textSecondary }]}>Property</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Location</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Price</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Type</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Status</Text>
+          <Text style={[styles.tableHead, { flex: 0.8, textAlign: 'center', color: stitchTheme.textSecondary }]}>Action</Text>
         </View>
-        {submissions.map((sub) => (
-          <View key={sub.id} style={styles.tableRow}>
-            <View style={[styles.tableCellView, { flex: 2.5, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-              <Image source={{ uri: sub.photos[0] }} style={styles.tableImage} />
-              <View>
-                <Text style={styles.tableCellTitle} numberOfLines={1}>{sub.title}</Text>
-                <Text style={styles.tableCellSubtitle}>{sub.id}</Text>
-              </View>
-            </View>
-            <Text style={[styles.tableCell, { flex: 1.5 }]}>{sub.location.district}, {sub.location.city}</Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>{(sub.price / 1000000).toFixed(1)}M</Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>{sub.type}</Text>
-            <View style={[styles.tableCellView, { flex: 1 }]}>
-              <View style={[
-                styles.statusBadge,
-                sub.submissionStatus === 'approved' ? styles.statusApproved :
-                  sub.submissionStatus === 'rejected' ? styles.statusRejected : styles.statusPending
-              ]}>
-                <Text style={[
-                  styles.statusText,
-                  sub.submissionStatus === 'approved' ? styles.statusTextApproved :
-                    sub.submissionStatus === 'rejected' ? styles.statusTextRejected : styles.statusTextPendingTable
-                ]}>{sub.submissionStatus}</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TouchableOpacity
-                style={[styles.tableCellView, { marginRight: 8, padding: 4 }]}
-                onPress={() => {
-                  setModerationProperty(sub);
-                  setShowAIModeration(true);
-                }}
-              >
-                <Sparkles size={16} color={Colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.tableCellView, { flex: 0.5 }]}>
-                <MoreVertical size={16} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+
+        {submissions.length === 0 ? (
+          <View style={{ padding: 40, alignItems: 'center' }}>
+            <Building2 size={40} color={stitchTheme.textMuted} />
+            <Text style={{ marginTop: 12, fontSize: 16, fontWeight: '600', color: stitchTheme.textPrimary }}>
+              No properties listed yet
+            </Text>
+            <Text style={{ color: stitchTheme.textSecondary, marginTop: 4 }}>
+              Properties submitted by users or agents will appear here.
+            </Text>
           </View>
-        ))}
+        ) : (
+          submissions.map((sub) => (
+            <View
+              key={sub.id}
+              style={[
+                styles.tableRow,
+                { borderBottomColor: stitchTheme.cardBorder },
+              ]}
+            >
+              <View style={[styles.tableCellView, { flex: 2.5, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                <Image
+                  source={{ uri: sub.photos[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200' }}
+                  style={styles.tableImage}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.tableCellTitle, { color: stitchTheme.textPrimary }]} numberOfLines={1}>
+                    {sub.title}
+                  </Text>
+                  <Text style={[styles.tableCellSubtitle, { color: stitchTheme.textMuted }]}>{sub.id.substring(0, 12)}...</Text>
+                </View>
+              </View>
+
+              <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textPrimary }]}>
+                {sub.location.district}, {sub.location.city}
+              </Text>
+              <Text style={[styles.tableCell, { flex: 1, fontWeight: '700', color: stitchTheme.textPrimary }]}>
+                {(sub.price / 1000000).toFixed(1)}M FCFA
+              </Text>
+              <Text style={[styles.tableCell, { flex: 1, textTransform: 'capitalize', color: stitchTheme.textSecondary }]}>
+                {sub.type}
+              </Text>
+              <View style={[styles.tableCellView, { flex: 1 }]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    sub.submissionStatus === 'approved'
+                      ? styles.statusApproved
+                      : sub.submissionStatus === 'rejected'
+                      ? styles.statusRejected
+                      : styles.statusPending,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusText,
+                      sub.submissionStatus === 'approved'
+                        ? styles.statusTextApproved
+                        : sub.submissionStatus === 'rejected'
+                        ? styles.statusTextRejected
+                        : styles.statusTextPendingTable,
+                    ]}
+                  >
+                    {sub.submissionStatus}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flex: 0.8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.actionIconBtn, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5' }]}
+                  onPress={() => {
+                    setModerationProperty(sub);
+                    setShowAIModeration(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Sparkles size={16} color="#10B981" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionIconBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9' }]}
+                  onPress={() => setAttachmentView({ type: 'media', submission: sub })}
+                  activeOpacity={0.8}
+                >
+                  <Eye size={16} color={stitchTheme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
       </View>
     </View>
   );
@@ -476,56 +635,74 @@ function AdminDashboard() {
     <View style={styles.animateView}>
       <View style={styles.documentsGrid}>
         {pendingSubmissions.length === 0 ? (
-          <View style={styles.emptyStateFull}>
-            <Shield size={64} color={Colors.success} />
-            <Text style={styles.emptyStateTitle}>All documents verified</Text>
-            <Text style={styles.emptyStateText}>Great job! There are no pending documents to review.</Text>
+          <View style={[styles.emptyStateFull, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <View style={[styles.emptyStateIconCircle, { backgroundColor: stitchTheme.primaryLight }]}>
+              <Shield size={48} color={stitchTheme.primary} />
+            </View>
+            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>All documents verified</Text>
+            <Text style={[styles.emptyStateText, { color: stitchTheme.textSecondary }]}>
+              Great job! There are currently no pending documents to review.
+            </Text>
           </View>
         ) : (
           pendingSubmissions.map((submission) => (
             <SubmissionCard
               key={submission.id}
               submission={submission}
+              theme={stitchTheme}
+              isDark={isDark}
               onApprove={() => updateSubmissionStatus(submission.id, 'approved')}
               onReject={() => updateSubmissionStatus(submission.id, 'rejected', 'Document invalid')}
               onViewDocs={() => setAttachmentView({ type: 'document', submission })}
               onViewMedia={() => setAttachmentView({ type: 'media', submission })}
             />
-
           ))
         )}
       </View>
     </View>
   );
 
-
-
-
   const renderReports = () => {
     const reports = [
-      { id: '1', name: 'Monthly Revenue Report', date: 'Oct 2023', size: '2.4 MB', type: 'PDF' },
-      { id: '2', name: 'User Growth Analysis', date: 'Sep 2023', size: '1.8 MB', type: 'PDF' },
-      { id: '3', name: 'Property Listings Summary', date: 'Q3 2023', size: '3.5 MB', type: 'CSV' },
-      { id: '4', name: 'Agent Performance Review', date: 'Oct 2023', size: '1.2 MB', type: 'PDF' },
+      { id: '1', name: 'Monthly Revenue Report', date: 'Q2 2026', size: '2.4 MB', type: 'PDF' },
+      { id: '2', name: 'User Growth & Retention Analysis', date: 'May 2026', size: '1.8 MB', type: 'PDF' },
+      { id: '3', name: 'Property Listings & Conversion Summary', date: 'Q2 2026', size: '3.5 MB', type: 'CSV' },
+      { id: '4', name: 'Agent Performance & SLA Review', date: 'June 2026', size: '1.2 MB', type: 'PDF' },
     ];
 
     return (
       <View style={styles.animateView}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Available Reports</Text>
+          <Text style={[styles.sectionTitle, { color: stitchTheme.textPrimary }]}>Available Reports</Text>
         </View>
         <View style={styles.cardsGrid}>
           {reports.map((report) => (
-            <View key={report.id} style={styles.reportCard}>
-              <View style={styles.reportIcon}>
-                <FileIcon size={24} color={Colors.primary} />
+            <View
+              key={report.id}
+              style={[
+                styles.reportCard,
+                {
+                  backgroundColor: stitchTheme.surface,
+                  borderColor: stitchTheme.cardBorder,
+                },
+              ]}
+            >
+              <View style={[styles.reportIcon, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#EFF6FF' }]}>
+                <FileIcon size={24} color="#3B82F6" />
               </View>
               <View style={styles.reportInfo}>
-                <Text style={styles.reportName}>{report.name}</Text>
-                <Text style={styles.reportMeta}>{report.date} • {report.size}</Text>
+                <Text style={[styles.reportName, { color: stitchTheme.textPrimary }]}>{report.name}</Text>
+                <Text style={[styles.reportMeta, { color: stitchTheme.textSecondary }]}>
+                  {report.date} • {report.size} • {report.type}
+                </Text>
               </View>
-              <TouchableOpacity style={styles.downloadButton}>
-                <Download size={18} color={Colors.textSecondary} />
+              <TouchableOpacity
+                style={[
+                  styles.downloadButton,
+                  { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' },
+                ]}
+              >
+                <Download size={18} color={stitchTheme.textSecondary} />
               </TouchableOpacity>
             </View>
           ))}
@@ -538,207 +715,282 @@ function AdminDashboard() {
     <View style={styles.animateView}>
       <View style={styles.pageHeader}>
         <View>
-          <Text style={styles.pageHeaderTitle}>{language === 'fr' ? 'Gestion du Personnel' : 'Staff Management'}</Text>
-          <Text style={styles.pageHeaderSubtitle}>{language === 'fr' ? 'Gérez les membres de votre équipe et leurs rôles' : 'Manage your team members and their roles'}</Text>
+          <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
+            {language === 'fr' ? 'Gestion du Personnel' : 'Staff Management'}
+          </Text>
+          <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
+            {language === 'fr' ? 'Gérez les membres de votre équipe et leurs rôles' : 'Manage team members and authorization roles'}
+          </Text>
         </View>
         <TouchableOpacity
-          style={styles.primaryButton}
+          style={[styles.primaryButton, { backgroundColor: stitchTheme.primary }]}
           onPress={() => setShowAddStaffModal(true)}
         >
-          <Plus size={18} color={Colors.white} />
+          <Plus size={18} color="#FFFFFF" />
           <Text style={styles.primaryButtonText}>Add Staff Member</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.filterBar}>
-        <View style={styles.searchContainer}>
-          <Search size={18} color={Colors.textSecondary} />
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: stitchTheme.surface,
+              borderColor: stitchTheme.cardBorder,
+            },
+          ]}
+        >
+          <Search size={18} color={stitchTheme.textSecondary} />
           <TextInput
             placeholder="Search staff members..."
-            style={styles.searchInput}
-            placeholderTextColor={Colors.textSecondary}
+            style={[styles.searchInput, { color: stitchTheme.textPrimary }]}
+            placeholderTextColor={stitchTheme.textSecondary}
           />
         </View>
-        <TouchableOpacity style={styles.filterButton}>
-          <Filter size={18} color={Colors.text} />
-          <Text style={styles.filterButtonText}>Filters</Text>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            {
+              backgroundColor: stitchTheme.surface,
+              borderColor: stitchTheme.cardBorder,
+            },
+          ]}
+        >
+          <Filter size={18} color={stitchTheme.textPrimary} />
+          <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>Filters</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Staff KPI summary cards */}
       <View style={styles.staffStatsGrid}>
-        <View style={styles.staffStatCard}>
+        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={styles.staffStatLabel}>Total Staff</Text>
-            <Users size={20} color={Colors.textSecondary} />
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Total Staff</Text>
+            <Users size={20} color={stitchTheme.textSecondary} />
           </View>
-          <Text style={styles.staffStatValue}>3</Text>
+          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>{staff.length}</Text>
         </View>
 
-        <View style={styles.staffStatCard}>
+        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={styles.staffStatLabel}>Active</Text>
-            <Shield size={20} color={Colors.success} />
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Active</Text>
+            <Shield size={20} color="#10B981" />
           </View>
-          <Text style={styles.staffStatValue}>2</Text>
+          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
+            {staff.filter((s) => s.status === 'Active').length}
+          </Text>
         </View>
 
-        <View style={styles.staffStatCard}>
+        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={styles.staffStatLabel}>Managers</Text>
-            <UserCheck size={20} color={Colors.info} />
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Managers</Text>
+            <UserCheck size={20} color="#3B82F6" />
           </View>
-          <Text style={styles.staffStatValue}>1</Text>
+          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
+            {staff.filter((s) => s.role === 'Manager').length}
+          </Text>
         </View>
 
-        <View style={styles.staffStatCard}>
+        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={styles.staffStatLabel}>Agents</Text>
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Agents</Text>
             <UserPlus size={20} color="#8B5CF6" />
           </View>
-          <Text style={styles.staffStatValue}>1</Text>
+          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
+            {staff.filter((s) => s.role === 'Agent').length}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>All Staff Members ({staff.length})</Text>
-
-        <View style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHead, { flex: 2 }]}>Staff Member</Text>
-            <Text style={[styles.tableHead, { flex: 2 }]}>Email</Text>
-            <Text style={[styles.tableHead, { flex: 1 }]}>Role</Text>
-            <Text style={[styles.tableHead, { flex: 1.5 }]}>Department</Text>
-            <Text style={[styles.tableHead, { flex: 1 }]}>Status</Text>
-            <Text style={[styles.tableHead, { flex: 1.5 }]}>Hire Date</Text>
-            <Text style={[styles.tableHead, { flex: 1.5 }]}>Last Active</Text>
-            <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'center' }]}>Actions</Text>
-          </View>
-
-          {staff.map((staff) => (
-            <View key={staff.id} style={styles.tableRow}>
-              <View style={[styles.tableCellView, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-                <View style={[styles.avatar, { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.primaryLight + '40' }]}>
-                  <Text style={[styles.avatarText, { fontSize: 12, color: Colors.primary }]}>{staff.avatar}</Text>
-                </View>
-                <Text style={styles.tableCellTitle}>{staff.name}</Text>
-              </View>
-
-              <Text style={[styles.tableCell, { flex: 2 }]}>{staff.email}</Text>
-
-              <View style={[styles.tableCellView, { flex: 1 }]}>
-                <View style={[
-                  styles.roleBadge,
-                  staff.role === 'Manager' ? styles.roleManager : styles.roleAgent
-                ]}>
-                  <Text style={[
-                    styles.roleText,
-                    staff.role === 'Manager' ? styles.roleTextManager : styles.roleTextAgent
-                  ]}>{staff.role}</Text>
-                </View>
-              </View>
-
-              <Text style={[styles.tableCell, { flex: 1.5 }]}>{staff.department}</Text>
-
-              <View style={[styles.tableCellView, { flex: 1 }]}>
-                <View style={[
-                  styles.statusBadge,
-                  staff.status === 'Active' ? styles.statusApproved : styles.statusRejected
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    staff.status === 'Active' ? styles.statusTextApproved : styles.statusTextRejected
-                  ]}>{staff.status}</Text>
-                </View>
-              </View>
-
-              <Text style={[styles.tableCell, { flex: 1.5 }]}>{staff.hireDate}</Text>
-              <Text style={[styles.tableCell, { flex: 1.5 }]}>{staff.lastActive}</Text>
-
-              <TouchableOpacity
-                style={[styles.tableCellView, { flex: 0.5, alignItems: 'center' }]}
-                onPress={() => handleStaffAction(staff)}
-              >
-                <MoreHorizontal size={16} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          ))}
+      <View style={[styles.tableContainer, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+        <View style={[styles.tableHeader, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderBottomColor: stitchTheme.cardBorder }]}>
+          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>Staff Member</Text>
+          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>Email</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Role</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Department</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Status</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Hire Date</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Last Active</Text>
+          <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'center', color: stitchTheme.textSecondary }]}>Actions</Text>
         </View>
+
+        {staff.map((member) => (
+          <View
+            key={member.id}
+            style={[styles.tableRow, { borderBottomColor: stitchTheme.cardBorder }]}
+          >
+            <View style={[styles.tableCellView, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: isDark ? '#3B82F6' : '#DBEAFE',
+                  },
+                ]}
+              >
+                <Text style={[styles.avatarText, { fontSize: 12, color: isDark ? '#FFFFFF' : '#1E40AF' }]}>
+                  {member.avatar}
+                </Text>
+              </View>
+              <Text style={[styles.tableCellTitle, { color: stitchTheme.textPrimary }]}>{member.name}</Text>
+            </View>
+
+            <Text style={[styles.tableCell, { flex: 2, color: stitchTheme.textSecondary }]}>{member.email}</Text>
+
+            <View style={[styles.tableCellView, { flex: 1 }]}>
+              <View
+                style={[
+                  styles.roleBadge,
+                  member.role === 'Manager' ? styles.roleManager : styles.roleAgent,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.roleText,
+                    member.role === 'Manager' ? styles.roleTextManager : styles.roleTextAgent,
+                  ]}
+                >
+                  {member.role}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textPrimary }]}>{member.department}</Text>
+
+            <View style={[styles.tableCellView, { flex: 1 }]}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  member.status === 'Active' ? styles.statusApproved : styles.statusRejected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    member.status === 'Active' ? styles.statusTextApproved : styles.statusTextRejected,
+                  ]}
+                >
+                  {member.status}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textSecondary }]}>{member.hireDate}</Text>
+            <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textSecondary }]}>{member.lastActive}</Text>
+
+            <TouchableOpacity
+              style={[styles.tableCellView, { flex: 0.5, alignItems: 'center' }]}
+              onPress={() => handleStaffAction(member)}
+            >
+              <MoreHorizontal size={18} color={stitchTheme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        ))}
       </View>
     </View>
   );
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'dashboard': return renderDashboard();
-      case 'analytics': return (
-        <View style={styles.animateView}>
-          <View style={styles.pageHeader}>
-            <View>
-              <Text style={styles.pageHeaderTitle}>{language === 'fr' ? 'Tableau de bord Analytique' : 'Analytics Dashboard'}</Text>
-              <Text style={styles.pageHeaderSubtitle}>{language === 'fr' ? 'Surveillez et gérez toute la plateforme' : 'Monitor and manage the entire platform'}</Text>
+      case 'dashboard':
+        return renderDashboard();
+      case 'analytics':
+        return (
+          <View style={styles.animateView}>
+            <View style={styles.pageHeader}>
+              <View>
+                <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
+                  {language === 'fr' ? 'Tableau de bord Analytique' : 'Analytics Dashboard'}
+                </Text>
+                <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
+                  {language === 'fr' ? 'Surveillez et gérez toute la plateforme' : 'Real-time performance metrics and predictive signals'}
+                </Text>
+              </View>
+              <View style={[styles.timePeriodSelector, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+                <Text style={[styles.timePeriodText, { color: stitchTheme.textPrimary }]}>Last 30 days</Text>
+              </View>
             </View>
-            <View style={styles.timePeriodSelector}>
-              <Text style={styles.timePeriodText}>Last 30 days</Text>
-            </View>
-          </View>
 
-          <View style={styles.chartsGrid}>
-            <View style={[styles.chartsRow, { flexDirection: 'row', flexWrap: 'wrap', gap: 20 }]}>
-              <View style={{ flex: 1, minWidth: 300, maxWidth: 800 }}>
-                <PerformanceDistributionChart
-                  title="Performance Distribution"
-                  subtitle="Q2 2026"
-                  themeMode="dark"
-                  size={240}
-                />
+            <View style={styles.chartsGrid}>
+              <View style={styles.chartsRow}>
+                <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+                  <PerformanceDistributionChart
+                    title="Performance Distribution"
+                    subtitle="Q2 2026"
+                    themeMode={isDark ? 'dark' : 'light'}
+                    size={240}
+                  />
+                </View>
+                <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+                  <PropertyDistributionChart
+                    data={charts.distribution}
+                    themeMode={isDark ? 'dark' : 'light'}
+                  />
+                </View>
               </View>
-              <View style={{ flex: 1, minWidth: 300, maxWidth: 800 }}>
-                <PropertyDistributionChart />
-              </View>
+              <MonthlyGrowthChart data={charts.userGrowth} />
+              <RevenueAnalyticsChart data={charts.revenue} />
             </View>
-            <MonthlyGrowthChart />
-            <RevenueAnalyticsChart />
           </View>
-        </View>
-      );
-      case 'properties': return renderProperties();
-      case 'documents': return renderDocuments();
-      case 'users': return <View style={styles.animateView}><UserManagement /></View>;
-      case 'staff': return renderStaff();
-      case 'reports': return renderReports();
-      case 'integrations': return <View style={styles.animateView}><AdminIntegrations /></View>;
-      case 'settings': return <View style={styles.animateView}><AdminSettings /></View>;
-      case 'support': return (
-        <View style={[styles.animateView, { alignItems: 'center', justifyContent: 'center', padding: 40 }]}>
-          <MessageCircle size={48} color={Colors.textSecondary} />
-          <Text style={{ marginTop: 16, ...Typography.h4, color: Colors.text }}>Support Messages</Text>
-          <Text style={{ marginTop: 8, ...Typography.body, color: Colors.textSecondary, textAlign: 'center' }}>
-            Messages sent via &quot;Contact Support&quot; will appear here.
-          </Text>
-        </View>
-      );
-      default: return renderDashboard();
+        );
+      case 'properties':
+        return renderProperties();
+      case 'documents':
+        return renderDocuments();
+      case 'users':
+        return (
+          <View style={styles.animateView}>
+            <UserManagement />
+          </View>
+        );
+      case 'staff':
+        return renderStaff();
+      case 'reports':
+        return renderReports();
+      case 'integrations':
+        return (
+          <View style={styles.animateView}>
+            <AdminIntegrations />
+          </View>
+        );
+      case 'settings':
+        return (
+          <View style={styles.animateView}>
+            <AdminSettings />
+          </View>
+        );
+      case 'support':
+        return (
+          <View
+            style={[
+              styles.animateView,
+              styles.emptyStateFull,
+              { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder },
+            ]}
+          >
+            <View style={[styles.emptyStateIconCircle, { backgroundColor: stitchTheme.indigoLight }]}>
+              <MessageCircle size={44} color={stitchTheme.indigo} />
+            </View>
+            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>Support Messages & Helpdesk</Text>
+            <Text style={[styles.emptyStateText, { color: stitchTheme.textSecondary, maxWidth: 440 }]}>
+              Real-time user inquiries and support chats from the mobile and web app will be synchronized here with instant AI triage.
+            </Text>
+          </View>
+        );
+      default:
+        return renderDashboard();
     }
   };
 
-
-  const navItems: { id: AdminSection; icon: React.ReactNode; title: string; count?: number }[] = [
-    { id: 'dashboard', icon: <LayoutDashboard size={20} color={activeSection === 'dashboard' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_dashboard') },
-    { id: 'analytics', icon: <TrendingUp size={20} color={activeSection === 'analytics' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_analytics') },
-    { id: 'properties', icon: <Building2 size={20} color={activeSection === 'properties' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_properties') },
-    { id: 'documents', icon: <FileText size={20} color={activeSection === 'documents' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_documents'), count: pendingSubmissions.length },
-    { id: 'users', icon: <Users size={20} color={activeSection === 'users' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_users') },
-    { id: 'staff', icon: <Users size={20} color={activeSection === 'staff' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_staff') },
-    { id: 'support', icon: <MessageCircle size={20} color={activeSection === 'support' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_support') },
-    { id: 'reports', icon: <FileText size={20} color={activeSection === 'reports' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_reports') },
-    { id: 'integrations', icon: <Zap size={20} color={activeSection === 'integrations' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_integrations') },
-    { id: 'settings', icon: <Settings size={20} color={activeSection === 'settings' ? Colors.white : Colors.textSecondary} />, title: t('admin_nav_settings') },
-  ];
-
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: stitchTheme.bg }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Staff Action Modal */}
       <Modal
         visible={showStaffActionModal}
         transparent
@@ -750,40 +1002,66 @@ function AdminDashboard() {
           activeOpacity={1}
           onPress={() => setShowStaffActionModal(false)}
         >
-          <View style={styles.actionModalContent} onStartShouldSetResponder={() => true}>
+          <View
+            style={[
+              styles.actionModalContent,
+              {
+                backgroundColor: stitchTheme.surface,
+                borderColor: stitchTheme.cardBorder,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
             {selectedStaff && (
               <>
-                <View style={styles.actionHeader}>
-                  <Text style={styles.actionTitle}>Actions for {selectedStaff.name}</Text>
+                <View style={[styles.actionHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
+                  <Text style={[styles.actionTitle, { color: stitchTheme.textPrimary }]}>
+                    Actions for {selectedStaff.name}
+                  </Text>
                 </View>
-                <TouchableOpacity style={styles.actionItem} onPress={() => selectedStaff && handleEditStaff(selectedStaff)}>
-                  <Users size={18} color={Colors.text} />
-                  <Text style={styles.actionText}>Edit Details</Text>
+
+                <TouchableOpacity
+                  style={[styles.actionItem, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}
+                  onPress={() => selectedStaff && handleEditStaff(selectedStaff)}
+                >
+                  <Users size={16} color={stitchTheme.textPrimary} />
+                  <Text style={[styles.actionText, { color: stitchTheme.textPrimary }]}>Edit Details</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionItem} onPress={() => {
-                  // Toggle status
-                  if (selectedStaff) {
-                    setStaff(prev => prev.map(s => s.id === selectedStaff.id ? { ...s, status: s.status === 'Active' ? 'Inactive' : 'Active' } : s));
-                    setShowStaffActionModal(false);
-                  }
-                }}>
+                <TouchableOpacity
+                  style={[styles.actionItem, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}
+                  onPress={() => {
+                    if (selectedStaff) {
+                      setStaff((prev) =>
+                        prev.map((s) =>
+                          s.id === selectedStaff.id
+                            ? { ...s, status: s.status === 'Active' ? 'Inactive' : 'Active' }
+                            : s
+                        )
+                      );
+                      setShowStaffActionModal(false);
+                    }
+                  }}
+                >
                   {selectedStaff.status === 'Active' ? (
                     <>
-                      <XCircle size={18} color={Colors.warning} />
-                      <Text style={styles.actionText}>Deactivate</Text>
+                      <XCircle size={16} color={stitchTheme.amber} />
+                      <Text style={[styles.actionText, { color: stitchTheme.amber }]}>Deactivate</Text>
                     </>
                   ) : (
                     <>
-                      <CheckCircle size={18} color={Colors.success} />
-                      <Text style={styles.actionText}>Activate</Text>
+                      <CheckCircle size={16} color={stitchTheme.primary} />
+                      <Text style={[styles.actionText, { color: stitchTheme.primary }]}>Activate</Text>
                     </>
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.actionItem, styles.actionDelete]} onPress={() => selectedStaff && handleDeleteStaff(selectedStaff.id)}>
-                  <X size={18} color={Colors.error} />
-                  <Text style={[styles.actionText, styles.actionDeleteText]}>Remove Staff</Text>
+                <TouchableOpacity
+                  style={[styles.actionItem, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+                  onPress={() => selectedStaff && handleDeleteStaff(selectedStaff.id)}
+                >
+                  <Trash2 size={16} color="#EF4444" />
+                  <Text style={[styles.actionText, { color: '#EF4444', fontWeight: '600' }]}>Remove Staff</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -791,6 +1069,7 @@ function AdminDashboard() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Add Staff Modal */}
       <Modal
         visible={showAddStaffModal}
         transparent
@@ -798,30 +1077,32 @@ function AdminDashboard() {
         onRequestClose={() => setShowAddStaffModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Staff Member</Text>
-              <TouchableOpacity onPress={() => setShowAddStaffModal(false)}>
-                <X size={24} color={Colors.textSecondary} />
+          <View style={[styles.modalContent, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
+              <Text style={[styles.modalTitle, { color: stitchTheme.textPrimary }]}>Add New Staff Member</Text>
+              <TouchableOpacity onPress={() => setShowAddStaffModal(false)} style={{ padding: 4 }}>
+                <X size={22} color={stitchTheme.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Full Name</Text>
+                <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Full Name</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', color: stitchTheme.textPrimary, borderColor: stitchTheme.cardBorder }]}
                   placeholder="e.g. John Doe"
+                  placeholderTextColor={stitchTheme.textMuted}
                   value={newStaff.name}
                   onChangeText={(text) => setNewStaff({ ...newStaff, name: text })}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Email Address</Text>
+                <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Email Address</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', color: stitchTheme.textPrimary, borderColor: stitchTheme.cardBorder }]}
                   placeholder="e.g. john@immoci.ci"
+                  placeholderTextColor={stitchTheme.textMuted}
                   value={newStaff.email}
                   onChangeText={(text) => setNewStaff({ ...newStaff, email: text })}
                   keyboardType="email-address"
@@ -829,21 +1110,29 @@ function AdminDashboard() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Role</Text>
+                <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Role</Text>
                 <View style={styles.roleSelector}>
                   {(['Manager', 'Agent', 'Admin'] as const).map((role) => (
                     <TouchableOpacity
                       key={role}
                       style={[
                         styles.roleOption,
-                        newStaff.role === role && styles.roleOptionActive,
+                        { borderColor: stitchTheme.cardBorder },
+                        newStaff.role === role && {
+                          backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5',
+                          borderColor: '#10B981',
+                        },
                       ]}
                       onPress={() => setNewStaff({ ...newStaff, role })}
                     >
                       <Text
                         style={[
                           styles.roleOptionText,
-                          newStaff.role === role && styles.roleOptionTextActive,
+                          { color: stitchTheme.textSecondary },
+                          newStaff.role === role && {
+                            color: '#10B981',
+                            fontWeight: '700',
+                          },
                         ]}
                       >
                         {role}
@@ -854,25 +1143,26 @@ function AdminDashboard() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Department</Text>
+                <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Department</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', color: stitchTheme.textPrimary, borderColor: stitchTheme.cardBorder }]}
                   placeholder="e.g. Sales"
+                  placeholderTextColor={stitchTheme.textMuted}
                   value={newStaff.department}
                   onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
                 />
               </View>
             </View>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { borderTopColor: stitchTheme.cardBorder, backgroundColor: isDark ? '#111827' : '#F8FAFC' }]}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: stitchTheme.cardBorder }]}
                 onPress={() => setShowAddStaffModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: stitchTheme.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.saveButton}
+                style={[styles.saveButton, { backgroundColor: stitchTheme.primary }]}
                 onPress={handleAddStaff}
               >
                 <Text style={styles.saveButtonText}>Add Member</Text>
@@ -882,6 +1172,7 @@ function AdminDashboard() {
         </View>
       </Modal>
 
+      {/* Document/Media Attachment Modal */}
       <Modal
         visible={!!attachmentView}
         transparent
@@ -893,6 +1184,8 @@ function AdminDashboard() {
             <AttachmentModal
               type={attachmentView.type}
               submission={attachmentView.submission}
+              theme={stitchTheme}
+              isDark={isDark}
               onClose={() => setAttachmentView(null)}
             />
           )}
@@ -900,12 +1193,17 @@ function AdminDashboard() {
       </Modal>
 
       <View style={styles.layout}>
-        {/* Sidebar */}
-        <View style={styles.sidebar}>
+        {/* ── Stitch Navigation Sidebar ───────────────────────────────────── */}
+        <View style={[styles.sidebar, { backgroundColor: stitchTheme.sidebarBg }]}>
           <View style={styles.sidebarHeader}>
             <View style={styles.logoContainer}>
-              <Home size={24} color={Colors.white} fill={Colors.primary} />
-              <Text style={styles.logoText}>ImmoCI Admin</Text>
+              <View style={styles.logoBadgeIcon}>
+                <Building2 size={20} color="#10B981" />
+              </View>
+              <View>
+                <Text style={styles.logoText}>ImmoCI</Text>
+                <Text style={styles.logoSubtext}>PRO ADMIN</Text>
+              </View>
             </View>
           </View>
 
@@ -926,7 +1224,7 @@ function AdminDashboard() {
 
             <View style={styles.menuGroup}>
               <Text style={styles.menuGroupTitle}>{t('admin_management')}</Text>
-              {navItems.slice(3, 5).map((item) => (
+              {navItems.slice(3, 6).map((item) => (
                 <SidebarItem
                   key={item.id}
                   icon={item.icon}
@@ -940,7 +1238,7 @@ function AdminDashboard() {
 
             <View style={styles.menuGroup}>
               <Text style={styles.menuGroupTitle}>{t('admin_other')}</Text>
-              {navItems.slice(5).map((item) => (
+              {navItems.slice(6).map((item) => (
                 <SidebarItem
                   key={item.id}
                   icon={item.icon}
@@ -954,105 +1252,166 @@ function AdminDashboard() {
           </ScrollView>
 
           <View style={styles.sidebarFooter}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/home')}>
-              <ChevronLeft size={18} color={Colors.textSecondary} />
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.push('/(tabs)/home')}
+              activeOpacity={0.8}
+            >
+              <ChevronLeft size={18} color="#94A3B8" />
               <Text style={styles.backButtonText}>{t('admin_back_to_app')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Top Header */}
-          <View style={styles.topHeader}>
+        {/* ── Main Stitch Workspace ────────────────────────────────────────── */}
+        <View style={[styles.mainContent, { backgroundColor: stitchTheme.bg }]}>
+          {/* Stitch App Bar (Top Header) */}
+          <View
+            style={[
+              styles.topHeader,
+              {
+                backgroundColor: stitchTheme.topBarBg,
+                borderBottomColor: stitchTheme.divider,
+              },
+            ]}
+          >
             <View style={styles.topHeaderLeft}>
-              <Text style={styles.pageTitle}>{t(`admin_nav_${activeSection}` as any)}</Text>
+              <Text style={[styles.pageTitle, { color: stitchTheme.textPrimary }]}>
+                {t(`admin_nav_${activeSection}` as any)}
+              </Text>
             </View>
+
             <View style={styles.topHeaderRight}>
-              
-              {/* Global Theme Toggle */}
-              <TouchableOpacity 
-                style={[styles.iconButton, { flexDirection: 'row', gap: 6, paddingHorizontal: 12 }]}
+              {/* Theme Toggle Pill */}
+              <TouchableOpacity
+                style={[
+                  styles.themeTogglePill,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                    borderColor: stitchTheme.cardBorder,
+                  },
+                ]}
                 onPress={() => setTheme(activeTheme === 'dark' ? 'light' : 'dark')}
+                activeOpacity={0.8}
               >
                 {activeTheme === 'dark' ? (
-                  <Moon size={18} color="#A78BFA" />
+                  <Moon size={16} color="#A78BFA" />
                 ) : (
-                  <Sun size={18} color="#F59E0B" />
+                  <Sun size={16} color="#F59E0B" />
                 )}
-                <Text style={{ fontWeight: '700', color: activeTheme === 'dark' ? '#A78BFA' : '#F59E0B' }}>
+                <Text
+                  style={[
+                    styles.themeToggleText,
+                    { color: activeTheme === 'dark' ? '#A78BFA' : '#D97706' },
+                  ]}
+                >
                   {activeTheme === 'dark' ? 'DARK' : 'LIGHT'}
                 </Text>
               </TouchableOpacity>
 
-              {/* Language Toggle */}
-              <TouchableOpacity 
-                style={[styles.iconButton, { flexDirection: 'row', gap: 6, paddingHorizontal: 12 }]}
+              {/* Language Switcher Pill */}
+              <TouchableOpacity
+                style={[
+                  styles.themeTogglePill,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                    borderColor: stitchTheme.cardBorder,
+                  },
+                ]}
                 onPress={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+                activeOpacity={0.8}
               >
-                <Globe size={18} color={Colors.textSecondary} />
-                <Text style={{ fontWeight: '700', color: Colors.textSecondary }}>{language.toUpperCase()}</Text>
+                <Globe size={16} color={stitchTheme.textSecondary} />
+                <Text style={[styles.themeToggleText, { color: stitchTheme.textSecondary }]}>
+                  {language.toUpperCase()}
+                </Text>
               </TouchableOpacity>
 
-              {/* Search Bar */}
+              {/* Search Capsule */}
               {isSearchActive ? (
-                <View style={[styles.searchContainer, { marginHorizontal: 8, height: 36, paddingHorizontal: 12, backgroundColor: Colors.background, width: 200 }]}>
-                  <Search size={16} color={Colors.textSecondary} />
+                <View
+                  style={[
+                    styles.searchCapsuleActive,
+                    {
+                      backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+                      borderColor: '#10B981',
+                    },
+                  ]}
+                >
+                  <Search size={16} color={stitchTheme.textSecondary} />
                   <TextInput
                     placeholder={t('admin_search_placeholder')}
-                    style={[styles.searchInput, { paddingVertical: 0 }]}
+                    style={[styles.searchInputHeader, { color: stitchTheme.textPrimary }]}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     autoFocus
-                    placeholderTextColor={Colors.textSecondary}
+                    placeholderTextColor={stitchTheme.textMuted}
                   />
                   <TouchableOpacity onPress={() => setIsSearchActive(false)}>
-                    <X size={16} color={Colors.textSecondary} />
+                    <X size={16} color={stitchTheme.textSecondary} />
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity style={styles.iconButton} onPress={() => setIsSearchActive(true)}>
-                  <Search size={20} color={Colors.textSecondary} />
+                <TouchableOpacity
+                  style={[
+                    styles.topIconBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                      borderColor: stitchTheme.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setIsSearchActive(true)}
+                >
+                  <Search size={18} color={stitchTheme.textSecondary} />
                 </TouchableOpacity>
               )}
 
               {/* Notifications */}
-              <TouchableOpacity 
-                style={styles.iconButton}
+              <TouchableOpacity
+                style={[
+                  styles.topIconBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                    borderColor: stitchTheme.cardBorder,
+                  },
+                ]}
                 onPress={() => {
                   if (pendingSubmissions.length > 0) setActiveSection('documents');
                 }}
               >
-                <Bell size={20} color={Colors.textSecondary} />
+                <Bell size={18} color={stitchTheme.textSecondary} />
                 {pendingSubmissions.length > 0 && (
-                  <View style={[styles.notificationBadge, { width: 16, height: 16, borderRadius: 8, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center' }]}>
-                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>{pendingSubmissions.length}</Text>
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>{pendingSubmissions.length}</Text>
                   </View>
                 )}
               </TouchableOpacity>
-              
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.userProfile}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>AD</Text>
+
+              <View style={[styles.divider, { backgroundColor: stitchTheme.divider }]} />
+
+              {/* User Profile Pill */}
+              <View style={styles.userProfile}>
+                <View style={styles.avatarPill}>
+                  <Text style={styles.avatarPillText}>AD</Text>
                 </View>
-                <View>
-                  <Text style={styles.userName}>Admin User</Text>
-                  <Text style={styles.userRole}>{t('admin_super_admin')}</Text>
+                <View style={{ display: 'flex' }}>
+                  <Text style={[styles.userName, { color: stitchTheme.textPrimary }]}>Admin User</Text>
+                  <Text style={[styles.userRole, { color: stitchTheme.textSecondary }]}>
+                    {t('admin_super_admin')}
+                  </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
 
-          {/* Page Content */}
+          {/* Page Content Scroll */}
           <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
-            <View style={styles.contentContainer}>
-              {renderContent()}
-            </View>
+            <View style={styles.contentContainer}>{renderContent()}</View>
           </ScrollView>
         </View>
       </View>
 
+      {/* AI Moderation Drawer/Modal */}
       <AIModeration
         visible={showAIModeration}
         onClose={() => setShowAIModeration(false)}
@@ -1066,171 +1425,447 @@ function AdminDashboard() {
           setShowAIModeration(false);
         }}
       />
-    </View >
+    </View>
   );
 }
 
+// ── Sidebar Item Component ───────────────────────────────────────────────────
+function SidebarItem({
+  icon,
+  title,
+  active,
+  onPress,
+  count,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  active?: boolean;
+  onPress: () => void;
+  count?: number;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.sidebarItem, active && styles.sidebarItemActive]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      {active && <View style={styles.sidebarActiveBar} />}
+      <View style={styles.sidebarItemLeft}>
+        <View style={styles.sidebarItemIcon}>{icon}</View>
+        <Text style={[styles.sidebarItemText, active && styles.sidebarItemTextActive]}>
+          {title}
+        </Text>
+      </View>
+      {count !== undefined && count > 0 && (
+        <View style={styles.sidebarCount}>
+          <Text style={styles.sidebarCountText}>{count}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+// ── Submission Card (Documents Review) ───────────────────────────────────────
 function SubmissionCard({
   submission,
+  theme,
+  isDark,
   onApprove,
   onReject,
   onViewDocs,
   onViewMedia,
-  compact = false
 }: {
   submission: PropertySubmission;
+  theme: any;
+  isDark: boolean;
   onApprove: () => void;
   onReject: () => void;
   onViewDocs?: () => void;
   onViewMedia?: () => void;
-  compact?: boolean;
 }) {
-
   return (
-    <View style={styles.submissionCard}>
+    <View
+      style={[
+        styles.submissionCard,
+        {
+          backgroundColor: theme.surface,
+          borderColor: theme.cardBorder,
+        },
+      ]}
+    >
       <View style={styles.submissionHeader}>
         <View style={styles.submissionHeaderContent}>
-          <Image source={{ uri: submission.photos[0] }} style={styles.submissionThumb} />
+          <Image
+            source={{ uri: submission.photos[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200' }}
+            style={styles.submissionThumb}
+          />
           <View style={{ flex: 1 }}>
-            <Text style={styles.submissionTitle} numberOfLines={1}>{submission.title}</Text>
-            <Text style={styles.submissionMeta}>{submission.location.district}, {submission.location.city}</Text>
+            <Text style={[styles.submissionTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+              {submission.title}
+            </Text>
+            <Text style={[styles.submissionMeta, { color: theme.textSecondary }]}>
+              {submission.location.district}, {submission.location.city}
+            </Text>
           </View>
-          <View style={styles.submissionPriceContainer}>
-            <Text style={styles.submissionPrice}>{(submission.price / 1000000).toFixed(1)}M</Text>
+          <View
+            style={[
+              styles.submissionPriceContainer,
+              { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5' },
+            ]}
+          >
+            <Text style={[styles.submissionPrice, { color: '#10B981' }]}>
+              {(submission.price / 1000000).toFixed(1)}M FCFA
+            </Text>
           </View>
         </View>
       </View>
 
-      {!compact && (
-        <View style={styles.submissionDetails}>
-          <View style={styles.detailGrid}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Type</Text>
-              <Text style={styles.detailValue}>{submission.type}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Area</Text>
-              <Text style={styles.detailValue}>{submission.area} m²</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Photos</Text>
-              <TouchableOpacity onPress={onViewMedia}>
-                <Text style={[styles.detailValue, { color: Colors.primary, textDecorationLine: 'underline' }]}>
-                  {submission.photos.length} photos {submission.video ? '+ 1 video' : ''}
-                </Text>
-              </TouchableOpacity>
-            </View>
+      <View style={[styles.submissionDetails, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}>
+        <View style={styles.detailGrid}>
+          <View style={styles.detailItem}>
+            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Type</Text>
+            <Text style={[styles.detailValue, { color: theme.textPrimary, textTransform: 'capitalize' }]}>
+              {submission.type}
+            </Text>
           </View>
-
-          <View style={styles.verificationSection}>
-            <Text style={styles.sectionHeaderLabel}>Payment & Docs</Text>
-            <View style={styles.paymentInfo}>
-              <CreditCard size={16} color={Colors.success} />
-              <Text style={styles.paymentText}>{submission.payment.method.toUpperCase()} - {submission.payment.transactionId}</Text>
-            </View>
-            <TouchableOpacity style={styles.docInfo} onPress={onViewDocs}>
-              <FileText size={16} color={Colors.primary} />
-              <Text style={[styles.docText, { textDecorationLine: 'underline' }]}>View Attached Document</Text>
+          <View style={styles.detailItem}>
+            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Area</Text>
+            <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{submission.area} m²</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Photos</Text>
+            <TouchableOpacity onPress={onViewMedia}>
+              <Text style={[styles.detailValue, { color: '#10B981', fontWeight: '700', textDecorationLine: 'underline' }]}>
+                {submission.photos.length} photos {submission.video ? '+ 1 video' : ''}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
+
+        <View style={[styles.verificationSection, { borderTopColor: theme.cardBorder }]}>
+          <Text style={[styles.sectionHeaderLabel, { color: theme.textMuted }]}>Payment & Document Proof</Text>
+          <View style={styles.paymentInfo}>
+            <CreditCard size={15} color="#10B981" />
+            <Text style={[styles.paymentText, { color: theme.textPrimary }]}>
+              {submission.payment.method.toUpperCase()} • {submission.payment.transactionId}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.docInfo} onPress={onViewDocs}>
+            <FileText size={15} color="#3B82F6" />
+            <Text style={[styles.docText, { color: '#3B82F6', textDecorationLine: 'underline' }]}>
+              View Attached Title Deed / Deed Proof
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.cardRejectBtn} onPress={onReject}>
-          <XCircle size={18} color={Colors.error} />
+        <TouchableOpacity
+          style={[styles.cardRejectBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
+          onPress={onReject}
+          activeOpacity={0.8}
+        >
+          <XCircle size={17} color="#EF4444" />
           <Text style={styles.cardRejectText}>Reject</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cardApproveBtn} onPress={onApprove}>
-          <CheckCircle size={18} color={Colors.white} />
-          <Text style={styles.cardApproveText}>Approve</Text>
+        <TouchableOpacity style={styles.cardApproveBtn} onPress={onApprove} activeOpacity={0.8}>
+          <CheckCircle size={17} color="#FFFFFF" />
+          <Text style={styles.cardApproveText}>Approve Listing</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
+// ── Document/Media Attachment Modal Component ────────────────────────────────
+function AttachmentModal({
+  type,
+  submission,
+  theme,
+  isDark,
+  onClose,
+}: {
+  type: 'document' | 'media';
+  submission: PropertySubmission;
+  theme: any;
+  isDark: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <View
+      style={{
+        backgroundColor: theme.surface,
+        width: '92%',
+        maxWidth: 820,
+        maxHeight: '90%',
+        borderRadius: 24,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        borderWidth: 1,
+        borderColor: theme.cardBorder,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.25,
+        shadowRadius: 32,
+        elevation: 12,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: Spacing.xl,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.cardBorder,
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: theme.textPrimary }}>
+            {type === 'document' ? 'Review Property Verification Document' : 'Property Media Gallery'}
+          </Text>
+          <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
+            {submission.title}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={onClose} style={{ padding: 6 }}>
+          <X size={22} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={{ padding: Spacing.xl }}>
+        {type === 'document' ? (
+          <View style={{ gap: Spacing.lg, alignItems: 'center' }}>
+            <View
+              style={{
+                width: '100%',
+                height: 420,
+                backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: theme.cardBorder,
+              }}
+            >
+              {submission.document ? (
+                <Image
+                  source={{ uri: submission.document }}
+                  style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+                />
+              ) : (
+                <View style={{ alignItems: 'center', gap: 8 }}>
+                  <FileText size={48} color={theme.textMuted} />
+                  <Text style={{ color: theme.textSecondary }}>No document preview available inline</Text>
+                </View>
+              )}
+            </View>
+
+            {submission.document ? (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: '#059669',
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+                onPress={() => Linking.openURL(submission.document!)}
+              >
+                <Download size={18} color="#FFFFFF" />
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Open / Download Document</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
+          <View style={{ gap: Spacing.xl }}>
+            {/* Photos Grid */}
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: Spacing.md, color: theme.textPrimary }}>
+                Photos ({submission.photos.length})
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {submission.photos.map((photo, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => Linking.openURL(photo)}
+                    style={{
+                      width: '31%',
+                      aspectRatio: 4 / 3,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: theme.cardBorder,
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Video Section */}
+            {submission.video && (
+              <View>
+                <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: Spacing.md, color: theme.textPrimary }}>
+                  Video Tour
+                </Text>
+                <View
+                  style={{
+                    width: '100%',
+                    height: 240,
+                    backgroundColor: '#000',
+                    borderRadius: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: 'white', marginBottom: 14 }}>Video Preview Available Externally</Text>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      backgroundColor: 'white',
+                      paddingHorizontal: 20,
+                      paddingVertical: 10,
+                      borderRadius: 20,
+                    }}
+                    onPress={() => Linking.openURL(submission.video!)}
+                  >
+                    <ExternalLink size={16} color="#000" />
+                    <Text style={{ fontWeight: '700', color: '#000' }}>Open Video Tour</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+      </ScrollView>
+
+      <View
+        style={{
+          padding: Spacing.lg,
+          borderTopWidth: 1,
+          borderTopColor: theme.cardBorder,
+          backgroundColor: isDark ? '#111827' : '#F8FAFC',
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <TouchableOpacity
+          style={{
+            paddingHorizontal: 24,
+            paddingVertical: 10,
+            borderRadius: 10,
+            backgroundColor: isDark ? '#1E293B' : '#E2E8F0',
+          }}
+          onPress={onClose}
+        >
+          <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ── Google Stitch Pro Stylesheet ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // Slate 50
   },
   layout: {
     flex: 1,
     flexDirection: 'row',
   },
-  // Sidebar
+
+  // ── Stitch Navigation Rail / Drawer ────────────────────────────────────────
   sidebar: {
-    width: 260,
-    backgroundColor: 'rgba(15, 23, 42, 0.95)', // Slate 900 with transparency
+    width: 256,
     borderRightWidth: 0,
-    borderTopRightRadius: 24,
-    borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
     elevation: 8,
   },
   sidebarHeader: {
-    height: 70,
+    height: 76,
     justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 12,
+  },
+  logoBadgeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
   logoText: {
-    ...Typography.h3,
-    color: Colors.white,
-    letterSpacing: 0.5,
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  logoSubtext: {
+    fontSize: 10,
+    fontWeight: '700' as const,
+    color: '#10B981',
+    letterSpacing: 1.2,
   },
   sidebarMenu: {
     flex: 1,
-    paddingVertical: Spacing.lg,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
   },
   menuGroup: {
-    marginBottom: Spacing.xl,
+    marginBottom: 20,
   },
   menuGroupTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700' as const,
-    color: '#94A3B8', // Slate 400
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    letterSpacing: 1,
-  },
-  sidebarFooter: {
-    padding: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#1E293B',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    padding: Spacing.md,
-  },
-  backButtonText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '500' as const,
+    color: '#64748B',
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
   },
   sidebarItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: 2,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 3,
+    position: 'relative',
+  },
+  sidebarActiveBar: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3.5,
+    borderRadius: 2,
+    backgroundColor: '#10B981',
   },
   sidebarItemActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
   },
   sidebarItemLeft: {
     flexDirection: 'row',
@@ -1238,44 +1873,60 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sidebarItemIcon: {
-    width: 20,
+    width: 22,
     alignItems: 'center',
   },
   sidebarItemText: {
-    fontSize: 14,
+    fontSize: 13.5,
     color: '#94A3B8',
     fontWeight: '500' as const,
   },
   sidebarItemTextActive: {
-    color: Colors.white,
-    fontWeight: '600' as const,
+    color: '#FFFFFF',
+    fontWeight: '700' as const,
   },
   sidebarCount: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 8,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   sidebarCountText: {
     fontSize: 10,
-    color: Colors.white,
-    fontWeight: '700' as const,
+    color: '#FFFFFF',
+    fontWeight: '800' as const,
+  },
+  sidebarFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  backButtonText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 
-  // Main Content
+  // ── Main Content Area ──────────────────────────────────────────────────────
   mainContent: {
     flex: 1,
-    backgroundColor: '#F1F5F9', // Slate 100
   },
   topHeader: {
-    height: 70,
-    backgroundColor: Colors.white,
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     zIndex: 10,
   },
   topHeaderLeft: {
@@ -1285,546 +1936,575 @@ const styles = StyleSheet.create({
   topHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.lg,
+    gap: 10,
   },
   pageTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: '#0F172A',
+    fontSize: 22,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
   },
-  iconButton: {
-    padding: 8,
+  themeTogglePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  themeToggleText: {
+    fontSize: 11,
+    fontWeight: '800' as const,
+    letterSpacing: 0.5,
+  },
+  topIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
     position: 'relative',
+  },
+  searchCapsuleActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
+    width: 220,
+  },
+  searchInputHeader: {
+    flex: 1,
+    fontSize: 13,
+    paddingVertical: 0,
   },
   notificationBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.error,
-    borderWidth: 1,
-    borderColor: Colors.white,
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800' as const,
   },
   divider: {
     width: 1,
     height: 24,
-    backgroundColor: '#E2E8F0',
+    marginHorizontal: 4,
   },
   userProfile: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 10,
+    marginLeft: 4,
   },
-  avatar: {
+  avatarPill: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.primary,
+    backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  avatarText: {
-    color: Colors.white,
-    fontWeight: '700' as const,
-    fontSize: 14,
+  avatarPillText: {
+    color: '#FFFFFF',
+    fontWeight: '800' as const,
+    fontSize: 13,
   },
   userName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#0F172A',
+    fontSize: 13.5,
+    fontWeight: '700' as const,
   },
   userRole: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '500' as const,
   },
   contentScroll: {
     flex: 1,
   },
   contentContainer: {
-    padding: Spacing.xl,
-    gap: Spacing.xl,
-    paddingBottom: Spacing.xl * 2,
+    padding: 24,
+    gap: 24,
+    paddingBottom: 48,
   },
 
-  // Dashboard Cards
+  // ── Stitch Tonal Metric Cards ──────────────────────────────────────────────
   animateView: {
-    gap: Spacing.xl,
+    gap: 24,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  dashboardGrid: {
-    flexDirection: 'column', // Fix: Stack dashboard sections vertically
-    gap: Spacing.lg,
-    marginTop: Spacing.lg,
+    gap: 16,
   },
   statCard: {
     flex: 1,
-    minWidth: 240,
-    backgroundColor: Colors.white,
-    borderRadius: 24, // Stitch rounded corners
-    padding: Spacing.lg,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
-    borderWidth: 0,
+    minWidth: 230,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  statCardIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 20,
+    right: 20,
+    height: 2.5,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+    opacity: 0.9,
   },
   statHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.lg,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16, // Softer curves
-    backgroundColor: '#F8FAFC',
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.02)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
   },
-  statTrendContainer: {
+  statTrendPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  statTrend: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  statTrendPositive: {
-    color: Colors.success,
-  },
-  statTrendNegative: {
-    color: Colors.error,
+  statTrendText: {
+    fontSize: 11.5,
+    fontWeight: '700' as const,
   },
   statContent: {
-    gap: 4,
+    gap: 3,
   },
   statValue: {
-    fontSize: 30,
-    fontWeight: '700' as const,
-    color: '#0F172A',
+    fontSize: 28,
+    fontWeight: '800' as const,
     letterSpacing: -0.5,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '600' as const,
-    color: '#64748B',
   },
   statSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
   },
 
-  // Recent Section
-  section: {
-    gap: Spacing.lg,
-    marginTop: Spacing.lg,
+  // ── Dashboard Grid & Charts ────────────────────────────────────────────────
+  dashboardGrid: {
+    flexDirection: 'column',
+    gap: 20,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: '#0F172A',
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.primary,
-  },
-  cardsGrid: {
+  chartsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.lg,
+    gap: 20,
   },
-  emptyState: {
-    backgroundColor: Colors.white,
-    padding: Spacing.xl * 2,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.md,
+  chartWrapper: {
+    flex: 1,
+    minWidth: 320,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#0F172A',
-  },
-  emptyStateText: {
-    color: '#64748B',
-    textAlign: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
   },
 
-  // Filter Bar
+  // ── Filter Bar & Search ────────────────────────────────────────────────────
   filterBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    paddingHorizontal: Spacing.md,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     height: 44,
-    width: 300,
+    width: 320,
   },
   searchInput: {
     flex: 1,
-    marginLeft: Spacing.sm,
-    fontSize: 14,
+    marginLeft: 10,
+    fontSize: 13.5,
   },
   filterActions: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 12,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.white,
+    gap: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: Spacing.lg,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     height: 44,
   },
   filterButtonText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#0F172A',
+    fontSize: 13.5,
+    fontWeight: '600' as const,
   },
   primaryButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: 8,
-    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    height: 44,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.white,
+    fontSize: 13.5,
+    fontWeight: '700' as const,
+    color: '#FFFFFF',
   },
 
-  // Table
+  // ── Stitch Tables ──────────────────────────────────────────────────────────
   tableContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    borderWidth: 0,
+    borderRadius: 20,
+    borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    padding: Spacing.lg,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   tableHead: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#64748B',
+    fontSize: 11.5,
+    fontWeight: '700' as const,
     textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
   },
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.lg,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   tableCell: {
-    fontSize: 14,
-    color: '#0F172A',
+    fontSize: 13.5,
   },
-  tableCellView: {
-  },
+  tableCellView: {},
   tableImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: '#E2E8F0',
   },
   tableCellTitle: {
-    fontWeight: '500' as const,
-    color: '#0F172A',
+    fontSize: 13.5,
+    fontWeight: '700' as const,
   },
   tableCellSubtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  actionIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
     alignSelf: 'flex-start',
   },
-  statusApproved: { backgroundColor: '#DCFCE7' }, // green-100
-  statusPending: { backgroundColor: '#FEF3C7' }, // amber-100
-  statusRejected: { backgroundColor: '#FEE2E2' }, // red-100
-  statusText: { fontSize: 12, fontWeight: '600' as const },
-  statusTextApproved: { color: '#166534' }, // green-700
-  statusTextPendingTable: { color: '#B45309' }, // amber-700
-  statusTextRejected: { color: '#B91C1C' }, // red-700
+  statusApproved: { backgroundColor: '#DCFCE7' },
+  statusPending: { backgroundColor: '#FEF3C7' },
+  statusRejected: { backgroundColor: '#FEE2E2' },
+  statusText: { fontSize: 11.5, fontWeight: '700' as const, textTransform: 'capitalize' as const },
+  statusTextApproved: { color: '#166534' },
+  statusTextPendingTable: { color: '#B45309' },
+  statusTextRejected: { color: '#B91C1C' },
 
+  // ── Staff & Reports ────────────────────────────────────────────────────────
   pageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   pageHeaderTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: '#0F172A',
+    fontSize: 22,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
   },
   pageHeaderSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: 13.5,
     marginTop: 4,
   },
   staffStatsGrid: {
     flexDirection: 'row',
-    gap: Spacing.lg,
+    gap: 16,
     flexWrap: 'wrap',
   },
   staffStatCard: {
     flex: 1,
-    minWidth: 200,
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: Spacing.xl,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
-    gap: Spacing.lg,
+    minWidth: 180,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   staffStatHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   staffStatLabel: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500' as const,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   staffStatValue: {
-    fontSize: 32,
+    fontSize: 28,
+    fontWeight: '800' as const,
+  },
+  avatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
     fontWeight: '700' as const,
-    color: '#0F172A',
   },
   roleBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 12,
     alignSelf: 'flex-start',
   },
   roleManager: {
-    backgroundColor: '#DBEAFE', // blue-100
+    backgroundColor: '#DBEAFE',
   },
   roleAgent: {
-    backgroundColor: '#ECFDF5', // emerald-100
+    backgroundColor: '#ECFDF5',
   },
   roleText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
+    fontSize: 11.5,
+    fontWeight: '700' as const,
   },
   roleTextManager: {
-    color: '#1E40AF', // blue-800
+    color: '#1E40AF',
   },
   roleTextAgent: {
-    color: '#047857', // emerald-700
+    color: '#047857',
   },
 
-  // Mobile Not Supported
-  centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl * 2,
+  cardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
   },
-  mobileTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: '#0F172A',
-    marginTop: Spacing.lg,
-  },
-  mobileSubtitle: {
-    fontSize: 16,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: Spacing.md,
-    maxWidth: 300,
-    lineHeight: 24,
-  },
-  mobileButton: {
-    marginTop: Spacing.xl,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-  },
-  mobileButtonText: {
-    color: Colors.white,
-    fontWeight: '600' as const,
-  },
-
-  // Action Modal
-  actionModalContent: {
-    width: 250,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: Spacing.md,
-    gap: 4,
-  },
-  actionHeader: {
-    paddingBottom: Spacing.sm,
-    marginBottom: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  actionTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.textSecondary,
-  },
-  actionItem: {
+  reportCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: 6,
+    padding: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+    width: '100%',
+    gap: 16,
   },
-  actionText: {
-    fontSize: 14,
-    color: Colors.text,
+  reportIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  actionDelete: {
-    marginTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+  reportInfo: {
+    flex: 1,
   },
-  actionDeleteText: {
-    color: Colors.error,
+  reportName: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  reportMeta: {
+    fontSize: 12.5,
+  },
+  downloadButton: {
+    padding: 10,
+    borderRadius: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    letterSpacing: -0.3,
   },
 
+  // ── Documents Section ──────────────────────────────────────────────────────
+  documentsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  emptyStateFull: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 48,
+    gap: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  emptyStateIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '800' as const,
+    letterSpacing: -0.4,
+  },
+  emptyStateText: {
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 22,
+  },
   submissionCard: {
     flex: 1,
     minWidth: 320,
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: Spacing.md,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
   },
   submissionHeader: {
-    marginBottom: Spacing.md,
+    marginBottom: 14,
   },
   submissionHeaderContent: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 12,
     alignItems: 'center',
   },
   submissionThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 52,
+    height: 52,
+    borderRadius: 12,
     backgroundColor: '#E2E8F0',
   },
   submissionTitle: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#0F172A',
+    fontSize: 14.5,
+    fontWeight: '700' as const,
   },
   submissionMeta: {
     fontSize: 12,
-    color: '#64748B',
+    marginTop: 2,
   },
   submissionPriceContainer: {
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
   submissionPrice: {
     fontSize: 12,
-    fontWeight: '700' as const,
-    color: '#166534',
+    fontWeight: '800' as const,
   },
   submissionDetails: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
   },
   detailGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
+    marginBottom: 12,
   },
   detailItem: {
     gap: 2,
   },
   detailLabel: {
-    fontSize: 10,
-    color: '#94A3B8',
+    fontSize: 10.5,
     textTransform: 'uppercase' as const,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
   },
   detailValue: {
     fontSize: 13,
-    color: '#0F172A',
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   verificationSection: {
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingTop: Spacing.md,
+    paddingTop: 12,
     gap: 8,
   },
   sectionHeaderLabel: {
-    fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '700' as const,
+    fontSize: 10.5,
+    fontWeight: '800' as const,
     textTransform: 'uppercase' as const,
   },
   paymentInfo: {
@@ -1834,7 +2514,7 @@ const styles = StyleSheet.create({
   },
   paymentText: {
     fontSize: 12,
-    color: '#0F172A',
+    fontWeight: '500' as const,
     fontFamily: Platform.select({ ios: 'Courier', default: 'monospace' }),
   },
   docInfo: {
@@ -1844,12 +2524,11 @@ const styles = StyleSheet.create({
   },
   docText: {
     fontSize: 12,
-    color: Colors.primary,
-    fontWeight: '500' as const,
+    fontWeight: '600' as const,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 12,
   },
   cardRejectBtn: {
     flex: 1,
@@ -1857,16 +2536,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   cardRejectText: {
     fontSize: 13,
-    fontWeight: '600' as const,
-    color: '#B91C1C',
+    fontWeight: '700' as const,
+    color: '#EF4444',
   },
   cardApproveBtn: {
     flex: 2,
@@ -1874,416 +2550,161 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#059669',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   cardApproveText: {
     fontSize: 13,
-    fontWeight: '600' as const,
-    color: Colors.white,
-  },
-
-  // Document Grid
-  documentsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  emptyStateFull: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl * 4,
-    gap: Spacing.lg,
-  },
-
-  // Placeholder
-  placeholderContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl * 4,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderStyle: 'dashed',
-  },
-  placeholderIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.lg,
-  },
-  placeholderTitle: {
-    fontSize: 20,
     fontWeight: '700' as const,
-    color: '#0F172A',
-    marginBottom: Spacing.sm,
+    color: '#FFFFFF',
   },
-  placeholderText: {
-    color: '#64748B',
-  },
+
+  // ── Modals & Dialogs ───────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 16,
   },
   modalContent: {
     width: '100%',
-    maxWidth: 500,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    shadowColor: Colors.shadow.lg,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 5,
+    maxWidth: 480,
+    borderRadius: 24,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.3,
+    shadowRadius: 32,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.xl,
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   modalTitle: {
-    ...Typography.h3,
-    color: Colors.text,
+    fontSize: 18,
+    fontWeight: '800' as const,
   },
   modalBody: {
-    padding: Spacing.xl,
-    gap: Spacing.lg,
+    padding: 20,
+    gap: 16,
   },
   formGroup: {
-    gap: Spacing.sm,
+    gap: 6,
   },
   label: {
-    ...Typography.bodySmall,
-    color: Colors.text,
-    fontWeight: '600' as const,
+    fontSize: 12.5,
+    fontWeight: '700' as const,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: 14,
-    color: Colors.text,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13.5,
   },
   roleSelector: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 10,
   },
   roleOption: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  roleOptionActive: {
-    backgroundColor: Colors.primaryLight + '20',
-    borderColor: Colors.primary,
   },
   roleOptionText: {
-    ...Typography.bodySmall,
-    color: Colors.textSecondary,
-  },
-  roleOptionTextActive: {
-    color: Colors.primary,
+    fontSize: 12.5,
     fontWeight: '600' as const,
   },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: Spacing.md,
-    padding: Spacing.xl,
+    gap: 12,
+    padding: 20,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.backgroundSecondary,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
   },
   cancelButton: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
   },
   cancelButtonText: {
-    ...Typography.body,
-    color: Colors.text,
+    fontSize: 13.5,
+    fontWeight: '600' as const,
   },
   saveButton: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: 8,
-    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 2,
   },
   saveButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600' as const,
+    fontSize: 13.5,
+    color: '#FFFFFF',
+    fontWeight: '700' as const,
   },
 
-  // Analytics Charts
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
+  actionModalContent: {
+    width: 260,
+    borderRadius: 18,
+    padding: 12,
+    borderWidth: 1,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  chartContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 240,
-    paddingTop: Spacing.xl,
-    paddingHorizontal: Spacing.md,
-  },
-  chartBarContainer: {
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  chartBar: {
-    width: 32,
-    backgroundColor: Colors.primary,
-    borderRadius: 6,
-    opacity: 0.8,
-  },
-  chartLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500' as const,
-  },
-
-  reportCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    padding: Spacing.lg,
-    borderRadius: 24,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.03)',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 2,
-    width: '100%',
-    marginBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  reportIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#F0F9FF', // Sky 50
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportName: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: '#0F172A',
+  actionHeader: {
+    paddingBottom: 8,
     marginBottom: 4,
+    borderBottomWidth: 1,
   },
-  reportMeta: {
-    fontSize: 12,
-    color: '#64748B',
+  actionTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
-  downloadButton: {
-    padding: 8,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-  },
-
-  chartsGrid: {
-    gap: 20,
-  },
-  chartsRow: {
+  actionItem: {
     flexDirection: 'row',
-    flexWrap: 'wrap', // Fix: Allow charts to wrap on smaller screens
-    gap: 20,
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  actionText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   timePeriodSelector: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: Colors.white,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   timePeriodText: {
-    ...Typography.body,
-    color: Colors.text,
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  chartsGrid: {
+    gap: 20,
   },
 });
-
-function AttachmentModal({
-  type,
-  submission,
-  onClose
-}: {
-  type: 'document' | 'media';
-  submission: PropertySubmission;
-  onClose: () => void;
-}) {
-  const Colors = useColors();
-  return (
-    <View style={{
-      backgroundColor: Colors.white,
-      width: '90%',
-      maxWidth: 800,
-      maxHeight: '90%',
-      borderRadius: 16,
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
-      <View style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: Spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
-      }}>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: '#0F172A' }}>
-          {type === 'document' ? 'Review Document' : 'Property Media'}
-        </Text>
-        <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
-          <X size={24} color={Colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={{ padding: Spacing.lg }}>
-        {type === 'document' ? (
-          <View style={{ gap: Spacing.lg, alignItems: 'center' }}>
-            <View style={{
-              width: '100%',
-              height: 400,
-              backgroundColor: '#F1F5F9',
-              borderRadius: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden'
-            }}>
-              {/* Try to show as image first */}
-              <Image
-                source={{ uri: submission.document }}
-                style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-              />
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: Spacing.md }}>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  backgroundColor: Colors.primary,
-                  paddingHorizontal: Spacing.xl,
-                  paddingVertical: Spacing.md,
-                  borderRadius: 8
-                }}
-                onPress={() => Linking.openURL(submission.document)}
-              >
-                <Download size={20} color={Colors.white} />
-                <Text style={{ color: Colors.white, fontWeight: '600' }}>Download / Open</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={{ gap: Spacing.xl }}>
-            {/* Video Section */}
-            {submission.video && (
-              <View>
-                <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: Spacing.md, color: '#0F172A' }}>Video Tour</Text>
-                <View style={{
-                  width: '100%',
-                  height: 300,
-                  backgroundColor: '#000',
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Text style={{ color: 'white', marginBottom: 16 }}>Video Preview Not Available Inline</Text>
-                  <TouchableOpacity
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      backgroundColor: 'white',
-                      paddingHorizontal: Spacing.lg,
-                      paddingVertical: 8,
-                      borderRadius: 20
-                    }}
-                    onPress={() => Linking.openURL(submission.video!)}
-                  >
-                    <Text style={{ fontWeight: '600' }}>Open Video</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {/* Photos Grid */}
-            <View>
-              <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: Spacing.md, color: '#0F172A' }}>
-                Photos ({submission.photos.length})
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
-                {submission.photos.map((photo, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => Linking.openURL(photo)}
-                    style={{ width: '31%', aspectRatio: 4 / 3, borderRadius: 8, overflow: 'hidden' }}
-                  >
-                    <Image
-                      source={{ uri: photo }}
-                      style={{ width: '100%', height: '100%' }}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={{
-        padding: Spacing.lg,
-        borderTopWidth: 1,
-        borderTopColor: '#E2E8F0',
-        backgroundColor: '#F8FAFC',
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: Spacing.md
-      }}>
-        <TouchableOpacity
-          style={{ paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md }}
-          onPress={onClose}
-        >
-          <Text style={{ fontWeight: '600', color: Colors.textSecondary }}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
