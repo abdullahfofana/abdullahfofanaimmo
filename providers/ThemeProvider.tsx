@@ -12,19 +12,14 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    loadTheme();
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      const { ThemeColors } = require('@/constants/colors');
-      const currentTheme = activeTheme === 'dark' ? ThemeColors.dark : ThemeColors.light;
-      document.body.style.backgroundColor = currentTheme.background;
+  const activeTheme = useMemo(() => {
+    if (themeMode === 'system') {
+      return systemColorScheme ?? 'light';
     }
-  }, [activeTheme]);
+    return themeMode;
+  }, [themeMode, systemColorScheme]);
 
-  const loadTheme = async () => {
+  const loadTheme = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(THEME_KEY);
       if (stored && (stored === 'light' || stored === 'dark' || stored === 'system')) {
@@ -35,7 +30,7 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
     } finally {
       setIsLoaded(true);
     }
-  };
+  }, []);
 
   const setTheme = useCallback(async (mode: ThemeMode) => {
     setThemeMode(mode);
@@ -47,12 +42,19 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
     }
   }, []);
 
-  const activeTheme = useMemo(() => {
-    if (themeMode === 'system') {
-      return systemColorScheme ?? 'light';
+  useEffect(() => {
+    loadTheme();
+  }, [loadTheme]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const { ThemeColors } = require('@/constants/colors');
+      const currentTheme = activeTheme === 'dark' ? ThemeColors.dark : ThemeColors.light;
+      if (document.body) {
+        document.body.style.backgroundColor = currentTheme.background;
+      }
     }
-    return themeMode;
-  }, [themeMode, systemColorScheme]);
+  }, [activeTheme]);
 
   return {
     themeMode,
