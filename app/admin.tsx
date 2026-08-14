@@ -39,6 +39,13 @@ import {
   Eye,
   Trash2,
   ExternalLink,
+  Scale,
+  Headphones,
+  Briefcase,
+  Sliders,
+  Send,
+  Bot,
+  RefreshCw,
 } from 'lucide-react-native';
 import React, { useState, useMemo } from 'react';
 import {
@@ -63,7 +70,6 @@ import type { PropertySubmission } from '@/types/property';
 import { AnalyticsProvider, useAnalytics } from '@/providers/AnalyticsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
-import { useColors } from '@/hooks/useColors';
 
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminIntegrations from '@/components/admin/AdminIntegrations';
@@ -91,12 +97,95 @@ export type AdminSection =
   | 'settings'
   | 'support';
 
+export type DepartmentType =
+  | 'Operations & Logistics'
+  | 'Legal & Compliance'
+  | 'Sales & Commercial'
+  | 'Customer Support'
+  | 'Finance & Billing'
+  | 'Platform Administration';
+
+export type AdminRoleType =
+  | 'Super Admin'
+  | 'Operations Manager'
+  | 'Legal Officer'
+  | 'Sales Agent'
+  | 'Support Specialist'
+  | 'Finance Officer';
+
+interface RoleDefinition {
+  id: AdminRoleType;
+  titleKey: string;
+  department: DepartmentType;
+  icon: any;
+  color: string;
+  allowedSections: AdminSection[];
+  descriptionKey: string;
+}
+
+const ROLES: RoleDefinition[] = [
+  {
+    id: 'Super Admin',
+    titleKey: 'role_super_admin',
+    department: 'Platform Administration',
+    icon: Shield,
+    color: '#059669',
+    allowedSections: ['dashboard', 'analytics', 'properties', 'documents', 'users', 'staff', 'support', 'reports', 'integrations', 'settings'],
+    descriptionKey: 'admin_unrestricted_access',
+  },
+  {
+    id: 'Operations Manager',
+    titleKey: 'role_operations_mgr',
+    department: 'Operations & Logistics',
+    icon: LayoutDashboard,
+    color: '#3B82F6',
+    allowedSections: ['dashboard', 'analytics', 'properties', 'documents', 'users', 'reports'],
+    descriptionKey: 'admin_stat_active_listings',
+  },
+  {
+    id: 'Legal Officer',
+    titleKey: 'role_legal_officer',
+    department: 'Legal & Compliance',
+    icon: Scale,
+    color: '#F59E0B',
+    allowedSections: ['documents', 'properties', 'reports', 'support'],
+    descriptionKey: 'admin_stat_verification_req',
+  },
+  {
+    id: 'Sales Agent',
+    titleKey: 'role_sales_agent',
+    department: 'Sales & Commercial',
+    icon: Briefcase,
+    color: '#8B5CF6',
+    allowedSections: ['properties', 'users', 'dashboard', 'reports'],
+    descriptionKey: 'admin_manage_properties',
+  },
+  {
+    id: 'Support Specialist',
+    titleKey: 'role_support_specialist',
+    department: 'Customer Support',
+    icon: Headphones,
+    color: '#EC4899',
+    allowedSections: ['support', 'users', 'dashboard'],
+    descriptionKey: 'admin_support_desk_sub',
+  },
+  {
+    id: 'Finance Officer',
+    titleKey: 'role_finance_officer',
+    department: 'Finance & Billing',
+    icon: DollarSign,
+    color: '#10B981',
+    allowedSections: ['analytics', 'reports', 'dashboard', 'integrations'],
+    descriptionKey: 'admin_stat_revenue',
+  },
+];
+
 interface StaffMember {
   id: string;
   name: string;
   email: string;
-  role: 'Manager' | 'Agent' | 'Admin';
-  department: string;
+  role: 'Manager' | 'Agent' | 'Admin' | 'Officer' | 'Specialist';
+  department: DepartmentType;
   status: 'Active' | 'Inactive';
   hireDate: string;
   lastActive: string;
@@ -109,33 +198,122 @@ const mockStaff: StaffMember[] = [
     name: 'Alice Johnson',
     email: 'alice@immoci.ci',
     role: 'Manager',
-    department: 'Operations',
+    department: 'Operations & Logistics',
     status: 'Active',
     hireDate: '2023-01-15',
-    lastActive: '2024-06-16',
+    lastActive: 'Just now',
     avatar: 'AJ',
   },
   {
     id: '2',
-    name: 'Bob Wilson',
-    email: 'bob@immoci.ci',
-    role: 'Agent',
-    department: 'Sales',
+    name: 'Koffi Kouamé',
+    email: 'koffi.k@immoci.ci',
+    role: 'Officer',
+    department: 'Legal & Compliance',
     status: 'Active',
-    hireDate: '2023-03-20',
-    lastActive: '2024-06-15',
-    avatar: 'BW',
+    hireDate: '2023-02-10',
+    lastActive: '5 min ago',
+    avatar: 'KK',
   },
   {
     id: '3',
-    name: 'Charlie Davis',
-    email: 'charlie@immoci.ci',
+    name: 'Fatou Diallo',
+    email: 'fatou.d@immoci.ci',
     role: 'Agent',
-    department: 'Support',
-    status: 'Inactive',
+    department: 'Sales & Commercial',
+    status: 'Active',
+    hireDate: '2023-03-20',
+    lastActive: '12 min ago',
+    avatar: 'FD',
+  },
+  {
+    id: '4',
+    name: 'Jean-Luc Bamba',
+    email: 'jeanluc.b@immoci.ci',
+    role: 'Specialist',
+    department: 'Customer Support',
+    status: 'Active',
     hireDate: '2023-05-10',
-    lastActive: '2024-05-30',
-    avatar: 'CD',
+    lastActive: '1 hour ago',
+    avatar: 'JB',
+  },
+  {
+    id: '5',
+    name: 'Awa Koné',
+    email: 'awa.k@immoci.ci',
+    role: 'Officer',
+    department: 'Finance & Billing',
+    status: 'Active',
+    hireDate: '2023-06-01',
+    lastActive: '2 hours ago',
+    avatar: 'AK',
+  },
+  {
+    id: '6',
+    name: 'Ibrahim Traoré',
+    email: 'ibrahim.t@immoci.ci',
+    role: 'Admin',
+    department: 'Platform Administration',
+    status: 'Active',
+    hireDate: '2022-11-15',
+    lastActive: 'Online',
+    avatar: 'IT',
+  },
+];
+
+interface SupportTicket {
+  id: string;
+  user: string;
+  email: string;
+  subject: string;
+  department: DepartmentType;
+  status: 'Open' | 'In Progress' | 'Resolved';
+  priority: 'High' | 'Medium' | 'Low';
+  timestamp: string;
+  messages: { sender: 'user' | 'admin' | 'ai'; text: string; time: string }[];
+}
+
+const mockTickets: SupportTicket[] = [
+  {
+    id: 'TK-1082',
+    user: 'Amadou Touré',
+    email: 'amadou.toure@gmail.com',
+    subject: 'Issue with ACD cadastral deed upload for Cocody Villa',
+    department: 'Legal & Compliance',
+    status: 'Open',
+    priority: 'High',
+    timestamp: '10 min ago',
+    messages: [
+      { sender: 'user', text: 'Hello, I uploaded the ACD deed twice for my property in Cocody Danga, but the verification status still says Pending. Could you please confirm if the document is legible?', time: '10 min ago' },
+    ],
+  },
+  {
+    id: 'TK-1079',
+    user: 'Marie Kouakou',
+    email: 'marie.k@hotmail.com',
+    subject: 'Orange Money payment confirmation for listing boost',
+    department: 'Finance & Billing',
+    status: 'In Progress',
+    priority: 'Medium',
+    timestamp: '45 min ago',
+    messages: [
+      { sender: 'user', text: 'Transaction OM-992014 was debited from my account for 25,000 FCFA but the listing badge is not showing Featured yet.', time: '45 min ago' },
+      { sender: 'admin', text: 'Bonjour Marie, we are verifying the transaction reference with the Orange Money gateway. Thank you for your patience.', time: '20 min ago' },
+    ],
+  },
+  {
+    id: 'TK-1064',
+    user: 'David Brown',
+    email: 'david.b@example.com',
+    subject: 'Request to schedule physical property inspection in Plateau',
+    department: 'Sales & Commercial',
+    status: 'Resolved',
+    priority: 'Low',
+    timestamp: '2 hours ago',
+    messages: [
+      { sender: 'user', text: 'Can an agency representative meet me on-site tomorrow at 2 PM?', time: '2 hours ago' },
+      { sender: 'admin', text: 'Confirmed! Agent Fatou Diallo will meet you at the property at 2:00 PM.', time: '1 hour ago' },
+    ],
   },
 ];
 
@@ -150,6 +328,9 @@ export default function AdminDashboardWrapper() {
 function AdminDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [activeRole, setActiveRole] = useState<AdminRoleType>('Super Admin');
+  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+
   const {
     submissions,
     getPendingSubmissions,
@@ -184,10 +365,8 @@ function AdminDashboard() {
     divider: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
   }), [isDark]);
 
-  const [isSearchActive, setIsSearchActive] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
   const [staff, setStaff] = useState<StaffMember[]>(mockStaff);
+  const [selectedStaffDepartment, setSelectedStaffDepartment] = useState<string>('All');
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAIModeration, setShowAIModeration] = useState(false);
   const [moderationProperty, setModerationProperty] = useState<PropertySubmission | null>(null);
@@ -196,7 +375,7 @@ function AdminDashboard() {
     name: '',
     email: '',
     role: 'Agent' as StaffMember['role'],
-    department: '',
+    department: 'Operations & Logistics' as DepartmentType,
   });
 
   const [showStaffActionModal, setShowStaffActionModal] = useState(false);
@@ -207,13 +386,24 @@ function AdminDashboard() {
     submission: PropertySubmission;
   } | null>(null);
 
+  // Helpdesk State
+  const [tickets, setTickets] = useState<SupportTicket[]>(mockTickets);
+  const [selectedTicketId, setSelectedTicketId] = useState<string>('TK-1082');
+  const [ticketFilter, setTicketFilter] = useState<'All' | 'Open' | 'In Progress' | 'Resolved'>('All');
+  const [replyText, setReplyText] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const currentRoleDef = useMemo(() => {
+    return ROLES.find((r) => r.id === activeRole) || ROLES[0];
+  }, [activeRole]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const { kpis, charts } = useAnalytics();
   const pendingSubmissions = getPendingSubmissions();
-
-  const handleEditStaff = (staffMember: StaffMember) => {
-    console.log('Edit staff', staffMember.id);
-    setShowStaffActionModal(false);
-  };
 
   const handleStaffAction = (staffMember: StaffMember) => {
     setSelectedStaff(staffMember);
@@ -221,15 +411,9 @@ function AdminDashboard() {
   };
 
   const handleDeleteStaff = (id: string) => {
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this staff member?')) {
-        setStaff((prev) => prev.filter((s) => s.id !== id));
-        setShowStaffActionModal(false);
-      }
-    } else {
-      setStaff((prev) => prev.filter((s) => s.id !== id));
-      setShowStaffActionModal(false);
-    }
+    setStaff((prev) => prev.filter((s) => s.id !== id));
+    setShowStaffActionModal(false);
+    showToast(language === 'fr' ? 'Membre du personnel supprimé' : 'Staff member removed');
   };
 
   const handleAddStaff = () => {
@@ -238,7 +422,7 @@ function AdminDashboard() {
     }
 
     const newMember: StaffMember = {
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       name: newStaff.name,
       email: newStaff.email,
       role: newStaff.role,
@@ -260,8 +444,60 @@ function AdminDashboard() {
       name: '',
       email: '',
       role: 'Agent',
-      department: '',
+      department: 'Operations & Logistics',
     });
+    showToast(language === 'fr' ? 'Nouveau membre ajouté avec succès' : 'New staff member added');
+  };
+
+  const handleRoleChange = (role: AdminRoleType) => {
+    setActiveRole(role);
+    setShowRoleSwitcher(false);
+    const def = ROLES.find((r) => r.id === role);
+    if (def && !def.allowedSections.includes(activeSection)) {
+      setActiveSection(def.allowedSections[0]);
+    }
+    showToast(`${language === 'fr' ? 'Mode changé :' : 'Access switched:'} ${role}`);
+  };
+
+  const handleSendTicketReply = () => {
+    if (!replyText.trim() || !selectedTicketId) return;
+
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id === selectedTicketId) {
+          return {
+            ...t,
+            messages: [
+              ...t.messages,
+              {
+                sender: 'admin',
+                text: replyText,
+                time: 'Just now',
+              },
+            ],
+          };
+        }
+        return t;
+      })
+    );
+    setReplyText('');
+    showToast(language === 'fr' ? 'Réponse envoyée au client' : 'Reply sent to customer');
+  };
+
+  const handleAIGenerateReply = () => {
+    const activeTicket = tickets.find((t) => t.id === selectedTicketId);
+    if (!activeTicket) return;
+
+    const draft =
+      language === 'fr'
+        ? `Bonjour ${activeTicket.user}, notre service ${activeTicket.department} a bien pris en charge votre demande concernant "${activeTicket.subject}". Votre dossier est en cours de validation prioritaire.`
+        : `Hello ${activeTicket.user}, our ${activeTicket.department} team has reviewed your request regarding "${activeTicket.subject}". We have prioritized your case for immediate resolution.`;
+
+    setReplyText(draft);
+  };
+
+  const handleDownloadReport = (reportName: string) => {
+    showToast(`${language === 'fr' ? 'Téléchargement de' : 'Downloaded:'} ${reportName}`);
   };
 
   if (!isLoggedIn) {
@@ -316,64 +552,81 @@ function AdminDashboard() {
     },
   ];
 
-  const navItems: {
+  const allNavItems: {
     id: AdminSection;
-    icon: React.ReactNode;
+    icon: (active: boolean) => React.ReactNode;
     title: string;
     count?: number;
+    category: 'MAIN MENU' | 'MANAGEMENT' | 'OTHER';
   }[] = [
     {
       id: 'dashboard',
-      icon: <LayoutDashboard size={19} color={activeSection === 'dashboard' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <LayoutDashboard size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_dashboard'),
+      category: 'MAIN MENU',
     },
     {
       id: 'analytics',
-      icon: <TrendingUp size={19} color={activeSection === 'analytics' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <TrendingUp size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_analytics'),
+      category: 'MAIN MENU',
     },
     {
       id: 'properties',
-      icon: <Building2 size={19} color={activeSection === 'properties' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <Building2 size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_properties'),
+      category: 'MANAGEMENT',
     },
     {
       id: 'documents',
-      icon: <FileText size={19} color={activeSection === 'documents' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <FileText size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_documents'),
       count: pendingSubmissions.length,
+      category: 'MANAGEMENT',
     },
     {
       id: 'users',
-      icon: <Users size={19} color={activeSection === 'users' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <Users size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_users'),
+      category: 'MANAGEMENT',
     },
     {
       id: 'staff',
-      icon: <UserCheck size={19} color={activeSection === 'staff' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <UserCheck size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_staff'),
+      category: 'MANAGEMENT',
     },
     {
       id: 'support',
-      icon: <MessageCircle size={19} color={activeSection === 'support' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <MessageCircle size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_support'),
+      count: tickets.filter((t) => t.status === 'Open').length,
+      category: 'OTHER',
     },
     {
       id: 'reports',
-      icon: <BarChart3 size={19} color={activeSection === 'reports' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <BarChart3 size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_reports'),
+      category: 'OTHER',
     },
     {
       id: 'integrations',
-      icon: <Zap size={19} color={activeSection === 'integrations' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <Zap size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_integrations'),
+      category: 'OTHER',
     },
     {
       id: 'settings',
-      icon: <Settings size={19} color={activeSection === 'settings' ? '#10B981' : '#94A3B8'} />,
+      icon: (a) => <Settings size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_settings'),
+      category: 'OTHER',
     },
   ];
+
+  // RBAC Filtering for Navigation Items
+  const filteredNavItems = useMemo(() => {
+    return allNavItems.filter((item) => currentRoleDef.allowedSections.includes(item.id));
+  }, [allNavItems, currentRoleDef]);
 
   // ── Render Views ───────────────────────────────────────────────────────────
   const renderDashboard = () => (
@@ -649,8 +902,14 @@ function AdminDashboard() {
               submission={submission}
               theme={stitchTheme}
               isDark={isDark}
-              onApprove={() => updateSubmissionStatus(submission.id, 'approved')}
-              onReject={() => updateSubmissionStatus(submission.id, 'rejected', 'Document invalid')}
+              onApprove={() => {
+                updateSubmissionStatus(submission.id, 'approved');
+                showToast(language === 'fr' ? 'Document approuvé avec succès' : 'Document verified and approved');
+              }}
+              onReject={() => {
+                updateSubmissionStatus(submission.id, 'rejected', 'Document invalid');
+                showToast(language === 'fr' ? 'Document rejeté' : 'Document rejected');
+              }}
               onViewDocs={() => setAttachmentView({ type: 'document', submission })}
               onViewMedia={() => setAttachmentView({ type: 'media', submission })}
             />
@@ -662,10 +921,11 @@ function AdminDashboard() {
 
   const renderReports = () => {
     const reports = [
-      { id: '1', name: 'Monthly Revenue Report', date: 'Q2 2026', size: '2.4 MB', type: 'PDF' },
-      { id: '2', name: 'User Growth & Retention Analysis', date: 'May 2026', size: '1.8 MB', type: 'PDF' },
-      { id: '3', name: 'Property Listings & Conversion Summary', date: 'Q2 2026', size: '3.5 MB', type: 'CSV' },
-      { id: '4', name: 'Agent Performance & SLA Review', date: 'June 2026', size: '1.2 MB', type: 'PDF' },
+      { id: '1', name: 'Monthly Revenue & Transaction Volume Report', date: 'Q2 2026', size: '2.4 MB', type: 'PDF', dept: 'Finance & Billing' },
+      { id: '2', name: 'Cadastral Deed Verification & Compliance Log', date: 'June 2026', size: '3.5 MB', type: 'CSV', dept: 'Legal & Compliance' },
+      { id: '3', name: 'User Growth & Retention Cohort Analysis', date: 'May 2026', size: '1.8 MB', type: 'PDF', dept: 'Platform Administration' },
+      { id: '4', name: 'Agent Performance & SLA Resolution Review', date: 'June 2026', size: '1.2 MB', type: 'PDF', dept: 'Operations & Logistics' },
+      { id: '5', name: 'Orange Money & Wave Gateway Settlement Log', date: 'June 2026', size: '4.1 MB', type: 'CSV', dept: 'Finance & Billing' },
     ];
 
     return (
@@ -691,7 +951,7 @@ function AdminDashboard() {
               <View style={styles.reportInfo}>
                 <Text style={[styles.reportName, { color: stitchTheme.textPrimary }]}>{report.name}</Text>
                 <Text style={[styles.reportMeta, { color: stitchTheme.textSecondary }]}>
-                  {report.date} • {report.size} • {report.type}
+                  {report.dept} • {report.date} • {report.size}
                 </Text>
               </View>
               <TouchableOpacity
@@ -699,8 +959,10 @@ function AdminDashboard() {
                   styles.downloadButton,
                   { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' },
                 ]}
+                onPress={() => handleDownloadReport(report.name)}
+                activeOpacity={0.8}
               >
-                <Download size={18} color={stitchTheme.textSecondary} />
+                <Download size={18} color="#10B981" />
               </TouchableOpacity>
             </View>
           ))}
@@ -709,188 +971,427 @@ function AdminDashboard() {
     );
   };
 
-  const renderStaff = () => (
-    <View style={styles.animateView}>
-      <View style={styles.pageHeader}>
-        <View>
-          <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
-            {t('admin_staff_management')}
-          </Text>
-          <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
-            {t('admin_staff_management_sub')}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.primaryButton, { backgroundColor: stitchTheme.primary }]}
-          onPress={() => setShowAddStaffModal(true)}
-        >
-          <Plus size={18} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>{t('admin_add_staff_member')}</Text>
-        </TouchableOpacity>
-      </View>
+  const renderStaff = () => {
+    const departmentsList: (string | DepartmentType)[] = [
+      'All',
+      'Operations & Logistics',
+      'Legal & Compliance',
+      'Sales & Commercial',
+      'Customer Support',
+      'Finance & Billing',
+      'Platform Administration',
+    ];
 
-      <View style={styles.filterBar}>
-        <View
-          style={[
-            styles.searchContainer,
-            {
-              backgroundColor: stitchTheme.surface,
-              borderColor: stitchTheme.cardBorder,
-            },
-          ]}
-        >
-          <Search size={18} color={stitchTheme.textSecondary} />
-          <TextInput
-            placeholder={t('admin_search_staff')}
-            style={[styles.searchInput, { color: stitchTheme.textPrimary }]}
-            placeholderTextColor={stitchTheme.textSecondary}
-          />
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            {
-              backgroundColor: stitchTheme.surface,
-              borderColor: stitchTheme.cardBorder,
-            },
-          ]}
-        >
-          <Filter size={18} color={stitchTheme.textPrimary} />
-          <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>{t('admin_filters')}</Text>
-        </TouchableOpacity>
-      </View>
+    const filteredStaff = staff.filter((s) => {
+      if (selectedStaffDepartment === 'All') return true;
+      return s.department === selectedStaffDepartment;
+    });
 
-      {/* Staff KPI summary cards */}
-      <View style={styles.staffStatsGrid}>
-        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-          <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_total_staff')}</Text>
-            <Users size={20} color={stitchTheme.textSecondary} />
+    return (
+      <View style={styles.animateView}>
+        <View style={styles.pageHeader}>
+          <View>
+            <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
+              {t('admin_staff_management')}
+            </Text>
+            <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
+              {t('admin_staff_management_sub')}
+            </Text>
           </View>
-          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>{staff.length}</Text>
-        </View>
-
-        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-          <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_active')}</Text>
-            <Shield size={20} color="#10B981" />
-          </View>
-          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
-            {staff.filter((s) => s.status === 'Active').length}
-          </Text>
-        </View>
-
-        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-          <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_managers')}</Text>
-            <UserCheck size={20} color="#3B82F6" />
-          </View>
-          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
-            {staff.filter((s) => s.role === 'Manager').length}
-          </Text>
-        </View>
-
-        <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-          <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_agents')}</Text>
-            <UserPlus size={20} color="#8B5CF6" />
-          </View>
-          <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
-            {staff.filter((s) => s.role === 'Agent').length}
-          </Text>
-        </View>
-      </View>
-
-      <View style={[styles.tableContainer, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-        <View style={[styles.tableHeader, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderBottomColor: stitchTheme.cardBorder }]}>
-          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_staff_member')}</Text>
-          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_email')}</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_role')}</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_department')}</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_status')}</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_hire_date')}</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_last_active')}</Text>
-          <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'center', color: stitchTheme.textSecondary }]}>{t('admin_th_actions')}</Text>
-        </View>
-
-        {staff.map((member) => (
-          <View
-            key={member.id}
-            style={[styles.tableRow, { borderBottomColor: stitchTheme.cardBorder }]}
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: stitchTheme.primary }]}
+            onPress={() => setShowAddStaffModal(true)}
           >
-            <View style={[styles.tableCellView, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-              <View
+            <Plus size={18} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>{t('admin_add_staff_member')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Department Filter Pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.deptPillsScroll}>
+          <View style={styles.deptPillsContainer}>
+            {departmentsList.map((dept) => {
+              const isSelected = selectedStaffDepartment === dept;
+              return (
+                <TouchableOpacity
+                  key={dept}
+                  style={[
+                    styles.deptPill,
+                    {
+                      backgroundColor: isSelected ? '#059669' : isDark ? '#1E293B' : '#FFFFFF',
+                      borderColor: isSelected ? '#059669' : stitchTheme.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setSelectedStaffDepartment(dept)}
+                >
+                  <Text
+                    style={[
+                      styles.deptPillText,
+                      { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary },
+                    ]}
+                  >
+                    {dept === 'All' ? (language === 'fr' ? 'Tous les départements' : 'All Departments') : dept}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+
+        {/* Staff KPI summary cards */}
+        <View style={styles.staffStatsGrid}>
+          <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <View style={styles.staffStatHeader}>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_total_staff')}</Text>
+              <Users size={18} color={stitchTheme.textSecondary} />
+            </View>
+            <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>{staff.length}</Text>
+          </View>
+
+          <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <View style={styles.staffStatHeader}>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_active')}</Text>
+              <Shield size={18} color="#10B981" />
+            </View>
+            <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
+              {staff.filter((s) => s.status === 'Active').length}
+            </Text>
+          </View>
+
+          <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <View style={styles.staffStatHeader}>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{language === 'fr' ? 'Juridique' : 'Legal'}</Text>
+              <Scale size={18} color="#F59E0B" />
+            </View>
+            <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
+              {staff.filter((s) => s.department === 'Legal & Compliance').length}
+            </Text>
+          </View>
+
+          <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            <View style={styles.staffStatHeader}>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{language === 'fr' ? 'Commercial' : 'Sales'}</Text>
+              <Briefcase size={18} color="#8B5CF6" />
+            </View>
+            <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
+              {staff.filter((s) => s.department === 'Sales & Commercial').length}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.tableContainer, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+          <View style={[styles.tableHeader, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderBottomColor: stitchTheme.cardBorder }]}>
+            <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_staff_member')}</Text>
+            <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_email')}</Text>
+            <Text style={[styles.tableHead, { flex: 1.2, color: stitchTheme.textSecondary }]}>{t('admin_th_role')}</Text>
+            <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_department')}</Text>
+            <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_status')}</Text>
+            <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'center', color: stitchTheme.textSecondary }]}>{t('admin_th_actions')}</Text>
+          </View>
+
+          {filteredStaff.map((member) => (
+            <View
+              key={member.id}
+              style={[styles.tableRow, { borderBottomColor: stitchTheme.cardBorder }]}
+            >
+              <View style={[styles.tableCellView, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                <View
+                  style={[
+                    styles.avatar,
+                    {
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      backgroundColor: isDark ? '#3B82F6' : '#DBEAFE',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.avatarText, { fontSize: 12, color: isDark ? '#FFFFFF' : '#1E40AF' }]}>
+                    {member.avatar}
+                  </Text>
+                </View>
+                <Text style={[styles.tableCellTitle, { color: stitchTheme.textPrimary }]}>{member.name}</Text>
+              </View>
+
+              <Text style={[styles.tableCell, { flex: 2, color: stitchTheme.textSecondary }]}>{member.email}</Text>
+
+              <View style={[styles.tableCellView, { flex: 1.2 }]}>
+                <View
+                  style={[
+                    styles.roleBadge,
+                    { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' },
+                  ]}
+                >
+                  <Text style={[styles.roleText, { color: '#6366F1' }]}>
+                    {member.role}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={[styles.tableCell, { flex: 2, color: stitchTheme.textPrimary }]}>{member.department}</Text>
+
+              <View style={[styles.tableCellView, { flex: 1 }]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    member.status === 'Active' ? styles.statusApproved : styles.statusRejected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusText,
+                      member.status === 'Active' ? styles.statusTextApproved : styles.statusTextRejected,
+                    ]}
+                  >
+                    {member.status}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.tableCellView, { flex: 0.5, alignItems: 'center' }]}
+                onPress={() => handleStaffAction(member)}
+              >
+                <MoreHorizontal size={18} color={stitchTheme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // ── Support & Tickets Helpdesk ──────────────────────────────────────────────
+  const renderSupport = () => {
+    const filteredTickets = tickets.filter((t) => {
+      if (ticketFilter === 'All') return true;
+      return t.status === ticketFilter;
+    });
+
+    const activeTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
+
+    return (
+      <View style={styles.animateView}>
+        <View style={styles.pageHeader}>
+          <View>
+            <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
+              {t('admin_tickets_title')}
+            </Text>
+            <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
+              {t('admin_support_desk_sub')}
+            </Text>
+          </View>
+        </View>
+
+        {/* Ticket Filter Pills */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+          {(['All', 'Open', 'In Progress', 'Resolved'] as const).map((filter) => {
+            const isSelected = ticketFilter === filter;
+            return (
+              <TouchableOpacity
+                key={filter}
                 style={[
-                  styles.avatar,
+                  styles.deptPill,
                   {
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: isDark ? '#3B82F6' : '#DBEAFE',
+                    backgroundColor: isSelected ? '#059669' : isDark ? '#1E293B' : '#FFFFFF',
+                    borderColor: isSelected ? '#059669' : stitchTheme.cardBorder,
                   },
                 ]}
+                onPress={() => setTicketFilter(filter)}
               >
-                <Text style={[styles.avatarText, { fontSize: 12, color: isDark ? '#FFFFFF' : '#1E40AF' }]}>
-                  {member.avatar}
+                <Text style={[styles.deptPillText, { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary }]}>
+                  {filter === 'All' ? (language === 'fr' ? 'Tous' : 'All') : filter}
                 </Text>
-              </View>
-              <Text style={[styles.tableCellTitle, { color: stitchTheme.textPrimary }]}>{member.name}</Text>
-            </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-            <Text style={[styles.tableCell, { flex: 2, color: stitchTheme.textSecondary }]}>{member.email}</Text>
-
-            <View style={[styles.tableCellView, { flex: 1 }]}>
-              <View
-                style={[
-                  styles.roleBadge,
-                  member.role === 'Manager' ? styles.roleManager : styles.roleAgent,
-                ]}
-              >
-                <Text
+        {/* Two column layout: ticket list & conversation view */}
+        <View style={styles.supportLayout}>
+          {/* Left Column: Tickets Queue */}
+          <View style={[styles.ticketListCol, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+            {filteredTickets.map((t) => {
+              const isSelected = t.id === selectedTicketId;
+              return (
+                <TouchableOpacity
+                  key={t.id}
                   style={[
-                    styles.roleText,
-                    member.role === 'Manager' ? styles.roleTextManager : styles.roleTextAgent,
+                    styles.ticketCard,
+                    {
+                      backgroundColor: isSelected ? (isDark ? '#1E293B' : '#EFF6FF') : 'transparent',
+                      borderBottomColor: stitchTheme.cardBorder,
+                    },
                   ]}
+                  onPress={() => setSelectedTicketId(t.id)}
                 >
-                  {member.role}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textPrimary }]}>{member.department}</Text>
-
-            <View style={[styles.tableCellView, { flex: 1 }]}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  member.status === 'Active' ? styles.statusApproved : styles.statusRejected,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusText,
-                    member.status === 'Active' ? styles.statusTextApproved : styles.statusTextRejected,
-                  ]}
-                >
-                  {member.status}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textSecondary }]}>{member.hireDate}</Text>
-            <Text style={[styles.tableCell, { flex: 1.5, color: stitchTheme.textSecondary }]}>{member.lastActive}</Text>
-
-            <TouchableOpacity
-              style={[styles.tableCellView, { flex: 0.5, alignItems: 'center' }]}
-              onPress={() => handleStaffAction(member)}
-            >
-              <MoreHorizontal size={18} color={stitchTheme.textSecondary} />
-            </TouchableOpacity>
+                  <View style={styles.ticketCardHeader}>
+                    <Text style={[styles.ticketUser, { color: stitchTheme.textPrimary }]}>{t.user}</Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        t.status === 'Open'
+                          ? styles.statusPending
+                          : t.status === 'In Progress'
+                          ? { backgroundColor: 'rgba(59, 130, 246, 0.15)' }
+                          : styles.statusApproved,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          t.status === 'Open'
+                            ? styles.statusTextPendingTable
+                            : t.status === 'In Progress'
+                            ? { color: '#3B82F6' }
+                            : styles.statusTextApproved,
+                        ]}
+                      >
+                        {t.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.ticketSubject, { color: stitchTheme.textPrimary }]} numberOfLines={1}>
+                    {t.subject}
+                  </Text>
+                  <View style={styles.ticketMeta}>
+                    <Text style={[styles.ticketDept, { color: '#059669' }]}>{t.department}</Text>
+                    <Text style={[styles.ticketTime, { color: stitchTheme.textSecondary }]}>{t.timestamp}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        ))}
+
+          {/* Right Column: Conversation Thread */}
+          {activeTicket ? (
+            <View style={[styles.ticketThreadCol, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+              {/* Thread Header */}
+              <View style={[styles.threadHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
+                <View>
+                  <Text style={[styles.threadSubject, { color: stitchTheme.textPrimary }]}>{activeTicket.subject}</Text>
+                  <Text style={[styles.threadUser, { color: stitchTheme.textSecondary }]}>
+                    {activeTicket.user} ({activeTicket.email}) • {activeTicket.department}
+                  </Text>
+                </View>
+                {/* Status Toggle */}
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    {
+                      backgroundColor: activeTicket.status === 'Resolved' ? '#64748B' : '#059669',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    },
+                  ]}
+                  onPress={() => {
+                    const nextStatus = activeTicket.status === 'Resolved' ? 'Open' : 'Resolved';
+                    setTickets((prev) =>
+                      prev.map((t) => (t.id === activeTicket.id ? { ...t, status: nextStatus } : t))
+                    );
+                    showToast(
+                      nextStatus === 'Resolved'
+                        ? language === 'fr'
+                          ? 'Ticket marqué comme résolu'
+                          : 'Ticket resolved'
+                        : language === 'fr'
+                        ? 'Ticket réouvert'
+                        : 'Ticket reopened'
+                    );
+                  }}
+                >
+                  <CheckCircle size={15} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>
+                    {activeTicket.status === 'Resolved'
+                      ? language === 'fr'
+                        ? 'Réouvrir'
+                        : 'Reopen'
+                      : language === 'fr'
+                      ? 'Marquer Résolu'
+                      : 'Resolve'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Messages Area */}
+              <ScrollView style={styles.messagesScroll}>
+                {activeTicket.messages.map((msg, i) => {
+                  const isAdmin = msg.sender === 'admin';
+                  return (
+                    <View
+                      key={i}
+                      style={[
+                        styles.chatBubbleContainer,
+                        { alignSelf: isAdmin ? 'flex-end' : 'flex-start' },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.chatBubble,
+                          {
+                            backgroundColor: isAdmin
+                              ? '#059669'
+                              : isDark
+                              ? '#1E293B'
+                              : '#F1F5F9',
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.chatBubbleText, { color: isAdmin ? '#FFFFFF' : stitchTheme.textPrimary }]}>
+                          {msg.text}
+                        </Text>
+                      </View>
+                      <Text style={[styles.chatBubbleTime, { color: stitchTheme.textSecondary, alignSelf: isAdmin ? 'flex-end' : 'flex-start' }]}>
+                        {msg.time}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Composer */}
+              <View style={[styles.threadComposer, { borderTopColor: stitchTheme.cardBorder }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <TouchableOpacity
+                    style={styles.aiDraftBtn}
+                    onPress={handleAIGenerateReply}
+                  >
+                    <Sparkles size={14} color="#10B981" />
+                    <Text style={styles.aiDraftText}>{t('admin_ai_suggest_reply')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.composerInputRow}>
+                  <TextInput
+                    style={[
+                      styles.composerInput,
+                      {
+                        backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+                        color: stitchTheme.textPrimary,
+                        borderColor: stitchTheme.cardBorder,
+                      },
+                    ]}
+                    placeholder={t('admin_reply_placeholder')}
+                    placeholderTextColor={stitchTheme.textSecondary}
+                    value={replyText}
+                    onChangeText={setReplyText}
+                    onSubmitEditing={handleSendTicketReply}
+                  />
+                  <TouchableOpacity
+                    style={[styles.sendButton, !replyText.trim() && { opacity: 0.5 }]}
+                    onPress={handleSendTicketReply}
+                    disabled={!replyText.trim()}
+                  >
+                    <Send size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ) : null}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -908,12 +1409,9 @@ function AdminDashboard() {
                   {t('admin_analytics_overview_sub')}
                 </Text>
               </View>
-              <View style={[styles.timePeriodSelector, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-                <Text style={[styles.timePeriodText, { color: stitchTheme.textPrimary }]}>Last 30 days</Text>
-              </View>
             </View>
 
-            <View style={styles.chartsGrid}>
+            <View style={styles.dashboardGrid}>
               <View style={styles.chartsRow}>
                 <View style={{ flex: 1, minWidth: 320 }}>
                   <PerformanceDistributionChart
@@ -960,23 +1458,7 @@ function AdminDashboard() {
           </View>
         );
       case 'support':
-        return (
-          <View
-            style={[
-              styles.animateView,
-              styles.emptyStateFull,
-              { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder },
-            ]}
-          >
-            <View style={[styles.emptyStateIconCircle, { backgroundColor: stitchTheme.indigoLight }]}>
-              <MessageCircle size={44} color={stitchTheme.indigo} />
-            </View>
-            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>{t('admin_support_desk')}</Text>
-            <Text style={[styles.emptyStateText, { color: stitchTheme.textSecondary, maxWidth: 440 }]}>
-              {t('admin_support_desk_sub')}
-            </Text>
-          </View>
-        );
+        return renderSupport();
       default:
         return renderDashboard();
     }
@@ -985,6 +1467,103 @@ function AdminDashboard() {
   return (
     <View style={[styles.container, { backgroundColor: stitchTheme.bg }]}>
       <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Toast Alert */}
+      {toastMessage && (
+        <View style={styles.toastContainer}>
+          <Sparkles size={16} color="#FFFFFF" />
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
+
+      {/* Role / Department Switcher Modal */}
+      <Modal
+        visible={showRoleSwitcher}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRoleSwitcher(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowRoleSwitcher(false)}
+        >
+          <View
+            style={[
+              styles.roleModalContent,
+              {
+                backgroundColor: stitchTheme.surface,
+                borderColor: stitchTheme.cardBorder,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
+              <View>
+                <Text style={[styles.modalTitle, { color: stitchTheme.textPrimary }]}>
+                  {t('admin_switch_role_title')}
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: stitchTheme.textSecondary }]}>
+                  {t('admin_switch_role_sub')}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowRoleSwitcher(false)}>
+                <X size={20} color={stitchTheme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+              <View style={{ gap: 10, paddingVertical: 14 }}>
+                {ROLES.map((roleDef) => {
+                  const isSelected = activeRole === roleDef.id;
+                  const RoleIcon = roleDef.icon;
+                  return (
+                    <TouchableOpacity
+                      key={roleDef.id}
+                      style={[
+                        styles.roleOptionCard,
+                        {
+                          backgroundColor: isSelected
+                            ? isDark
+                              ? 'rgba(16, 185, 129, 0.15)'
+                              : '#ECFDF5'
+                            : isDark
+                            ? '#1E293B'
+                            : '#F8FAFC',
+                          borderColor: isSelected ? '#10B981' : stitchTheme.cardBorder,
+                        },
+                      ]}
+                      onPress={() => handleRoleChange(roleDef.id)}
+                    >
+                      <View style={[styles.roleIconCircle, { backgroundColor: roleDef.color + '20' }]}>
+                        <RoleIcon size={20} color={roleDef.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={[styles.roleOptionTitle, { color: stitchTheme.textPrimary }]}>
+                            {roleDef.id}
+                          </Text>
+                          {isSelected && (
+                            <View style={styles.activePillBadge}>
+                              <Text style={styles.activePillText}>Active</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.roleOptionDept, { color: stitchTheme.textSecondary }]}>
+                          {roleDef.department}
+                        </Text>
+                        <Text style={[styles.roleOptionSections, { color: stitchTheme.textMuted }]}>
+                          Unlocks {roleDef.allowedSections.length} sections: {roleDef.allowedSections.join(', ')}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Staff Action Modal */}
       <Modal
@@ -1012,17 +1591,9 @@ function AdminDashboard() {
               <>
                 <View style={[styles.actionHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
                   <Text style={[styles.actionTitle, { color: stitchTheme.textPrimary }]}>
-                    Actions for {selectedStaff.name}
+                    Actions for {selectedStaff.name} ({selectedStaff.department})
                   </Text>
                 </View>
-
-                <TouchableOpacity
-                  style={[styles.actionItem, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}
-                  onPress={() => selectedStaff && handleEditStaff(selectedStaff)}
-                >
-                  <Users size={16} color={stitchTheme.textPrimary} />
-                  <Text style={[styles.actionText, { color: stitchTheme.textPrimary }]}>Edit Details</Text>
-                </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[styles.actionItem, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}
@@ -1036,6 +1607,15 @@ function AdminDashboard() {
                         )
                       );
                       setShowStaffActionModal(false);
+                      showToast(
+                        selectedStaff.status === 'Active'
+                          ? language === 'fr'
+                            ? 'Membre désactivé'
+                            : 'Staff deactivated'
+                          : language === 'fr'
+                          ? 'Membre activé'
+                          : 'Staff activated'
+                      );
                     }
                   }}
                 >
@@ -1065,7 +1645,7 @@ function AdminDashboard() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Add Staff Modal */}
+      {/* Add Staff Modal with Department Assignment */}
       <Modal
         visible={showAddStaffModal}
         transparent
@@ -1075,7 +1655,7 @@ function AdminDashboard() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
             <View style={[styles.modalHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
-              <Text style={[styles.modalTitle, { color: stitchTheme.textPrimary }]}>Add New Staff Member</Text>
+              <Text style={[styles.modalTitle, { color: stitchTheme.textPrimary }]}>{t('admin_add_staff_member')}</Text>
               <TouchableOpacity onPress={() => setShowAddStaffModal(false)} style={{ padding: 4 }}>
                 <X size={22} color={stitchTheme.textSecondary} />
               </TouchableOpacity>
@@ -1086,7 +1666,7 @@ function AdminDashboard() {
                 <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Full Name</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', color: stitchTheme.textPrimary, borderColor: stitchTheme.cardBorder }]}
-                  placeholder="e.g. John Doe"
+                  placeholder="e.g. Jean Kouassi"
                   placeholderTextColor={stitchTheme.textMuted}
                   value={newStaff.name}
                   onChangeText={(text) => setNewStaff({ ...newStaff, name: text })}
@@ -1097,7 +1677,7 @@ function AdminDashboard() {
                 <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Email Address</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', color: stitchTheme.textPrimary, borderColor: stitchTheme.cardBorder }]}
-                  placeholder="e.g. john@immoci.ci"
+                  placeholder="e.g. jean@immoci.ci"
                   placeholderTextColor={stitchTheme.textMuted}
                   value={newStaff.email}
                   onChangeText={(text) => setNewStaff({ ...newStaff, email: text })}
@@ -1106,9 +1686,51 @@ function AdminDashboard() {
               </View>
 
               <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Department</Text>
+                <View style={styles.roleSelector}>
+                  {(
+                    [
+                      'Operations & Logistics',
+                      'Legal & Compliance',
+                      'Sales & Commercial',
+                      'Customer Support',
+                      'Finance & Billing',
+                      'Platform Administration',
+                    ] as const
+                  ).map((dept) => (
+                    <TouchableOpacity
+                      key={dept}
+                      style={[
+                        styles.roleOption,
+                        { borderColor: stitchTheme.cardBorder },
+                        newStaff.department === dept && {
+                          backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5',
+                          borderColor: '#10B981',
+                        },
+                      ]}
+                      onPress={() => setNewStaff({ ...newStaff, department: dept })}
+                    >
+                      <Text
+                        style={[
+                          styles.roleOptionText,
+                          { color: stitchTheme.textSecondary },
+                          newStaff.department === dept && {
+                            color: '#10B981',
+                            fontWeight: '700',
+                          },
+                        ]}
+                      >
+                        {dept}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Role</Text>
                 <View style={styles.roleSelector}>
-                  {(['Manager', 'Agent', 'Admin'] as const).map((role) => (
+                  {(['Manager', 'Agent', 'Officer', 'Specialist', 'Admin'] as const).map((role) => (
                     <TouchableOpacity
                       key={role}
                       style={[
@@ -1138,330 +1760,1093 @@ function AdminDashboard() {
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: stitchTheme.textPrimary }]}>Department</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', color: stitchTheme.textPrimary, borderColor: stitchTheme.cardBorder }]}
-                  placeholder="e.g. Sales"
-                  placeholderTextColor={stitchTheme.textMuted}
-                  value={newStaff.department}
-                  onChangeText={(text) => setNewStaff({ ...newStaff, department: text })}
-                />
-              </View>
-            </View>
-
-            <View style={[styles.modalFooter, { borderTopColor: stitchTheme.cardBorder, backgroundColor: isDark ? '#111827' : '#F8FAFC' }]}>
               <TouchableOpacity
-                style={[styles.cancelButton, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: stitchTheme.cardBorder }]}
-                onPress={() => setShowAddStaffModal(false)}
-              >
-                <Text style={[styles.cancelButtonText, { color: stitchTheme.textSecondary }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: stitchTheme.primary }]}
+                style={[styles.primaryButton, { backgroundColor: stitchTheme.primary, marginTop: 12 }]}
                 onPress={handleAddStaff}
               >
-                <Text style={styles.saveButtonText}>Add Member</Text>
+                <Text style={styles.primaryButtonText}>{t('admin_add_staff_member')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Document/Media Attachment Modal */}
-      <Modal
-        visible={!!attachmentView}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setAttachmentView(null)}
-      >
-        <View style={styles.modalOverlay}>
-          {attachmentView && (
-            <AttachmentModal
-              type={attachmentView.type}
-              submission={attachmentView.submission}
-              theme={stitchTheme}
-              isDark={isDark}
-              onClose={() => setAttachmentView(null)}
-            />
-          )}
-        </View>
-      </Modal>
+      {/* AI Moderation Modal */}
+      {moderationProperty && (
+        <AIModeration
+          visible={showAIModeration}
+          property={moderationProperty}
+          onClose={() => {
+            setShowAIModeration(false);
+            setModerationProperty(null);
+          }}
+          onApprove={() => {
+            updateSubmissionStatus(moderationProperty.id, 'approved');
+            setShowAIModeration(false);
+            setModerationProperty(null);
+            showToast(language === 'fr' ? 'Annonce validée par IA' : 'Listing approved via AI');
+          }}
+          onReject={(reason) => {
+            updateSubmissionStatus(moderationProperty.id, 'rejected', reason);
+            setShowAIModeration(false);
+            setModerationProperty(null);
+            showToast(language === 'fr' ? 'Annonce rejetée par IA' : 'Listing rejected via AI');
+          }}
+        />
+      )}
 
-      <View style={styles.layout}>
-        {/* ── Stitch Navigation Sidebar ───────────────────────────────────── */}
+      {/* Attachment Preview Modal */}
+      {attachmentView && (
+        <Modal
+          visible={!!attachmentView}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setAttachmentView(null)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setAttachmentView(null)}
+          >
+            <View
+              style={[
+                styles.attachmentModalContent,
+                { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder },
+              ]}
+              onStartShouldSetResponder={() => true}
+            >
+              <View style={[styles.modalHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
+                <Text style={[styles.modalTitle, { color: stitchTheme.textPrimary }]}>
+                  {attachmentView.type === 'document' ? 'Document Verification' : 'Photo Gallery'}
+                </Text>
+                <TouchableOpacity onPress={() => setAttachmentView(null)}>
+                  <X size={20} color={stitchTheme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: 500 }} showsVerticalScrollIndicator={false}>
+                {attachmentView.type === 'document' ? (
+                  <View style={styles.docPreviewCard}>
+                    <Shield size={48} color="#10B981" style={{ alignSelf: 'center', marginVertical: 12 }} />
+                    <Text style={[styles.docPreviewTitle, { color: stitchTheme.textPrimary }]}>
+                      Certificat Foncier / Titre Foncier (ACD)
+                    </Text>
+                    <Text style={[styles.docPreviewText, { color: stitchTheme.textSecondary }]}>
+                      Verified cadastral deed record for {attachmentView.submission.title}.
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { backgroundColor: '#10B981', alignSelf: 'center', marginTop: 16 }]}
+                      onPress={() => {
+                        showToast(language === 'fr' ? 'Document ACD conforme' : 'Cadastral deed verified');
+                        setAttachmentView(null);
+                      }}
+                    >
+                      <Check size={16} color="#FFFFFF" />
+                      <Text style={styles.primaryButtonText}>Confirm Compliance</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ gap: 14 }}>
+                    {attachmentView.submission.photos.map((url, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri: url }}
+                        style={styles.galleryImage}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
+
+      {/* ── Main Layout: Sidebar + Content ─────────────────────────────────── */}
+      <View style={styles.layoutWrapper}>
+        {/* Stitch Navigation Rail */}
         <View style={[styles.sidebar, { backgroundColor: stitchTheme.sidebarBg }]}>
+          {/* Sidebar Header Brand */}
           <View style={styles.sidebarHeader}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoBadgeIcon}>
-                <Building2 size={20} color="#10B981" />
-              </View>
-              <View>
-                <Text style={styles.logoText}>ImmoCI</Text>
-                <Text style={styles.logoSubtext}>PRO ADMIN</Text>
-              </View>
+            <View style={styles.logoBadge}>
+              <Sparkles size={20} color="#10B981" />
+            </View>
+            <View>
+              <Text style={styles.logoTitle}>ImmoCI</Text>
+              <Text style={styles.logoSubtitle}>ADMIN PRO</Text>
             </View>
           </View>
 
-          <ScrollView style={styles.sidebarMenu} showsVerticalScrollIndicator={false}>
-            <View style={styles.menuGroup}>
-              <Text style={styles.menuGroupTitle}>{t('admin_main_menu')}</Text>
-              {navItems.slice(0, 3).map((item) => (
-                <SidebarItem
-                  key={item.id}
-                  icon={item.icon}
-                  title={item.title}
-                  active={activeSection === item.id}
-                  onPress={() => setActiveSection(item.id)}
-                  count={item.count}
-                />
-              ))}
-            </View>
-
-            <View style={styles.menuGroup}>
-              <Text style={styles.menuGroupTitle}>{t('admin_management')}</Text>
-              {navItems.slice(3, 6).map((item) => (
-                <SidebarItem
-                  key={item.id}
-                  icon={item.icon}
-                  title={item.title}
-                  active={activeSection === item.id}
-                  onPress={() => setActiveSection(item.id)}
-                  count={item.count}
-                />
-              ))}
-            </View>
-
-            <View style={styles.menuGroup}>
-              <Text style={styles.menuGroupTitle}>{t('admin_other')}</Text>
-              {navItems.slice(6).map((item) => (
-                <SidebarItem
-                  key={item.id}
-                  icon={item.icon}
-                  title={item.title}
-                  active={activeSection === item.id}
-                  onPress={() => setActiveSection(item.id)}
-                  count={item.count}
-                />
-              ))}
+          {/* Nav Items Scroll */}
+          <ScrollView showsVerticalScrollIndicator={false} style={styles.navScrollView}>
+            <View style={styles.navGroup}>
+              {filteredNavItems.map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.navItem,
+                      isActive && styles.navItemActive,
+                    ]}
+                    onPress={() => setActiveSection(item.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.navItemContent}>
+                      {item.icon(isActive)}
+                      <Text style={[styles.navItemText, isActive && styles.navItemTextActive]}>
+                        {item.title}
+                      </Text>
+                    </View>
+                    {item.count ? (
+                      <View style={styles.navBadge}>
+                        <Text style={styles.navBadgeText}>{item.count}</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
 
+          {/* Sidebar Footer */}
           <View style={styles.sidebarFooter}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.push('/(tabs)/home')}
+              onPress={() => router.replace('/dashboard')}
               activeOpacity={0.8}
             >
-              <ChevronLeft size={18} color="#94A3B8" />
+              <Home size={18} color="#94A3B8" />
               <Text style={styles.backButtonText}>{t('admin_back_to_app')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── Main Stitch Workspace ────────────────────────────────────────── */}
-        <View style={[styles.mainContent, { backgroundColor: stitchTheme.bg }]}>
-          {/* Stitch App Bar (Top Header) */}
+        {/* Right Main Scrollable View */}
+        <ScrollView style={styles.mainContent} showsVerticalScrollIndicator={false}>
+          {/* Stitch App Bar */}
           <View
             style={[
-              styles.topHeader,
+              styles.appBar,
               {
                 backgroundColor: stitchTheme.topBarBg,
-                borderBottomColor: stitchTheme.divider,
+                borderBottomColor: stitchTheme.cardBorder,
               },
             ]}
           >
-            <View style={styles.topHeaderLeft}>
+            <View style={styles.appBarLeft}>
               <Text style={[styles.pageTitle, { color: stitchTheme.textPrimary }]}>
-                {t(`admin_nav_${activeSection}` as any)}
+                {filteredNavItems.find((n) => n.id === activeSection)?.title || 'Dashboard'}
               </Text>
             </View>
 
-            <View style={styles.topHeaderRight}>
+            <View style={styles.appBarRight}>
+              {/* Interactive Role & Department Switcher Capsule */}
+              <TouchableOpacity
+                style={[
+                  styles.roleSwitcherPill,
+                  {
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+                    borderColor: '#10B981',
+                  },
+                ]}
+                onPress={() => setShowRoleSwitcher(true)}
+                activeOpacity={0.8}
+              >
+                <Shield size={15} color="#10B981" />
+                <Text style={styles.roleSwitcherPillText}>{activeRole}</Text>
+                <Sliders size={13} color="#10B981" />
+              </TouchableOpacity>
+
               {/* Theme Toggle Pill */}
               <TouchableOpacity
                 style={[
-                  styles.themeTogglePill,
+                  styles.iconPillBtn,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
                     borderColor: stitchTheme.cardBorder,
                   },
                 ]}
-                onPress={() => setTheme(activeTheme === 'dark' ? 'light' : 'dark')}
+                onPress={() => setTheme(isDark ? 'light' : 'dark')}
                 activeOpacity={0.8}
               >
-                {activeTheme === 'dark' ? (
-                  <Moon size={16} color="#A78BFA" />
-                ) : (
-                  <Sun size={16} color="#F59E0B" />
-                )}
-                <Text
-                  style={[
-                    styles.themeToggleText,
-                    { color: activeTheme === 'dark' ? '#A78BFA' : '#D97706' },
-                  ]}
-                >
-                  {activeTheme === 'dark' ? 'DARK' : 'LIGHT'}
-                </Text>
+                {isDark ? <Sun size={17} color="#F59E0B" /> : <Moon size={17} color="#64748B" />}
               </TouchableOpacity>
 
               {/* Language Switcher Pill */}
               <TouchableOpacity
                 style={[
-                  styles.themeTogglePill,
+                  styles.iconPillBtn,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
                     borderColor: stitchTheme.cardBorder,
                   },
                 ]}
                 onPress={() => setLanguage(language === 'en' ? 'fr' : 'en')}
                 activeOpacity={0.8}
               >
-                <Globe size={16} color={stitchTheme.textSecondary} />
-                <Text style={[styles.themeToggleText, { color: stitchTheme.textSecondary }]}>
+                <Globe size={15} color={stitchTheme.textSecondary} />
+                <Text style={[styles.langText, { color: stitchTheme.textPrimary }]}>
                   {language.toUpperCase()}
                 </Text>
               </TouchableOpacity>
 
-              {/* Search Capsule */}
-              {isSearchActive ? (
-                <View
-                  style={[
-                    styles.searchCapsuleActive,
-                    {
-                      backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
-                      borderColor: '#10B981',
-                    },
-                  ]}
-                >
-                  <Search size={16} color={stitchTheme.textSecondary} />
-                  <TextInput
-                    placeholder={t('admin_search_placeholder')}
-                    style={[styles.searchInputHeader, { color: stitchTheme.textPrimary }]}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    autoFocus
-                    placeholderTextColor={stitchTheme.textMuted}
-                  />
-                  <TouchableOpacity onPress={() => setIsSearchActive(false)}>
-                    <X size={16} color={stitchTheme.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.topIconBtn,
-                    {
-                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
-                      borderColor: stitchTheme.cardBorder,
-                    },
-                  ]}
-                  onPress={() => setIsSearchActive(true)}
-                >
-                  <Search size={18} color={stitchTheme.textSecondary} />
-                </TouchableOpacity>
-              )}
-
-              {/* Notifications */}
-              <TouchableOpacity
+              {/* Notifications Pill */}
+              <View
                 style={[
-                  styles.topIconBtn,
+                  styles.iconPillBtn,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
                     borderColor: stitchTheme.cardBorder,
                   },
                 ]}
-                onPress={() => {
-                  if (pendingSubmissions.length > 0) setActiveSection('documents');
-                }}
               >
-                <Bell size={18} color={stitchTheme.textSecondary} />
-                {pendingSubmissions.length > 0 && (
-                  <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>{pendingSubmissions.length}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              <View style={[styles.divider, { backgroundColor: stitchTheme.divider }]} />
-
-              {/* User Profile Pill */}
-              <View style={styles.userProfile}>
-                <View style={styles.avatarPill}>
-                  <Text style={styles.avatarPillText}>AD</Text>
-                </View>
-                <View style={{ display: 'flex' }}>
-                  <Text style={[styles.userName, { color: stitchTheme.textPrimary }]}>Admin User</Text>
-                  <Text style={[styles.userRole, { color: stitchTheme.textSecondary }]}>
-                    {t('admin_super_admin')}
-                  </Text>
-                </View>
+                <Bell size={17} color={stitchTheme.textSecondary} />
+                {pendingSubmissions.length > 0 && <View style={styles.bellDot} />}
               </View>
             </View>
           </View>
 
-          {/* Page Content Scroll */}
-          <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
-            <View style={styles.contentContainer}>{renderContent()}</View>
-          </ScrollView>
-        </View>
+          {/* Section Body */}
+          <View style={styles.contentPadding}>{renderContent()}</View>
+        </ScrollView>
       </View>
-
-      {/* AI Moderation Drawer/Modal */}
-      <AIModeration
-        visible={showAIModeration}
-        onClose={() => setShowAIModeration(false)}
-        property={moderationProperty}
-        onApprove={() => {
-          if (moderationProperty) updateSubmissionStatus(moderationProperty.id, 'approved');
-          setShowAIModeration(false);
-        }}
-        onReject={(reason) => {
-          if (moderationProperty) updateSubmissionStatus(moderationProperty.id, 'rejected', reason);
-          setShowAIModeration(false);
-        }}
-      />
     </View>
   );
 }
 
-// ── Sidebar Item Component ───────────────────────────────────────────────────
-function SidebarItem({
-  icon,
-  title,
-  active,
-  onPress,
-  count,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  active?: boolean;
-  onPress: () => void;
-  count?: number;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.sidebarItem, active && styles.sidebarItemActive]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      {active && <View style={styles.sidebarActiveBar} />}
-      <View style={styles.sidebarItemLeft}>
-        <View style={styles.sidebarItemIcon}>{icon}</View>
-        <Text style={[styles.sidebarItemText, active && styles.sidebarItemTextActive]}>
-          {title}
-        </Text>
-      </View>
-      {count !== undefined && count > 0 && (
-        <View style={styles.sidebarCount}>
-          <Text style={styles.sidebarCountText}>{count}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-}
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  layoutWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 9999,
+    backgroundColor: '#059669',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  sidebar: {
+    width: 260,
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255, 255, 255, 0.06)',
+    paddingVertical: 20,
+    paddingHorizontal: 14,
+    justifyContent: 'space-between',
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    marginBottom: 24,
+  },
+  logoBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  logoTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  logoSubtitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#10B981',
+    letterSpacing: 1.2,
+  },
+  navScrollView: {
+    flex: 1,
+  },
+  navGroup: {
+    gap: 6,
+  },
+  navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+  navItemActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.18)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#10B981',
+  },
+  navItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  navItemText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  navItemTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  navBadge: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  navBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#000000',
+  },
+  sidebarFooter: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  mainContent: {
+    flex: 1,
+  },
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  appBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  appBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  roleSwitcherPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  roleSwitcherPillText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  iconPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    position: 'relative',
+  },
+  langText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 6,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EF4444',
+  },
+  contentPadding: {
+    padding: 24,
+  },
+  animateView: {
+    gap: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: 200,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  statHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statTrendPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  statTrendText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  statContent: {
+    gap: 2,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  statTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  statSubtitle: {
+    fontSize: 11.5,
+  },
+  statCardIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+  },
+  dashboardGrid: {
+    gap: 20,
+  },
+  chartsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  filterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    minWidth: 240,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13.5,
+  },
+  filterActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    height: 42,
+    borderRadius: 12,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  tableContainer: {
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  tableHead: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  tableCell: {
+    fontSize: 13,
+  },
+  tableCellView: {
+    justifyContent: 'center',
+  },
+  tableCellTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  tableCellSubtitle: {
+    fontSize: 11,
+  },
+  tableImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  statusApproved: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  statusRejected: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+  },
+  statusPending: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  statusTextApproved: {
+    color: '#10B981',
+  },
+  statusTextRejected: {
+    color: '#EF4444',
+  },
+  statusTextPendingTable: {
+    color: '#F59E0B',
+  },
+  actionIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentsGrid: {
+    gap: 16,
+  },
+  emptyStateFull: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 40,
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyStateIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  emptyStateText: {
+    fontSize: 13.5,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  pageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 6,
+  },
+  pageHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  pageHeaderSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  deptPillsScroll: {
+    marginBottom: 10,
+  },
+  deptPillsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  deptPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  deptPillText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  staffStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  staffStatCard: {
+    flex: 1,
+    minWidth: 120,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+  },
+  staffStatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  staffStatLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  staffStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  avatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontWeight: '700',
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  roleText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  supportLayout: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  ticketListCol: {
+    flex: 1,
+    minWidth: 280,
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  ticketCard: {
+    padding: 16,
+    borderBottomWidth: 1,
+    gap: 6,
+  },
+  ticketCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ticketUser: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  ticketSubject: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  ticketMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ticketDept: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  ticketTime: {
+    fontSize: 11,
+  },
+  ticketThreadCol: {
+    flex: 2,
+    minWidth: 340,
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: 'hidden',
+    height: 480,
+    justifyContent: 'space-between',
+  },
+  threadHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  threadSubject: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  threadUser: {
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  messagesScroll: {
+    padding: 16,
+    flex: 1,
+  },
+  chatBubbleContainer: {
+    maxWidth: '80%',
+    marginBottom: 12,
+  },
+  chatBubble: {
+    padding: 12,
+    borderRadius: 14,
+  },
+  chatBubbleText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  chatBubbleTime: {
+    fontSize: 10,
+    marginTop: 4,
+  },
+  threadComposer: {
+    padding: 14,
+    borderTopWidth: 1,
+  },
+  aiDraftBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  aiDraftText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  composerInputRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  composerInput: {
+    flex: 1,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    fontSize: 13,
+  },
+  sendButton: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#059669',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeader: {
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  cardsGrid: {
+    gap: 12,
+  },
+  reportCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 14,
+  },
+  reportIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  reportName: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  reportMeta: {
+    fontSize: 12,
+  },
+  downloadButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  roleModalContent: {
+    width: '100%',
+    maxWidth: 520,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  roleOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  roleIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleOptionTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+  },
+  roleOptionDept: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  roleOptionSections: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  activePillBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  activePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  actionModalContent: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  actionHeader: {
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+  },
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+  },
+  actionText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 480,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  modalBody: {
+    paddingTop: 16,
+    gap: 12,
+  },
+  formGroup: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  input: {
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    fontSize: 13,
+  },
+  roleSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  roleOption: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  roleOptionText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  attachmentModalContent: {
+    width: '100%',
+    maxWidth: 520,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  docPreviewCard: {
+    padding: 20,
+    alignItems: 'center',
+    gap: 6,
+  },
+  docPreviewTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  docPreviewText: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  galleryImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+  },
+});
 
-// ── Submission Card (Documents Review) ───────────────────────────────────────
+// Helper SubmissionCard for Document Review
 function SubmissionCard({
   submission,
   theme,
@@ -1476,1231 +2861,113 @@ function SubmissionCard({
   isDark: boolean;
   onApprove: () => void;
   onReject: () => void;
-  onViewDocs?: () => void;
-  onViewMedia?: () => void;
-}) {
-  return (
-    <View
-      style={[
-        styles.submissionCard,
-        {
-          backgroundColor: theme.surface,
-          borderColor: theme.cardBorder,
-        },
-      ]}
-    >
-      <View style={styles.submissionHeader}>
-        <View style={styles.submissionHeaderContent}>
-          <Image
-            source={{ uri: submission.photos[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=200' }}
-            style={styles.submissionThumb}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.submissionTitle, { color: theme.textPrimary }]} numberOfLines={1}>
-              {submission.title}
-            </Text>
-            <Text style={[styles.submissionMeta, { color: theme.textSecondary }]}>
-              {submission.location.district}, {submission.location.city}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.submissionPriceContainer,
-              { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5' },
-            ]}
-          >
-            <Text style={[styles.submissionPrice, { color: '#10B981' }]}>
-              {(submission.price / 1000000).toFixed(1)}M FCFA
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={[styles.submissionDetails, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC' }]}>
-        <View style={styles.detailGrid}>
-          <View style={styles.detailItem}>
-            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Type</Text>
-            <Text style={[styles.detailValue, { color: theme.textPrimary, textTransform: 'capitalize' }]}>
-              {submission.type}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Area</Text>
-            <Text style={[styles.detailValue, { color: theme.textPrimary }]}>{submission.area} m²</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={[styles.detailLabel, { color: theme.textMuted }]}>Photos</Text>
-            <TouchableOpacity onPress={onViewMedia}>
-              <Text style={[styles.detailValue, { color: '#10B981', fontWeight: '700', textDecorationLine: 'underline' }]}>
-                {submission.photos.length} photos {submission.video ? '+ 1 video' : ''}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={[styles.verificationSection, { borderTopColor: theme.cardBorder }]}>
-          <Text style={[styles.sectionHeaderLabel, { color: theme.textMuted }]}>Payment & Document Proof</Text>
-          <View style={styles.paymentInfo}>
-            <CreditCard size={15} color="#10B981" />
-            <Text style={[styles.paymentText, { color: theme.textPrimary }]}>
-              {submission.payment.method.toUpperCase()} • {submission.payment.transactionId}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.docInfo} onPress={onViewDocs}>
-            <FileText size={15} color="#3B82F6" />
-            <Text style={[styles.docText, { color: '#3B82F6', textDecorationLine: 'underline' }]}>
-              View Attached Title Deed / Deed Proof
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={[styles.cardRejectBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2' }]}
-          onPress={onReject}
-          activeOpacity={0.8}
-        >
-          <XCircle size={17} color="#EF4444" />
-          <Text style={styles.cardRejectText}>Reject</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cardApproveBtn} onPress={onApprove} activeOpacity={0.8}>
-          <CheckCircle size={17} color="#FFFFFF" />
-          <Text style={styles.cardApproveText}>Approve Listing</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-// ── Document/Media Attachment Modal Component ────────────────────────────────
-function AttachmentModal({
-  type,
-  submission,
-  theme,
-  isDark,
-  onClose,
-}: {
-  type: 'document' | 'media';
-  submission: PropertySubmission;
-  theme: any;
-  isDark: boolean;
-  onClose: () => void;
+  onViewDocs: () => void;
+  onViewMedia: () => void;
 }) {
   return (
     <View
       style={{
         backgroundColor: theme.surface,
-        width: '92%',
-        maxWidth: 820,
-        maxHeight: '90%',
-        borderRadius: 24,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        borderWidth: 1,
         borderColor: theme.cardBorder,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 16 },
-        shadowOpacity: 0.25,
-        shadowRadius: 32,
-        elevation: 12,
+        borderWidth: 1,
+        borderRadius: 16,
+        padding: 18,
+        gap: 12,
       }}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: Spacing.xl,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.cardBorder,
-        }}
-      >
-        <View>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: theme.textPrimary }}>
-            {type === 'document' ? 'Review Property Verification Document' : 'Property Media Gallery'}
-          </Text>
-          <Text style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
-            {submission.title}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: theme.textPrimary }}>
+          {submission.title}
+        </Text>
+        <View
+          style={{
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#F59E0B' }}>
+            Pending Verification
           </Text>
         </View>
-        <TouchableOpacity onPress={onClose} style={{ padding: 6 }}>
-          <X size={22} color={theme.textSecondary} />
+      </View>
+
+      <Text style={{ fontSize: 13, color: theme.textSecondary }}>
+        {submission.location.district}, {submission.location.city} • {(submission.price / 1000000).toFixed(1)}M FCFA
+      </Text>
+
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+            borderRadius: 8,
+          }}
+          onPress={onViewDocs}
+        >
+          <FileText size={14} color={theme.textPrimary} />
+          <Text style={{ fontSize: 12, fontWeight: '700', color: theme.textPrimary }}>View ACD Deed</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+            borderRadius: 8,
+          }}
+          onPress={onViewMedia}
+        >
+          <Eye size={14} color={theme.textPrimary} />
+          <Text style={{ fontSize: 12, fontWeight: '700', color: theme.textPrimary }}>View Photos ({submission.photos.length})</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ padding: Spacing.xl }}>
-        {type === 'document' ? (
-          <View style={{ gap: Spacing.lg, alignItems: 'center' }}>
-            <View
-              style={{
-                width: '100%',
-                height: 420,
-                backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
-                borderRadius: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: theme.cardBorder,
-              }}
-            >
-              {submission.document ? (
-                <Image
-                  source={{ uri: submission.document }}
-                  style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-                />
-              ) : (
-                <View style={{ alignItems: 'center', gap: 8 }}>
-                  <FileText size={48} color={theme.textMuted} />
-                  <Text style={{ color: theme.textSecondary }}>No document preview available inline</Text>
-                </View>
-              )}
-            </View>
-
-            {submission.document ? (
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  backgroundColor: '#059669',
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                }}
-                onPress={() => Linking.openURL(submission.document!)}
-              >
-                <Download size={18} color="#FFFFFF" />
-                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Open / Download Document</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        ) : (
-          <View style={{ gap: Spacing.xl }}>
-            {/* Photos Grid */}
-            <View>
-              <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: Spacing.md, color: theme.textPrimary }}>
-                Photos ({submission.photos.length})
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                {submission.photos.map((photo, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => Linking.openURL(photo)}
-                    style={{
-                      width: '31%',
-                      aspectRatio: 4 / 3,
-                      borderRadius: 12,
-                      overflow: 'hidden',
-                      borderWidth: 1,
-                      borderColor: theme.cardBorder,
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Video Section */}
-            {submission.video && (
-              <View>
-                <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: Spacing.md, color: theme.textPrimary }}>
-                  Video Tour
-                </Text>
-                <View
-                  style={{
-                    width: '100%',
-                    height: 240,
-                    backgroundColor: '#000',
-                    borderRadius: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: 'white', marginBottom: 14 }}>Video Preview Available Externally</Text>
-                  <TouchableOpacity
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      backgroundColor: 'white',
-                      paddingHorizontal: 20,
-                      paddingVertical: 10,
-                      borderRadius: 20,
-                    }}
-                    onPress={() => Linking.openURL(submission.video!)}
-                  >
-                    <ExternalLink size={16} color="#000" />
-                    <Text style={{ fontWeight: '700', color: '#000' }}>Open Video Tour</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
-
-      <View
-        style={{
-          padding: Spacing.lg,
-          borderTopWidth: 1,
-          borderTopColor: theme.cardBorder,
-          backgroundColor: isDark ? '#111827' : '#F8FAFC',
-          flexDirection: 'row',
-          justifyContent: 'flex-end',
-        }}
-      >
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, borderTopWidth: 1, borderTopColor: theme.cardBorder, paddingTop: 12 }}>
         <TouchableOpacity
           style={{
-            paddingHorizontal: 24,
-            paddingVertical: 10,
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            backgroundColor: '#059669',
+            paddingVertical: 9,
             borderRadius: 10,
-            backgroundColor: isDark ? '#1E293B' : '#E2E8F0',
           }}
-          onPress={onClose}
+          onPress={onApprove}
         >
-          <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Close</Text>
+          <CheckCircle size={16} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Approve Document</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
+            paddingVertical: 9,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FCA5A5',
+          }}
+          onPress={onReject}
+        >
+          <XCircle size={16} color="#EF4444" />
+          <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '700' }}>Reject</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-// ── Google Stitch Pro Stylesheet ─────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  layout: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-
-  // ── Stitch Navigation Rail / Drawer ────────────────────────────────────────
-  sidebar: {
-    width: 256,
-    borderRightWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  sidebarHeader: {
-    height: 76,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logoBadgeIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-  },
-  logoText: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
-  },
-  logoSubtext: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    color: '#10B981',
-    letterSpacing: 1.2,
-  },
-  sidebarMenu: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-  },
-  menuGroup: {
-    marginBottom: 20,
-  },
-  menuGroupTitle: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    color: '#64748B',
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase' as const,
-  },
-  sidebarItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 3,
-    position: 'relative',
-  },
-  sidebarActiveBar: {
-    position: 'absolute',
-    left: 0,
-    top: 8,
-    bottom: 8,
-    width: 3.5,
-    borderRadius: 2,
-    backgroundColor: '#10B981',
-  },
-  sidebarItemActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-  },
-  sidebarItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sidebarItemIcon: {
-    width: 22,
-    alignItems: 'center',
-  },
-  sidebarItemText: {
-    fontSize: 13.5,
-    color: '#94A3B8',
-    fontWeight: '500' as const,
-  },
-  sidebarItemTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700' as const,
-  },
-  sidebarCount: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  sidebarCountText: {
-    fontSize: 10,
-    color: '#FFFFFF',
-    fontWeight: '800' as const,
-  },
-  sidebarFooter: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  backButtonText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-
-  // ── Main Content Area ──────────────────────────────────────────────────────
-  mainContent: {
-    flex: 1,
-  },
-  topHeader: {
-    height: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    zIndex: 10,
-  },
-  topHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  topHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800' as const,
-    letterSpacing: -0.5,
-  },
-  themeTogglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  themeToggleText: {
-    fontSize: 11,
-    fontWeight: '800' as const,
-    letterSpacing: 0.5,
-  },
-  topIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    position: 'relative',
-  },
-  searchCapsuleActive: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1.5,
-    width: 220,
-  },
-  searchInputHeader: {
-    flex: 1,
-    fontSize: 13,
-    paddingVertical: 0,
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#EF4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  notificationBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '800' as const,
-  },
-  divider: {
-    width: 1,
-    height: 24,
-    marginHorizontal: 4,
-  },
-  userProfile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginLeft: 4,
-  },
-  avatarPill: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#059669',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  avatarPillText: {
-    color: '#FFFFFF',
-    fontWeight: '800' as const,
-    fontSize: 13,
-  },
-  userName: {
-    fontSize: 13.5,
-    fontWeight: '700' as const,
-  },
-  userRole: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-  },
-  contentScroll: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 24,
-    gap: 24,
-    paddingBottom: 48,
-  },
-
-  // ── Stitch Tonal Metric Cards ──────────────────────────────────────────────
-  animateView: {
-    gap: 24,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: 230,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
-  },
-  statCardIndicator: {
-    position: 'absolute',
-    top: 0,
-    left: 20,
-    right: 20,
-    height: 2.5,
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
-    opacity: 0.9,
-  },
-  statHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  statIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statTrendPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  statTrendText: {
-    fontSize: 11.5,
-    fontWeight: '700' as const,
-  },
-  statContent: {
-    gap: 3,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-    letterSpacing: -0.5,
-  },
-  statTitle: {
-    fontSize: 13.5,
-    fontWeight: '600' as const,
-  },
-  statSubtitle: {
-    fontSize: 12,
-  },
-
-  // ── Dashboard Grid & Charts ────────────────────────────────────────────────
-  dashboardGrid: {
-    flexDirection: 'column',
-    gap: 20,
-  },
-  chartsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 20,
-  },
-  chartWrapper: {
-    flex: 1,
-    minWidth: 320,
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
-  },
-
-  // ── Filter Bar & Search ────────────────────────────────────────────────────
-  filterBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 44,
-    width: 320,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 13.5,
-  },
-  filterActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    height: 44,
-  },
-  filterButtonText: {
-    fontSize: 13.5,
-    fontWeight: '600' as const,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    height: 44,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  primaryButtonText: {
-    fontSize: 13.5,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-  },
-
-  // ── Stitch Tables ──────────────────────────────────────────────────────────
-  tableContainer: {
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  tableHead: {
-    fontSize: 11.5,
-    fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.8,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  tableCell: {
-    fontSize: 13.5,
-  },
-  tableCellView: {},
-  tableImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  tableCellTitle: {
-    fontSize: 13.5,
-    fontWeight: '700' as const,
-  },
-  tableCellSubtitle: {
-    fontSize: 11.5,
-    marginTop: 2,
-  },
-  actionIconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  statusApproved: { backgroundColor: '#DCFCE7' },
-  statusPending: { backgroundColor: '#FEF3C7' },
-  statusRejected: { backgroundColor: '#FEE2E2' },
-  statusText: { fontSize: 11.5, fontWeight: '700' as const, textTransform: 'capitalize' as const },
-  statusTextApproved: { color: '#166534' },
-  statusTextPendingTable: { color: '#B45309' },
-  statusTextRejected: { color: '#B91C1C' },
-
-  // ── Staff & Reports ────────────────────────────────────────────────────────
-  pageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  pageHeaderTitle: {
-    fontSize: 22,
-    fontWeight: '800' as const,
-    letterSpacing: -0.5,
-  },
-  pageHeaderSubtitle: {
-    fontSize: 13.5,
-    marginTop: 4,
-  },
-  staffStatsGrid: {
-    flexDirection: 'row',
-    gap: 16,
-    flexWrap: 'wrap',
-  },
-  staffStatCard: {
-    flex: 1,
-    minWidth: 180,
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  staffStatHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  staffStatLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  staffStatValue: {
-    fontSize: 28,
-    fontWeight: '800' as const,
-  },
-  avatar: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontWeight: '700' as const,
-  },
-  roleBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  roleManager: {
-    backgroundColor: '#DBEAFE',
-  },
-  roleAgent: {
-    backgroundColor: '#ECFDF5',
-  },
-  roleText: {
-    fontSize: 11.5,
-    fontWeight: '700' as const,
-  },
-  roleTextManager: {
-    color: '#1E40AF',
-  },
-  roleTextAgent: {
-    color: '#047857',
-  },
-
-  cardsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  reportCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 18,
-    borderRadius: 18,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
-    width: '100%',
-    gap: 16,
-  },
-  reportIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportName: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    marginBottom: 4,
-  },
-  reportMeta: {
-    fontSize: 12.5,
-  },
-  downloadButton: {
-    padding: 10,
-    borderRadius: 10,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-    letterSpacing: -0.3,
-  },
-
-  // ── Documents Section ──────────────────────────────────────────────────────
-  documentsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  emptyStateFull: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 48,
-    gap: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  emptyStateIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '800' as const,
-    letterSpacing: -0.4,
-  },
-  emptyStateText: {
-    textAlign: 'center',
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  submissionCard: {
-    flex: 1,
-    minWidth: 320,
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 2,
-  },
-  submissionHeader: {
-    marginBottom: 14,
-  },
-  submissionHeaderContent: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  submissionThumb: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: '#E2E8F0',
-  },
-  submissionTitle: {
-    fontSize: 14.5,
-    fontWeight: '700' as const,
-  },
-  submissionMeta: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  submissionPriceContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  submissionPrice: {
-    fontSize: 12,
-    fontWeight: '800' as const,
-  },
-  submissionDetails: {
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 14,
-  },
-  detailGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  detailItem: {
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: 10.5,
-    textTransform: 'uppercase' as const,
-    fontWeight: '700' as const,
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  verificationSection: {
-    borderTopWidth: 1,
-    paddingTop: 12,
-    gap: 8,
-  },
-  sectionHeaderLabel: {
-    fontSize: 10.5,
-    fontWeight: '800' as const,
-    textTransform: 'uppercase' as const,
-  },
-  paymentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  paymentText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    fontFamily: Platform.select({ ios: 'Courier', default: 'monospace' }),
-  },
-  docInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  docText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cardRejectBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  cardRejectText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: '#EF4444',
-  },
-  cardApproveBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#059669',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  cardApproveText: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: '#FFFFFF',
-  },
-
-  // ── Modals & Dialogs ───────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 480,
-    borderRadius: 24,
-    borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.3,
-    shadowRadius: 32,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-  },
-  modalBody: {
-    padding: 20,
-    gap: 16,
-  },
-  formGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 12.5,
-    fontWeight: '700' as const,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 13.5,
-  },
-  roleSelector: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  roleOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  roleOptionText: {
-    fontSize: 12.5,
-    fontWeight: '600' as const,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    padding: 20,
-    borderTopWidth: 1,
-  },
-  cancelButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  cancelButtonText: {
-    fontSize: 13.5,
-    fontWeight: '600' as const,
-  },
-  saveButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  saveButtonText: {
-    fontSize: 13.5,
-    color: '#FFFFFF',
-    fontWeight: '700' as const,
-  },
-
-  actionModalContent: {
-    width: 260,
-    borderRadius: 18,
-    padding: 12,
-    borderWidth: 1,
-    gap: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  actionHeader: {
-    paddingBottom: 8,
-    marginBottom: 4,
-    borderBottomWidth: 1,
-  },
-  actionTitle: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-  },
-  actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  timePeriodSelector: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  timePeriodText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  chartsGrid: {
-    gap: 20,
-  },
-});

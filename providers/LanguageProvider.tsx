@@ -424,6 +424,39 @@ const dictionary: Dictionary = {
   admin_support_desk: { en: 'Support & Tickets Desk', fr: 'Support & Centre de Tickets' },
   admin_support_desk_sub: { en: 'Triage live customer questions, dispute escalations, and inquiries', fr: 'Gestion des demandes clients, signalements et litiges' },
   admin_verified: { en: 'Verified', fr: 'Vérifié' },
+
+  // ── Departments & RBAC Roles ─────────────────────────────────────────────
+  dept_all: { en: 'All Departments', fr: 'Tous les départements' },
+  dept_operations: { en: 'Operations & Logistics', fr: 'Opérations & Logistique' },
+  dept_legal: { en: 'Legal & Compliance', fr: 'Juridique & Conformité' },
+  dept_sales: { en: 'Sales & Commercial', fr: 'Commercial & Ventes' },
+  dept_support: { en: 'Customer Support', fr: 'Support Client' },
+  dept_finance: { en: 'Finance & Billing', fr: 'Finance & Facturation' },
+  dept_platform_admin: { en: 'Platform Administration', fr: 'Administration Plateforme' },
+  dept_marketing: { en: 'Marketing & Growth', fr: 'Marketing & Croissance' },
+
+  role_super_admin: { en: 'Super Admin', fr: 'Super Administrateur' },
+  role_operations_mgr: { en: 'Operations Manager', fr: 'Responsable Opérations' },
+  role_legal_officer: { en: 'Legal Officer', fr: 'Chargé Juridique' },
+  role_sales_agent: { en: 'Sales Agent', fr: 'Agent Commercial' },
+  role_support_specialist: { en: 'Support Specialist', fr: 'Spécialiste Support' },
+  role_finance_officer: { en: 'Finance Officer', fr: 'Responsable Finance' },
+
+  admin_switch_role_title: { en: 'Switch Department & Access Level', fr: 'Changer de Département & Rôle' },
+  admin_switch_role_sub: { en: 'Select an access role to test permissions and workflows across the platform.', fr: 'Sélectionnez un rôle pour tester les autorisations et flux de travail.' },
+  admin_current_access: { en: 'Active Access Mode', fr: 'Mode d\'accès actif' },
+  admin_permissions_label: { en: 'Permissions & Scope', fr: 'Autorisations & Portée' },
+  admin_unrestricted_access: { en: 'Full Platform Access (All Sections)', fr: 'Accès complet plateforme (Toutes sections)' },
+
+  admin_tickets_title: { en: 'Live Helpdesk & User Inquiries', fr: 'Assistance & Demandes Utilisateurs' },
+  admin_reply_placeholder: { en: 'Type your official response to customer...', fr: 'Tapez votre réponse officielle au client...' },
+  admin_send_reply: { en: 'Send Reply', fr: 'Envoyer la réponse' },
+  admin_ai_suggest_reply: { en: 'AI Draft Reply', fr: 'Rédiger avec l\'IA' },
+  admin_ticket_status_open: { en: 'Open', fr: 'Ouvert' },
+  admin_ticket_status_in_progress: { en: 'In Progress', fr: 'En cours' },
+  admin_ticket_status_resolved: { en: 'Resolved', fr: 'Résolu' },
+  admin_report_downloaded: { en: 'Report downloaded successfully', fr: 'Rapport téléchargé avec succès' },
+  admin_download: { en: 'Download', fr: 'Télécharger' },
 };
 
 export type TranslationKey = keyof typeof dictionary;
