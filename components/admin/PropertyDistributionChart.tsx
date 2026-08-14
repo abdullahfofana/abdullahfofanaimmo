@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import Svg, { Path, G, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, G } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
-import Typography from '@/constants/typography';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,10 +30,14 @@ const defaultData: PropertyDistributionItem[] = [
 
 export default function PropertyDistributionChart({
   data = defaultData,
-  title = 'Property Distribution',
-  subtitle = 'By property type · Q2 2026',
+  title,
+  subtitle,
   themeMode = 'dark',
 }: PropertyDistributionChartProps) {
+  const { t } = useLanguage();
+  const displayTitle = title || t('admin_property_distribution');
+  const displaySubtitle = subtitle || t('admin_by_property_type');
+
   const [activeItem, setActiveItem] = useState<PropertyDistributionItem>(data[0]);
 
   const chartSize = Math.min(SCREEN_WIDTH - 80, 240);
@@ -94,11 +98,20 @@ export default function PropertyDistributionChart({
     ].join(' ');
   };
 
+  const getTranslatedType = (typeStr: string) => {
+    const lower = typeStr.toLowerCase();
+    if (lower.includes('villa')) return t('admin_villas') || 'Villas';
+    if (lower.includes('land') || lower.includes('terrain')) return t('admin_land') || 'Land';
+    if (lower.includes('comm')) return t('admin_commercial') || 'Commercial';
+    if (lower.includes('appart') || lower.includes('apart')) return t('admin_apartments') || 'Apartments';
+    return typeStr;
+  };
+
   const isDark = themeMode === 'dark';
-  const cardGradient = isDark ? ['#0D1527', '#111C35'] as const : ['#FFFFFF', '#F8FAFC'] as const;
-  const cardBorder = isDark ? '#1E293B' : Colors.border;
-  const titleColor = isDark ? '#FFFFFF' : Colors.text;
-  const subtitleColor = isDark ? '#64748B' : Colors.textSecondary;
+  const cardGradient = isDark ? (['#0F172A', '#161F30'] as const) : (['#FFFFFF', '#FFFFFF'] as const);
+  const cardBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+  const titleColor = isDark ? '#F8FAFC' : '#0F172A';
+  const subtitleColor = isDark ? '#94A3B8' : '#64748B';
 
   return (
     <LinearGradient
@@ -110,9 +123,9 @@ export default function PropertyDistributionChart({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.icon}>📊</Text>
-          <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
+          <Text style={[styles.title, { color: titleColor }]}>{displayTitle}</Text>
         </View>
-        <Text style={[styles.subtitle, { color: subtitleColor }]}>{subtitle}</Text>
+        <Text style={[styles.subtitle, { color: subtitleColor }]}>{displaySubtitle}</Text>
       </View>
 
       <View style={styles.chartContainer}>
@@ -136,7 +149,7 @@ export default function PropertyDistributionChart({
                   key={item.type}
                   d={pathD}
                   fill={item.color}
-                  stroke="#FFFFFF"
+                  stroke={isDark ? '#161F30' : '#FFFFFF'}
                   strokeWidth={2.5}
                   strokeLinejoin="round"
                   opacity={isSelected ? 1.0 : activeItem ? 0.88 : 1.0}
@@ -164,19 +177,19 @@ export default function PropertyDistributionChart({
                 {activeItem.percentage}%
               </Text>
               <Text style={[styles.centerLabel, { color: subtitleColor }]} numberOfLines={1}>
-                {activeItem.type}
+                {getTranslatedType(activeItem.type)}
               </Text>
             </>
           )}
         </View>
       </View>
 
-      {/* Screenshot-aligned highlighted footer */}
-      <View style={styles.footerHighlight}>
+      {/* Highlighted footer */}
+      <View style={[styles.footerHighlight, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}>
         <View style={styles.footerLeft}>
           <View style={[styles.footerDot, { backgroundColor: activeItem?.color || '#3B82F6' }]} />
           <Text style={[styles.footerLabel, { color: titleColor }]}>
-            {activeItem?.type || 'Villas'}
+            {getTranslatedType(activeItem?.type || 'Villas')}
           </Text>
         </View>
         <Text style={[styles.footerPercent, { color: titleColor }]}>
@@ -195,8 +208,8 @@ export default function PropertyDistributionChart({
                 styles.legendItem,
                 {
                   backgroundColor: isSelected ? (isDark ? '#1E293B' : '#F1F5F9') : 'transparent',
-                  paddingHorizontal: isSelected ? 8 : 0,
-                  paddingVertical: 4,
+                  paddingHorizontal: isSelected ? 10 : 0,
+                  paddingVertical: 6,
                   borderRadius: 8,
                 },
               ]}
@@ -204,8 +217,8 @@ export default function PropertyDistributionChart({
               activeOpacity={0.7}
             >
               <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-              <Text style={[styles.legendLabel, { color: titleColor, fontWeight: isSelected ? '600' : '400' }]}>
-                {item.type}
+              <Text style={[styles.legendLabel, { color: titleColor, fontWeight: isSelected ? '700' : '500' }]}>
+                {getTranslatedType(item.type)}
               </Text>
               <Text style={[styles.legendValue, { color: isDark ? '#94A3B8' : Colors.textSecondary }]}>
                 {item.count ? `${item.count} · ` : ''}{item.percentage}%
@@ -220,14 +233,14 @@ export default function PropertyDistributionChart({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 22,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 22,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
     marginBottom: 20,
     width: '100%',
   },
@@ -244,13 +257,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800' as const,
     letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12.5,
+    fontWeight: '500' as const,
   },
   chartContainer: {
     alignItems: 'center',
@@ -266,12 +279,12 @@ const styles = StyleSheet.create({
   },
   centerValue: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '800' as const,
     letterSpacing: -0.5,
   },
   centerLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 11.5,
+    fontWeight: '700' as const,
     marginTop: 1,
     textAlign: 'center',
   },
@@ -282,7 +295,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginTop: 6,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(148, 163, 184, 0.15)',
   },
   footerLeft: {
     flexDirection: 'row',
@@ -295,16 +307,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   footerLabel: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontWeight: '700' as const,
   },
   footerPercent: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800' as const,
   },
   legend: {
     marginTop: 12,
-    gap: 8,
+    gap: 6,
   },
   legendItem: {
     flexDirection: 'row',
@@ -312,16 +324,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   legendColor: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     borderRadius: 4,
   },
   legendLabel: {
-    fontSize: 14,
+    fontSize: 13.5,
     flex: 1,
   },
   legendValue: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: '600' as const,
   },
 });

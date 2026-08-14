@@ -274,9 +274,9 @@ function AdminDashboard() {
       id: 'properties',
       icon: <Building2 size={22} color={stitchTheme.primary} />,
       iconBg: stitchTheme.primaryLight,
-      title: 'Total Properties',
+      title: t('admin_stat_total_properties'),
       value: kpis.totalProperties.toLocaleString(),
-      subtitle: 'Active listings',
+      subtitle: t('admin_stat_active_listings'),
       trend: `+${kpis.propertyGrowth}%`,
       trendPositive: kpis.propertyGrowth >= 0,
       accentColor: stitchTheme.primary,
@@ -285,9 +285,9 @@ function AdminDashboard() {
       id: 'users',
       icon: <Users size={22} color={stitchTheme.indigo} />,
       iconBg: stitchTheme.indigoLight,
-      title: 'Total Users',
+      title: t('admin_stat_total_users'),
       value: kpis.activeUsers.toLocaleString(),
-      subtitle: 'Active accounts',
+      subtitle: t('admin_stat_active_accounts'),
       trend: `+${kpis.userGrowth}%`,
       trendPositive: kpis.userGrowth >= 0,
       accentColor: stitchTheme.indigo,
@@ -296,9 +296,9 @@ function AdminDashboard() {
       id: 'docs',
       icon: <FileText size={22} color={stitchTheme.amber} />,
       iconBg: stitchTheme.amberLight,
-      title: 'Pending Docs',
+      title: t('admin_stat_pending_docs'),
       value: kpis.pendingVerifications.toString(),
-      subtitle: 'Verification required',
+      subtitle: t('admin_stat_verification_req'),
       trend: kpis.pendingVerifications > 5 ? 'High' : 'Normal',
       trendPositive: kpis.pendingVerifications <= 5,
       accentColor: stitchTheme.amber,
@@ -307,9 +307,9 @@ function AdminDashboard() {
       id: 'revenue',
       icon: <DollarSign size={22} color={stitchTheme.blue} />,
       iconBg: stitchTheme.blueLight,
-      title: 'Revenue',
+      title: t('admin_stat_revenue'),
       value: kpis.totalRevenue.toLocaleString(),
-      subtitle: 'Total Revenue (FCFA)',
+      subtitle: t('admin_stat_revenue_sub'),
       trend: `+${kpis.revenueGrowth}%`,
       trendPositive: kpis.revenueGrowth >= 0,
       accentColor: stitchTheme.blue,
@@ -443,15 +443,13 @@ function AdminDashboard() {
       {/* Charts Section */}
       <View style={styles.dashboardGrid}>
         <View style={styles.chartsRow}>
-          <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+          <View style={{ flex: 1, minWidth: 320 }}>
             <PerformanceDistributionChart
-              title="Performance Distribution"
-              subtitle="Q2 2026"
               themeMode={isDark ? 'dark' : 'light'}
               size={240}
             />
           </View>
-          <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+          <View style={{ flex: 1, minWidth: 320 }}>
             <PropertyDistributionChart
               data={charts.distribution}
               themeMode={isDark ? 'dark' : 'light'}
@@ -484,7 +482,7 @@ function AdminDashboard() {
         >
           <Search size={18} color={stitchTheme.textSecondary} />
           <TextInput
-            placeholder="Search properties..."
+            placeholder={t('admin_search_properties')}
             style={[styles.searchInput, { color: stitchTheme.textPrimary }]}
             placeholderTextColor={stitchTheme.textSecondary}
           />
@@ -500,14 +498,14 @@ function AdminDashboard() {
             ]}
           >
             <Filter size={18} color={stitchTheme.textPrimary} />
-            <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>Filters</Text>
+            <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>{t('admin_filters')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: stitchTheme.primary }]}
             onPress={() => router.push('/add-property')}
           >
             <Plus size={18} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>Add Property</Text>
+            <Text style={styles.primaryButtonText}>{t('admin_add_property')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -530,22 +528,22 @@ function AdminDashboard() {
             },
           ]}
         >
-          <Text style={[styles.tableHead, { flex: 2.5, color: stitchTheme.textSecondary }]}>Property</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Location</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Price</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Type</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Status</Text>
-          <Text style={[styles.tableHead, { flex: 0.8, textAlign: 'center', color: stitchTheme.textSecondary }]}>Action</Text>
+          <Text style={[styles.tableHead, { flex: 2.5, color: stitchTheme.textSecondary }]}>{t('admin_th_property')}</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_location')}</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_price')}</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_type')}</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_status')}</Text>
+          <Text style={[styles.tableHead, { flex: 0.8, textAlign: 'center', color: stitchTheme.textSecondary }]}>{t('admin_th_action')}</Text>
         </View>
 
         {submissions.length === 0 ? (
           <View style={{ padding: 40, alignItems: 'center' }}>
             <Building2 size={40} color={stitchTheme.textMuted} />
             <Text style={{ marginTop: 12, fontSize: 16, fontWeight: '600', color: stitchTheme.textPrimary }}>
-              No properties listed yet
+              {t('admin_no_properties')}
             </Text>
             <Text style={{ color: stitchTheme.textSecondary, marginTop: 4 }}>
-              Properties submitted by users or agents will appear here.
+              {t('admin_no_properties_sub')}
             </Text>
           </View>
         ) : (
@@ -639,9 +637,9 @@ function AdminDashboard() {
             <View style={[styles.emptyStateIconCircle, { backgroundColor: stitchTheme.primaryLight }]}>
               <Shield size={48} color={stitchTheme.primary} />
             </View>
-            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>All documents verified</Text>
+            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>{t('admin_all_docs_verified')}</Text>
             <Text style={[styles.emptyStateText, { color: stitchTheme.textSecondary }]}>
-              Great job! There are currently no pending documents to review.
+              {t('admin_all_docs_verified_sub')}
             </Text>
           </View>
         ) : (
@@ -673,7 +671,7 @@ function AdminDashboard() {
     return (
       <View style={styles.animateView}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: stitchTheme.textPrimary }]}>Available Reports</Text>
+          <Text style={[styles.sectionTitle, { color: stitchTheme.textPrimary }]}>{t('admin_available_reports')}</Text>
         </View>
         <View style={styles.cardsGrid}>
           {reports.map((report) => (
@@ -716,10 +714,10 @@ function AdminDashboard() {
       <View style={styles.pageHeader}>
         <View>
           <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
-            {language === 'fr' ? 'Gestion du Personnel' : 'Staff Management'}
+            {t('admin_staff_management')}
           </Text>
           <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
-            {language === 'fr' ? 'Gérez les membres de votre équipe et leurs rôles' : 'Manage team members and authorization roles'}
+            {t('admin_staff_management_sub')}
           </Text>
         </View>
         <TouchableOpacity
@@ -727,7 +725,7 @@ function AdminDashboard() {
           onPress={() => setShowAddStaffModal(true)}
         >
           <Plus size={18} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>Add Staff Member</Text>
+          <Text style={styles.primaryButtonText}>{t('admin_add_staff_member')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -743,7 +741,7 @@ function AdminDashboard() {
         >
           <Search size={18} color={stitchTheme.textSecondary} />
           <TextInput
-            placeholder="Search staff members..."
+            placeholder={t('admin_search_staff')}
             style={[styles.searchInput, { color: stitchTheme.textPrimary }]}
             placeholderTextColor={stitchTheme.textSecondary}
           />
@@ -758,7 +756,7 @@ function AdminDashboard() {
           ]}
         >
           <Filter size={18} color={stitchTheme.textPrimary} />
-          <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>Filters</Text>
+          <Text style={[styles.filterButtonText, { color: stitchTheme.textPrimary }]}>{t('admin_filters')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -766,7 +764,7 @@ function AdminDashboard() {
       <View style={styles.staffStatsGrid}>
         <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Total Staff</Text>
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_total_staff')}</Text>
             <Users size={20} color={stitchTheme.textSecondary} />
           </View>
           <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>{staff.length}</Text>
@@ -774,7 +772,7 @@ function AdminDashboard() {
 
         <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Active</Text>
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_active')}</Text>
             <Shield size={20} color="#10B981" />
           </View>
           <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -784,7 +782,7 @@ function AdminDashboard() {
 
         <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Managers</Text>
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_managers')}</Text>
             <UserCheck size={20} color="#3B82F6" />
           </View>
           <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -794,7 +792,7 @@ function AdminDashboard() {
 
         <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
           <View style={styles.staffStatHeader}>
-            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>Agents</Text>
+            <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{t('admin_agents')}</Text>
             <UserPlus size={20} color="#8B5CF6" />
           </View>
           <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -805,14 +803,14 @@ function AdminDashboard() {
 
       <View style={[styles.tableContainer, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
         <View style={[styles.tableHeader, { backgroundColor: isDark ? '#1E293B' : '#F8FAFC', borderBottomColor: stitchTheme.cardBorder }]}>
-          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>Staff Member</Text>
-          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>Email</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Role</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Department</Text>
-          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>Status</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Hire Date</Text>
-          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>Last Active</Text>
-          <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'center', color: stitchTheme.textSecondary }]}>Actions</Text>
+          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_staff_member')}</Text>
+          <Text style={[styles.tableHead, { flex: 2, color: stitchTheme.textSecondary }]}>{t('admin_th_email')}</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_role')}</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_department')}</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitchTheme.textSecondary }]}>{t('admin_th_status')}</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_hire_date')}</Text>
+          <Text style={[styles.tableHead, { flex: 1.5, color: stitchTheme.textSecondary }]}>{t('admin_th_last_active')}</Text>
+          <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'center', color: stitchTheme.textSecondary }]}>{t('admin_th_actions')}</Text>
         </View>
 
         {staff.map((member) => (
@@ -904,10 +902,10 @@ function AdminDashboard() {
             <View style={styles.pageHeader}>
               <View>
                 <Text style={[styles.pageHeaderTitle, { color: stitchTheme.textPrimary }]}>
-                  {language === 'fr' ? 'Tableau de bord Analytique' : 'Analytics Dashboard'}
+                  {t('admin_analytics_overview')}
                 </Text>
                 <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
-                  {language === 'fr' ? 'Surveillez et gérez toute la plateforme' : 'Real-time performance metrics and predictive signals'}
+                  {t('admin_analytics_overview_sub')}
                 </Text>
               </View>
               <View style={[styles.timePeriodSelector, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
@@ -917,15 +915,13 @@ function AdminDashboard() {
 
             <View style={styles.chartsGrid}>
               <View style={styles.chartsRow}>
-                <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+                <View style={{ flex: 1, minWidth: 320 }}>
                   <PerformanceDistributionChart
-                    title="Performance Distribution"
-                    subtitle="Q2 2026"
                     themeMode={isDark ? 'dark' : 'light'}
                     size={240}
                   />
                 </View>
-                <View style={[styles.chartWrapper, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
+                <View style={{ flex: 1, minWidth: 320 }}>
                   <PropertyDistributionChart
                     data={charts.distribution}
                     themeMode={isDark ? 'dark' : 'light'}
@@ -975,9 +971,9 @@ function AdminDashboard() {
             <View style={[styles.emptyStateIconCircle, { backgroundColor: stitchTheme.indigoLight }]}>
               <MessageCircle size={44} color={stitchTheme.indigo} />
             </View>
-            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>Support Messages & Helpdesk</Text>
+            <Text style={[styles.emptyStateTitle, { color: stitchTheme.textPrimary }]}>{t('admin_support_desk')}</Text>
             <Text style={[styles.emptyStateText, { color: stitchTheme.textSecondary, maxWidth: 440 }]}>
-              Real-time user inquiries and support chats from the mobile and web app will be synchronized here with instant AI triage.
+              {t('admin_support_desk_sub')}
             </Text>
           </View>
         );

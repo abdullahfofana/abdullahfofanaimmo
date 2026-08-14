@@ -9,13 +9,14 @@ import {
 import Svg, { Path, G } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { dashboardDark, dashboardLight } from '@/constants/colors';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export interface PerformanceSegment {
   id: string;
   label: string;
-  value: number; // percentage (0-100)
+  value: number;
   color: string;
   count?: number;
   description?: string;
@@ -25,8 +26,8 @@ export interface PerformanceDistributionChartProps {
   title?: string;
   subtitle?: string;
   data?: PerformanceSegment[];
-  size?: number; // Outer diameter of chart
-  donutThickness?: number; // Thickness of the ring
+  size?: number;
+  donutThickness?: number;
   themeMode?: 'dark' | 'light' | 'auto';
   showDetailsToggle?: boolean;
   onSelectSegment?: (segment: PerformanceSegment) => void;
@@ -36,18 +37,12 @@ export interface PerformanceDistributionChartProps {
   style?: object;
 }
 
-// Default dataset strictly aligned with the reference image:
-// 1. Blue (Exceptional) - ~12% (top-right)
-// 2. Slate (Needs Focus) - ~5% (middle-right)
-// 3. Red (Underperforming) - ~10% (bottom-right)
-// 4. Amber/Orange (Satisfactory) - ~45% (bottom & left, largest)
-// 5. Green (Outstanding) - ~28% (top-left)
 export const DEFAULT_PERFORMANCE_DATA: PerformanceSegment[] = [
   {
     id: 'exceptional',
     label: 'Exceptional',
     value: 12,
-    color: '#3B82F6', // Vibrant Blue
+    color: '#3B82F6',
     count: 48,
     description: 'Top tier consistency & high revenue volume',
   },
@@ -55,7 +50,7 @@ export const DEFAULT_PERFORMANCE_DATA: PerformanceSegment[] = [
     id: 'needs_focus',
     label: 'Needs Focus',
     value: 5,
-    color: '#64748B', // Slate Grey
+    color: '#64748B',
     count: 20,
     description: 'Moderate progress, requires optimization',
   },
@@ -63,7 +58,7 @@ export const DEFAULT_PERFORMANCE_DATA: PerformanceSegment[] = [
     id: 'underperforming',
     label: 'Underperforming',
     value: 10,
-    color: '#EF4444', // Coral Red
+    color: '#EF4444',
     count: 40,
     description: 'Below quarterly targets & SLA requirements',
   },
@@ -71,7 +66,7 @@ export const DEFAULT_PERFORMANCE_DATA: PerformanceSegment[] = [
     id: 'satisfactory',
     label: 'Satisfactory',
     value: 45,
-    color: '#F59E0B', // Amber / Warm Orange
+    color: '#F59E0B',
     count: 180,
     description: 'Consistently hitting expected milestones',
   },
@@ -79,14 +74,14 @@ export const DEFAULT_PERFORMANCE_DATA: PerformanceSegment[] = [
     id: 'outstanding',
     label: 'Outstanding',
     value: 28,
-    color: '#10B981', // Emerald Green
+    color: '#10B981',
     count: 112,
     description: 'Above targets with high client satisfaction',
   },
 ];
 
 export default function PerformanceDistributionChart({
-  title = 'Performance Distribution',
+  title,
   subtitle = 'Q2 2026',
   data = DEFAULT_PERFORMANCE_DATA,
   size,
@@ -99,12 +94,14 @@ export default function PerformanceDistributionChart({
   onPeriodChange,
   style,
 }: PerformanceDistributionChartProps) {
+  const { t, language } = useLanguage();
+  const displayTitle = title || t('admin_performance_distribution');
+
   const [selectedPeriod, setSelectedPeriod] = useState(controlledPeriod || subtitle);
   const [activeSegmentId, setActiveSegmentId] = useState<string>('exceptional');
 
   const isDark = themeMode === 'dark';
 
-  // Responsive chart sizing: compact on mobile, spacious on web/desktop
   const chartSize = useMemo(() => {
     if (size) return size;
     const available = Math.min(SCREEN_WIDTH - 64, 320);
@@ -115,14 +112,28 @@ export default function PerformanceDistributionChart({
   const outerRadius = chartSize / 2 - 16;
   const innerRadius = Math.max(outerRadius - donutThickness, 35);
 
-  // Normalize data percentages so sum equals 100
   const totalRaw = useMemo(() => data.reduce((sum, item) => sum + item.value, 0), [data]);
   const totalCount = useMemo(() => data.reduce((sum, item) => sum + (item.count || 0), 0), [data]);
 
-  // Compute angles for each segment
-  // In the reference screenshot, Blue (Exceptional) starts around ~35° (just past top)
+  const getTranslatedLabel = (id: string, defaultLabel: string) => {
+    switch (id) {
+      case 'exceptional':
+        return t('admin_exceptional') || defaultLabel;
+      case 'needs_focus':
+        return t('admin_needs_focus') || defaultLabel;
+      case 'underperforming':
+        return t('admin_underperforming') || defaultLabel;
+      case 'satisfactory':
+        return t('admin_satisfactory') || defaultLabel;
+      case 'outstanding':
+        return t('admin_outstanding') || defaultLabel;
+      default:
+        return defaultLabel;
+    }
+  };
+
   const segmentsWithArcs = useMemo(() => {
-    let currentAngle = 35; // Start in top-right quadrant matching reference screenshot
+    let currentAngle = 35;
     return data.map((item) => {
       const percentage = totalRaw > 0 ? (item.value / totalRaw) * 100 : 0;
       const angleSpan = (percentage / 100) * 360;
@@ -139,7 +150,6 @@ export default function PerformanceDistributionChart({
     });
   }, [data, totalRaw]);
 
-  // Active segment object
   const activeSegment = useMemo(() => {
     return (
       segmentsWithArcs.find((s) => s.id === activeSegmentId) ||
@@ -162,7 +172,6 @@ export default function PerformanceDistributionChart({
     }
   };
 
-  // Helper function to build SVG donut slice path
   const createArcPath = (
     startAngleDeg: number,
     endAngleDeg: number,
@@ -197,14 +206,12 @@ export default function PerformanceDistributionChart({
   };
 
   const theme = isDark ? dashboardDark : dashboardLight;
-
-  const cardGradient = theme.gradient.card;
-  const cardBorder = theme.borderLight;
-  const titleColor = theme.text;
-  const subtitleColor = theme.textSecondary;
-  const sliceStroke = theme.surface;
-  const pillBg = theme.surfaceAlt;
-  const pillActiveBg = theme.surfaceElevated;
+  const cardGradient = isDark ? (['#0F172A', '#161F30'] as const) : (['#FFFFFF', '#FFFFFF'] as const);
+  const cardBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+  const titleColor = isDark ? '#F8FAFC' : '#0F172A';
+  const subtitleColor = isDark ? '#94A3B8' : '#64748B';
+  const sliceStroke = isDark ? '#161F30' : '#FFFFFF';
+  const pillBg = isDark ? '#1E293B' : '#F1F5F9';
 
   return (
     <LinearGradient
@@ -216,7 +223,7 @@ export default function PerformanceDistributionChart({
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.titleWrap}>
-          <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
+          <Text style={[styles.title, { color: titleColor }]}>{displayTitle}</Text>
           <View style={styles.subtitleRow}>
             <Text style={[styles.subtitle, { color: subtitleColor }]}>{selectedPeriod}</Text>
             {periods.length > 1 && (
@@ -256,7 +263,6 @@ export default function PerformanceDistributionChart({
           <G>
             {segmentsWithArcs.map((segment) => {
               const isSelected = activeSegment?.id === segment.id;
-              // Expand active slice slightly for a rich responsive feel
               const curOuter = isSelected ? outerRadius + 3 : outerRadius;
               const curInner = isSelected ? innerRadius - 1 : innerRadius;
               const pathD = createArcPath(
@@ -284,7 +290,7 @@ export default function PerformanceDistributionChart({
           </G>
         </Svg>
 
-        {/* Center cutout info tooltip (interactive hover/tap) */}
+        {/* Center cutout info */}
         <View
           style={[
             styles.centerInfo,
@@ -310,19 +316,19 @@ export default function PerformanceDistributionChart({
               <Text
                 style={[
                   styles.centerLabel,
-                  { color: isDark ? '#94A3B8' : '#64748B' },
+                  { color: subtitleColor },
                 ]}
                 numberOfLines={1}
               >
-                {activeSegment.label}
+                {getTranslatedLabel(activeSegment.id, activeSegment.label)}
               </Text>
             </>
           )}
         </View>
       </View>
 
-      {/* ── Bottom Reference Row (Exact Match to Screenshot) ── */}
-      <View style={styles.footerRow}>
+      {/* ── Bottom Reference Row ── */}
+      <View style={[styles.footerRow, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}>
         <View style={styles.activeLegendLeft}>
           <View
             style={[
@@ -331,7 +337,7 @@ export default function PerformanceDistributionChart({
             ]}
           />
           <Text style={[styles.activeLegendLabel, { color: titleColor }]}>
-            {activeSegment?.label || 'Exceptional'}
+            {activeSegment ? getTranslatedLabel(activeSegment.id, activeSegment.label) : 'Exceptional'}
           </Text>
         </View>
 
@@ -340,7 +346,7 @@ export default function PerformanceDistributionChart({
         </Text>
       </View>
 
-      {/* ── Segment Selector Chips / Multi Legend ── */}
+      {/* ── Segment Selector Chips ── */}
       {showDetailsToggle && (
         <View style={styles.segmentChipsContainer}>
           {segmentsWithArcs.map((item) => {
@@ -351,7 +357,7 @@ export default function PerformanceDistributionChart({
                 style={[
                   styles.segmentChip,
                   {
-                    backgroundColor: isSelected ? pillActiveBg : pillBg,
+                    backgroundColor: isSelected ? (isDark ? '#1E293B' : '#EFF6FF') : pillBg,
                     borderColor: isSelected ? item.color : 'transparent',
                     borderWidth: isSelected ? 1.5 : 1,
                   },
@@ -366,7 +372,7 @@ export default function PerformanceDistributionChart({
                     { color: isDark ? '#E2E8F0' : '#1E293B', fontWeight: isSelected ? '700' : '500' },
                   ]}
                 >
-                  {item.label}
+                  {getTranslatedLabel(item.id, item.label)}
                 </Text>
                 <Text style={[styles.chipPercent, { color: item.color }]}>
                   {item.value}%
@@ -377,16 +383,20 @@ export default function PerformanceDistributionChart({
         </View>
       )}
 
-      {/* ── High-Performance KPI Summary Footer ── */}
+      {/* ── Summary KPI Footer ── */}
       {totalCount > 0 && (
-        <View style={[styles.kpiFooter, { borderTopColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+        <View style={[styles.kpiFooter, { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}>
           <View style={styles.kpiCol}>
-            <Text style={[styles.kpiLabel, { color: subtitleColor }]}>Total Monitored</Text>
-            <Text style={[styles.kpiValue, { color: titleColor }]}>{totalCount} Units</Text>
+            <Text style={[styles.kpiLabel, { color: subtitleColor }]}>
+              {language === 'fr' ? 'Total Surveillé' : 'Total Units'}
+            </Text>
+            <Text style={[styles.kpiValue, { color: titleColor }]}>{totalCount}</Text>
           </View>
           <View style={styles.kpiDivider} />
           <View style={styles.kpiCol}>
-            <Text style={[styles.kpiLabel, { color: subtitleColor }]}>Top Performers</Text>
+            <Text style={[styles.kpiLabel, { color: subtitleColor }]}>
+              {language === 'fr' ? 'Top Rangs' : 'Top Performers'}
+            </Text>
             <Text style={[styles.kpiValue, { color: '#10B981' }]}>
               {((segmentsWithArcs.find(s => s.id === 'exceptional')?.value || 0) +
                 (segmentsWithArcs.find(s => s.id === 'outstanding')?.value || 0))}%
@@ -394,7 +404,9 @@ export default function PerformanceDistributionChart({
           </View>
           <View style={styles.kpiDivider} />
           <View style={styles.kpiCol}>
-            <Text style={[styles.kpiLabel, { color: subtitleColor }]}>Benchmark</Text>
+            <Text style={[styles.kpiLabel, { color: subtitleColor }]}>
+              {language === 'fr' ? 'Croissance' : 'Benchmark'}
+            </Text>
             <Text style={[styles.kpiValue, { color: '#3B82F6' }]}>+14.2% YoY</Text>
           </View>
         </View>
@@ -405,14 +417,14 @@ export default function PerformanceDistributionChart({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 22,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 24,
+    padding: 22,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
     shadowRadius: 16,
-    elevation: 4,
+    elevation: 2,
     width: '100%',
   },
   header: {
@@ -422,9 +434,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.4,
+    fontSize: 17,
+    fontWeight: '800' as const,
+    letterSpacing: -0.3,
   },
   subtitleRow: {
     flexDirection: 'row',
@@ -435,8 +447,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12.5,
+    fontWeight: '500' as const,
   },
   periodPillRow: {
     flexDirection: 'row',
@@ -449,13 +461,13 @@ const styles = StyleSheet.create({
   },
   periodPillText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700' as const,
   },
   chartWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginVertical: 12,
+    marginVertical: 10,
   },
   centerInfo: {
     position: 'absolute',
@@ -465,12 +477,12 @@ const styles = StyleSheet.create({
   },
   centerValue: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '800' as const,
     letterSpacing: -0.5,
   },
   centerLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700' as const,
     marginTop: 1,
     textAlign: 'center',
   },
@@ -478,13 +490,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
     marginTop: 6,
   },
   activeLegendLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   bulletDot: {
     width: 10,
@@ -492,28 +505,26 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   activeLegendLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
   activeLegendValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800' as const,
   },
   segmentChipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 8,
+    gap: 6,
+    marginTop: 12,
   },
   segmentChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
   chipDot: {
     width: 8,
@@ -521,18 +532,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   chipLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
   },
   chipPercent: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11.5,
+    fontWeight: '700' as const,
   },
   kpiFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 16,
-    marginTop: 12,
+    marginTop: 16,
+    paddingTop: 14,
     borderTopWidth: 1,
   },
   kpiCol: {
@@ -540,17 +551,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   kpiLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginBottom: 3,
+    fontSize: 10.5,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   kpiValue: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800' as const,
   },
   kpiDivider: {
     width: 1,
-    height: 24,
+    height: 20,
     backgroundColor: 'rgba(148, 163, 184, 0.2)',
   },
 });
