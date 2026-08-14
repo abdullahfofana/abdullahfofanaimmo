@@ -1319,8 +1319,8 @@ const SHADOW_ELEVATED = Platform.select({
 });
 
 const ds = StyleSheet.create({
-  root:    { flex: 1, flexDirection: 'row' },
-  main:    { flex: 1 },
+  root:    { flex: 1, flexDirection: 'row', width: '100%', minHeight: '100%' },
+  main:    { flex: 1, width: '100%' },
   content: { paddingHorizontal: 24, paddingTop: 20, gap: 20, paddingBottom: 24 },
 
   // ── Sidebar

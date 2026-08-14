@@ -46,6 +46,7 @@ import {
   Send,
   Bot,
   RefreshCw,
+  LogOut,
 } from 'lucide-react-native';
 import React, { useState, useMemo } from 'react';
 import {
@@ -70,6 +71,7 @@ import type { PropertySubmission } from '@/types/property';
 import { AnalyticsProvider, useAnalytics } from '@/providers/AnalyticsProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useAuth } from '@/providers/AuthProvider';
 
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminIntegrations from '@/components/admin/AdminIntegrations';
@@ -326,7 +328,10 @@ export default function AdminDashboardWrapper() {
 }
 
 function AdminDashboard() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, signOut } = useAuth();
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return user?.role === 'admin' || user?.role === 'agent' || false;
+  });
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [activeRole, setActiveRole] = useState<AdminRoleType>('Super Admin');
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -496,8 +501,12 @@ function AdminDashboard() {
     setReplyText(draft);
   };
 
-  const handleDownloadReport = (reportName: string) => {
-    showToast(`${language === 'fr' ? 'Téléchargement de' : 'Downloaded:'} ${reportName}`);
+  const handleLogout = async () => {
+    try {
+      if (signOut) await signOut();
+    } catch {}
+    setIsLoggedIn(false);
+    showToast(language === 'fr' ? 'Déconnexion réussie' : 'Logged out successfully');
   };
 
   if (!isLoggedIn) {
@@ -1920,6 +1929,16 @@ function AdminDashboard() {
               <Home size={18} color="#94A3B8" />
               <Text style={styles.backButtonText}>{t('admin_back_to_app')}</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.backButton, { marginTop: 4 }]}
+              onPress={handleLogout}
+              activeOpacity={0.8}
+            >
+              <LogOut size={16} color="#EF4444" />
+              <Text style={[styles.backButtonText, { color: '#EF4444' }]}>
+                {language === 'fr' ? 'Déconnexion' : 'Log out'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -2019,9 +2038,13 @@ function AdminDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    minHeight: '100%',
   },
   layoutWrapper: {
     flex: 1,
+    width: '100%',
+    minHeight: '100%',
     flexDirection: 'row',
   },
   toastContainer: {
