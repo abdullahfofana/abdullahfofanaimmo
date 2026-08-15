@@ -31,7 +31,6 @@ import {
   Users,
   Sparkles,
   Zap,
-  LayoutDashboard,
   AlertCircle,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
@@ -166,11 +165,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     }
   };
 
-  const handleQuickRole = (roleEmail: string) => {
-    setEmail(roleEmail);
-    setPassword('admin123');
-    setError('');
-  };
+
 
   return (
     <View style={styles.container}>
@@ -245,42 +240,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             </LinearGradient>
           </TouchableOpacity>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OU CONNEXION PAR RÔLE</Text>
-            <View style={styles.dividerLine} />
-          </View>
 
-          {/* Quick Role Selector Chips */}
-          <View style={styles.rolesRow}>
-            <TouchableOpacity
-              style={[styles.roleChip, email === 'admin@immoci.ci' && styles.roleChipActive]}
-              onPress={() => handleQuickRole('admin@immoci.ci')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.roleChipText, email === 'admin@immoci.ci' && styles.roleChipTextActive]}>
-                Super Admin
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.roleChip, email === 'ops@immoci.ci' && styles.roleChipActive]}
-              onPress={() => handleQuickRole('ops@immoci.ci')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.roleChipText, email === 'ops@immoci.ci' && styles.roleChipTextActive]}>
-                Opérations
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.roleChip, email === 'finance@immoci.ci' && styles.roleChipActive]}
-              onPress={() => handleQuickRole('finance@immoci.ci')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.roleChipText, email === 'finance@immoci.ci' && styles.roleChipTextActive]}>
-                Finance
-              </Text>
-            </TouchableOpacity>
-          </View>
 
           {/* Form */}
           <View style={styles.form}>
@@ -359,17 +319,6 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             >
               <Home size={15} color="#93C5FD" />
               <Text style={styles.footerLinkText}>Retour à l'accueil</Text>
-            </TouchableOpacity>
-
-            <View style={styles.footerDot} />
-
-            <TouchableOpacity
-              style={styles.footerLink}
-              onPress={() => router.push('/dashboard')}
-              activeOpacity={0.7}
-            >
-              <LayoutDashboard size={15} color="#93C5FD" />
-              <Text style={styles.footerLinkText}>Dashboard Client</Text>
             </TouchableOpacity>
           </View>
 
@@ -541,51 +490,7 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     letterSpacing: 0.2,
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  dividerText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748B',
-    letterSpacing: 0.8,
-  },
-  rolesRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 18,
-  },
-  roleChip: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: 9,
-    backgroundColor: 'rgba(30, 41, 59, 0.65)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-  },
-  roleChipActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.22)',
-    borderColor: '#3B82F6',
-  },
-  roleChipText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  roleChipTextActive: {
-    color: '#60A5FA',
-    fontWeight: '700',
-  },
+
   form: {
     gap: 14,
   },
