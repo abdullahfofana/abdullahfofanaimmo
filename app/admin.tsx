@@ -1923,7 +1923,7 @@ function AdminDashboard() {
           <View style={styles.sidebarFooter}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.replace('/dashboard')}
+              onPress={() => router.replace('/(tabs)/home')}
               activeOpacity={0.8}
             >
               <Home size={18} color="#94A3B8" />
@@ -2046,6 +2046,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: '100%',
     flexDirection: 'row',
+    alignItems: 'stretch',
   },
   toastContainer: {
     position: 'absolute',
@@ -2072,6 +2073,9 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 260,
+    flexShrink: 0,
+    height: '100%',
+    minHeight: '100vh' as any,
     borderRightWidth: 1,
     borderRightColor: 'rgba(255, 255, 255, 0.06)',
     paddingVertical: 20,
@@ -2170,6 +2174,7 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+    minHeight: '100%',
   },
   appBar: {
     flexDirection: 'row',
