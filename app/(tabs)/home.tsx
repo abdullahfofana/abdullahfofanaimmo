@@ -14,10 +14,11 @@ import {
   TrendingUp,
   ArrowRight,
 } from 'lucide-react-native';
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Animated,
   Dimensions,
+  Easing,
   Image,
   Platform,
   ScrollView,
@@ -59,9 +60,9 @@ export default function HomeScreen() {
   const [userName] = useState('Jean');
   const colors = useColors();
   
-  // Auto-scroll ref and state for recent listings
-  const recentListRef = useRef<any>(null);
+  // 3D Carousel state for recent listings
   const [recentIndex, setRecentIndex] = useState(0);
+  const carouselAnim = useRef(new Animated.Value(0)).current;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -180,30 +181,41 @@ export default function HomeScreen() {
     { key: 'commercial', label: t('search_commercial') || 'Commercial', icon: '🏬' },
   ];
 
-  // Auto-slider for recent listings (every 1.5s)
+  const recentItems = useMemo(() =>
+    (listingFilter === 'all'
+      ? allProperties
+      : allProperties.filter(p => p.status === listingFilter)
+    ).slice(0, 8),
+    [allProperties, listingFilter]
+  );
+
+  const goToSlide = useCallback((nextIndex: number) => {
+    Animated.timing(carouselAnim, {
+      toValue: nextIndex,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    setRecentIndex(nextIndex);
+  }, [carouselAnim]);
+
+  // Auto-advance every 3 seconds
   useEffect(() => {
-    const slideTimer = setInterval(() => {
-      if (recentListRef.current && allProperties.length > 0) {
-        setRecentIndex((prevIndex) => {
-          // Wrap around after 8 items or total length
-          const maxItems = Math.min(allProperties.length, 8);
-          const nextIndex = (prevIndex + 1) % maxItems;
-          
-          try {
-            recentListRef.current.scrollToIndex({
-              index: nextIndex,
-              animated: true,
-              viewPosition: 0,
-            });
-          } catch (e) {
-            // Ignore scroll errors if list isn't fully laid out yet
-          }
-          return nextIndex;
-        });
-      }
-    }, 1500);
-    return () => clearInterval(slideTimer);
-  }, [allProperties.length]);
+    if (recentItems.length === 0) return;
+    const timer = setInterval(() => {
+      setRecentIndex(prev => {
+        const next = (prev + 1) % recentItems.length;
+        Animated.timing(carouselAnim, {
+          toValue: next,
+          duration: 600,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+        return next;
+      });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [recentItems.length, carouselAnim]);
 
   return (
     <View style={styles.container}>
@@ -526,31 +538,99 @@ export default function HomeScreen() {
             })}
           </View>
 
-          <View style={{ width: '100%', marginTop: 8 }}>
-            <Animated.FlatList
-              ref={recentListRef}
-              data={(listingFilter === 'all'
-                ? allProperties
-                : allProperties.filter(p => p.status === listingFilter)
-              ).slice(0, 8)}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={isDesktop ? 340 : 280}
-              decelerationRate="fast"
-              contentContainerStyle={{ paddingHorizontal: contentPadding, gap: 16 }}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={{ width: isDesktop ? 324 : 264 }}>
-                  <PropertyCard property={item} />
-                </View>
-              )}
-              onScrollToIndexFailed={(info) => {
-                const wait = new Promise(resolve => setTimeout(resolve, 500));
-                wait.then(() => {
-                  recentListRef.current?.scrollToIndex({ index: info.index, animated: true });
+          {/* 3D Carousel */}
+          <View style={{ width: '100%', marginTop: 12, overflow: 'hidden' }}>
+            <View style={{
+              height: isDesktop ? 380 : 340,
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+            }}>
+              {recentItems.map((item, i) => {
+                const offset = i - recentIndex;
+                const CARD_W = isDesktop ? 300 : 250;
+                const GAP = isDesktop ? 320 : 268;
+                // translateX based on offset from active
+                const translateX = carouselAnim.interpolate({
+                  inputRange: [i - 1, i, i + 1],
+                  outputRange: [GAP, 0, -GAP],
+                  extrapolate: 'clamp',
                 });
-              }}
-            />
+                // scale: center=1, sides=0.84
+                const scale = carouselAnim.interpolate({
+                  inputRange: [i - 1, i, i + 1],
+                  outputRange: [0.82, 1, 0.82],
+                  extrapolate: 'clamp',
+                });
+                // opacity: center=1, sides=0.55
+                const opacity = carouselAnim.interpolate({
+                  inputRange: [i - 1, i, i + 1],
+                  outputRange: [0.55, 1, 0.55],
+                  extrapolate: 'clamp',
+                });
+                // rotateY: center=0deg, left=18deg, right=-18deg
+                const rotateY = carouselAnim.interpolate({
+                  inputRange: [i - 1, i, i + 1],
+                  outputRange: ['18deg', '0deg', '-18deg'],
+                  extrapolate: 'clamp',
+                });
+                // zIndex: active card on top
+                const isActive = i === recentIndex;
+                const isVisible = Math.abs(offset) <= 1;
+                if (!isVisible) return null;
+                return (
+                  <Animated.View
+                    key={item.id}
+                    style={[
+                      {
+                        position: 'absolute',
+                        width: CARD_W,
+                        zIndex: isActive ? 10 : 5,
+                      },
+                      {
+                        transform: [
+                          { perspective: 900 },
+                          { translateX },
+                          { scale },
+                          { rotateY },
+                        ],
+                        opacity,
+                      },
+                    ]}
+                  >
+                    <TouchableOpacity
+                      activeOpacity={isActive ? 1 : 0.8}
+                      onPress={() => !isActive && goToSlide(i)}
+                    >
+                      <PropertyCard property={item} />
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
+            </View>
+
+            {/* Dot indicators */}
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 14,
+              marginBottom: 4,
+            }}>
+              {recentItems.map((_, i) => (
+                <TouchableOpacity key={i} onPress={() => goToSlide(i)} activeOpacity={0.7}>
+                  <Animated.View
+                    style={{
+                      width: i === recentIndex ? 22 : 7,
+                      height: 7,
+                      borderRadius: 4,
+                      backgroundColor: i === recentIndex ? colors.primary : (colors.border || '#CBD5E1'),
+                    }}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
 
