@@ -319,6 +319,39 @@ const mockTickets: SupportTicket[] = [
   },
 ];
 
+class AdminErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: string }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: '' };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error: String(error?.message || error) };
+  }
+  componentDidCatch(error: any, info: any) {
+    console.error('[AdminDashboard] Render error:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <Text style={{ color: '#EF4444', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>⚠️ Admin Dashboard Error</Text>
+          <Text style={{ color: '#94A3B8', fontSize: 13, textAlign: 'center', marginBottom: 24 }}>{this.state.error}</Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#059669', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
+            onPress={() => this.setState({ hasError: false, error: '' })}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function AdminDashboardWrapper() {
   return (
     <View style={{
@@ -327,12 +360,15 @@ export default function AdminDashboardWrapper() {
       minHeight: '100%',
       ...(Platform.OS === 'web' ? { height: '100vh' as any } : {}),
     }}>
-      <AnalyticsProvider>
-        <AdminDashboard />
-      </AnalyticsProvider>
+      <AdminErrorBoundary>
+        <AnalyticsProvider>
+          <AdminDashboard />
+        </AnalyticsProvider>
+      </AdminErrorBoundary>
     </View>
   );
 }
+
 
 function AdminDashboard() {
   const { user, signOut } = useAuth();
