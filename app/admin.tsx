@@ -321,9 +321,16 @@ const mockTickets: SupportTicket[] = [
 
 export default function AdminDashboardWrapper() {
   return (
-    <AnalyticsProvider>
-      <AdminDashboard />
-    </AnalyticsProvider>
+    <View style={{
+      flex: 1,
+      width: '100%',
+      minHeight: '100%',
+      ...(Platform.OS === 'web' ? { height: '100vh' as any } : {}),
+    }}>
+      <AnalyticsProvider>
+        <AdminDashboard />
+      </AnalyticsProvider>
+    </View>
   );
 }
 
@@ -510,7 +517,16 @@ function AdminDashboard() {
   };
 
   if (!isLoggedIn) {
-    return <AdminLogin onLogin={() => setIsLoggedIn(true)} />;
+    return (
+      <View style={{
+        flex: 1,
+        width: '100%',
+        minHeight: '100%',
+        ...(Platform.OS === 'web' ? { height: '100vh' as any } : {}),
+      }}>
+        <AdminLogin onLogin={() => setIsLoggedIn(true)} />
+      </View>
+    );
   }
 
   // Stitch Tonal Metric Cards
@@ -1474,7 +1490,11 @@ function AdminDashboard() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: stitchTheme.bg }]}>
+    <View style={[
+      styles.container,
+      { backgroundColor: stitchTheme.bg },
+      Platform.OS === 'web' ? { height: '100vh' as any, overflow: 'hidden' } : {},
+    ]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Toast Alert */}
@@ -1875,7 +1895,11 @@ function AdminDashboard() {
       {/* ── Main Layout: Sidebar + Content ─────────────────────────────────── */}
       <View style={styles.layoutWrapper}>
         {/* Stitch Navigation Rail */}
-        <View style={[styles.sidebar, { backgroundColor: stitchTheme.sidebarBg }]}>
+        <View style={[
+          styles.sidebar,
+          { backgroundColor: stitchTheme.sidebarBg },
+          Platform.OS === 'web' ? { height: '100%' as any } : {},
+        ]}>
           {/* Sidebar Header Brand */}
           <View style={styles.sidebarHeader}>
             <View style={styles.logoBadge}>
@@ -2074,8 +2098,6 @@ const styles = StyleSheet.create({
   sidebar: {
     width: 260,
     flexShrink: 0,
-    height: '100%',
-    minHeight: '100vh' as any,
     borderRightWidth: 1,
     borderRightColor: 'rgba(255, 255, 255, 0.06)',
     paddingVertical: 20,
