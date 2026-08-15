@@ -354,12 +354,7 @@ class AdminErrorBoundary extends React.Component<
 
 export default function AdminDashboardWrapper() {
   return (
-    <View style={{
-      flex: 1,
-      width: '100%',
-      minHeight: '100%',
-      ...(Platform.OS === 'web' ? { height: '100vh' as any } : {}),
-    }}>
+    <View style={{ flex: 1, width: '100%' }}>
       <AdminErrorBoundary>
         <AnalyticsProvider>
           <AdminDashboard />
@@ -554,12 +549,7 @@ function AdminDashboard() {
 
   if (!isLoggedIn) {
     return (
-      <View style={{
-        flex: 1,
-        width: '100%',
-        minHeight: '100%',
-        ...(Platform.OS === 'web' ? { height: '100vh' as any } : {}),
-      }}>
+      <View style={{ flex: 1, width: '100%' }}>
         <AdminLogin onLogin={() => setIsLoggedIn(true)} />
       </View>
     );
@@ -1526,11 +1516,7 @@ function AdminDashboard() {
   };
 
   return (
-    <View style={[
-      styles.container,
-      { backgroundColor: stitchTheme.bg },
-      Platform.OS === 'web' ? { height: '100vh' as any, overflow: 'hidden' } : {},
-    ]}>
+    <View style={[styles.container, { backgroundColor: stitchTheme.bg }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Toast Alert */}
