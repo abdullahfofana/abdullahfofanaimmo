@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Platform, Alert } from 'react-native';
-import { Search, Filter, MoreHorizontal, Edit, Trash2, X, Shield, Mail } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import Spacing from '@/constants/spacing';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, Platform } from 'react-native';
+import { Search, Filter, MoreHorizontal, Edit, Trash2, X, Shield, Mail, Plus, UserPlus, Check } from 'lucide-react-native';
+import { useTheme } from '@/providers/ThemeProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface UserData {
   id: string;
@@ -17,23 +17,35 @@ interface UserData {
 }
 
 const mockUsers: UserData[] = [
-  { id: '1', name: 'John Doe', email: 'john@example.com', type: 'Seller', status: 'Active', propertiesCount: 3, joined: '2024-01-10', lastActive: '2024-06-15', avatar: 'JD' },
-  { id: '2', name: 'Jane Smith', email: 'jane@example.com', type: 'Buyer', status: 'Active', propertiesCount: 0, joined: '2024-02-05', lastActive: '2024-06-16', avatar: 'JS' },
-  { id: '3', name: 'Bob Johnson', email: 'bob@example.com', type: 'Landlord', status: 'Pending', propertiesCount: 1, joined: '2024-03-01', lastActive: '2024-06-14', avatar: 'BJ' },
-  { id: '4', name: 'Alice Williams', email: 'alice@example.com', type: 'Renter', status: 'Inactive', propertiesCount: 0, joined: '2024-03-20', lastActive: '2024-05-30', avatar: 'AW' },
-  { id: '5', name: 'David Brown', email: 'david@example.com', type: 'Seller', status: 'Active', propertiesCount: 12, joined: '2023-11-15', lastActive: '2024-06-16', avatar: 'DB' },
+  { id: '1', name: 'Kouassi Marc', email: 'k.marc@immoci.ci', type: 'Seller', status: 'Active', propertiesCount: 8, joined: '2024-01-10', lastActive: 'Il y a 5 min', avatar: 'KM' },
+  { id: '2', name: 'Awa Traoré', email: 'awa.traore@gmail.com', type: 'Buyer', status: 'Active', propertiesCount: 0, joined: '2024-02-05', lastActive: 'Aujourd’hui', avatar: 'AT' },
+  { id: '3', name: 'Bamba Souleymane', email: 'bamba.s@cabinet-immo.ci', type: 'Landlord', status: 'Pending', propertiesCount: 3, joined: '2024-03-01', lastActive: 'Hier', avatar: 'BS' },
+  { id: '4', name: 'Nathalie Koffi', email: 'nathalie.k@yahoo.fr', type: 'Renter', status: 'Inactive', propertiesCount: 0, joined: '2024-03-20', lastActive: 'Il y a 2 sem.', avatar: 'NK' },
+  { id: '5', name: 'Ibrahim Diarra', email: 'diarra.ibrahim@immoci.ci', type: 'Seller', status: 'Active', propertiesCount: 15, joined: '2023-11-15', lastActive: 'Il y a 10 min', avatar: 'ID' },
 ];
 
-import { trpc } from '@/lib/trpc';
-
 export default function UserManagement() {
-  const { data: usersData, isLoading } = trpc.users.list.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
+  const { activeTheme } = useTheme();
+  const isDark = activeTheme === 'dark';
+  const { language } = useLanguage();
+
+  const stitch = {
+    bg: isDark ? '#0B0F19' : '#F6F8FC',
+    surface: isDark ? '#161F30' : '#FFFFFF',
+    surfaceHover: isDark ? '#1E293B' : '#F8FAFC',
+    cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    textPrimary: isDark ? '#F8FAFC' : '#0F172A',
+    textSecondary: isDark ? '#94A3B8' : '#64748B',
+    textMuted: isDark ? '#64748B' : '#94A3B8',
+    inputBg: isDark ? '#1E293B' : '#F8FAFC',
+    inputBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+    tableHeaderBg: isDark ? '#111827' : '#F8FAFC',
+    tableRowBorder: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+    primary: '#059669',
+    primaryLight: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+  };
 
   const [userList, setUserList] = useState<UserData[]>(mockUsers);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'All' | 'Seller' | 'Buyer' | 'Landlord' | 'Renter'>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Pending' | 'Inactive'>('All');
@@ -53,7 +65,7 @@ export default function UserManagement() {
   });
 
   const filteredUsers = useMemo(() => {
-    return userList.filter(user => {
+    return userList.filter((user) => {
       const matchesSearch =
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -97,7 +109,7 @@ export default function UserManagement() {
         status: userForm.status || 'Active',
         propertiesCount: 0,
         joined: new Date().toISOString().split('T')[0],
-        lastActive: 'Just now',
+        lastActive: 'À l’instant',
         avatar: userForm.name!.substring(0, 2).toUpperCase(),
       };
       setUserList((prev) => [newUser, ...prev]);
@@ -110,669 +122,527 @@ export default function UserManagement() {
     setShowActionMenu(true);
   };
 
+  const getTypeStyle = (type: UserData['type']) => {
+    switch (type) {
+      case 'Seller':
+        return { bg: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF', text: '#3B82F6' };
+      case 'Buyer':
+        return { bg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', text: '#10B981' };
+      case 'Landlord':
+        return { bg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7', text: '#F59E0B' };
+      default:
+        return { bg: isDark ? 'rgba(139, 92, 246, 0.15)' : '#F5F3FF', text: '#8B5CF6' };
+    }
+  };
+
+  const getStatusStyle = (status: UserData['status']) => {
+    switch (status) {
+      case 'Active':
+        return { bg: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', text: '#10B981' };
+      case 'Pending':
+        return { bg: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7', text: '#F59E0B' };
+      default:
+        return { bg: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2', text: '#EF4444' };
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Page Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Manage Users</Text>
-          <Text style={styles.subtitle}>Manage all users on the platform</Text>
+          <Text style={[styles.title, { color: stitch.textPrimary }]}>
+            {language === 'fr' ? 'Gestion des Utilisateurs' : 'User Management'}
+          </Text>
+          <Text style={[styles.subtitle, { color: stitch.textSecondary }]}>
+            {language === 'fr' ? 'Gérez les comptes acheteurs, vendeurs, bailleurs et locataires' : 'Manage all users, permissions and roles'}
+          </Text>
         </View>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: stitch.primary }]}
           onPress={() => {
             setUserForm({ name: '', email: '', type: 'Buyer', status: 'Active' });
-            setSelectedUser({ id: 'new', joined: new Date().toISOString().split('T')[0], lastActive: 'Just now', propertiesCount: 0 } as UserData);
+            setSelectedUser({ id: 'new', joined: new Date().toISOString().split('T')[0], lastActive: 'À l’instant', propertiesCount: 0 } as UserData);
             setShowEditModal(true);
           }}
+          activeOpacity={0.85}
         >
-          <Text style={styles.addButtonText}>+ Add User</Text>
+          <Plus size={16} color="#FFFFFF" />
+          <Text style={styles.addButtonText}>{language === 'fr' ? 'Ajouter Utilisateur' : 'Add User'}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Filter Bar */}
       <View style={styles.filterBar}>
-        <View style={styles.searchContainer}>
-          <Search size={18} color={Colors.textSecondary} />
+        <View style={[styles.searchContainer, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+          <Search size={18} color={stitch.textSecondary} />
           <TextInput
-            placeholder="Search users..."
-            style={styles.searchInput}
-            placeholderTextColor={Colors.textSecondary}
+            placeholder={language === 'fr' ? 'Rechercher un utilisateur...' : 'Search users...'}
+            style={[styles.searchInput, { color: stitch.textPrimary }]}
+            placeholderTextColor={stitch.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
         <TouchableOpacity
-          style={[styles.filterButton, (typeFilter !== 'All' || statusFilter !== 'All') && styles.filterButtonActive]}
+          style={[
+            styles.filterButton,
+            { backgroundColor: stitch.surface, borderColor: stitch.cardBorder },
+            (typeFilter !== 'All' || statusFilter !== 'All') && { borderColor: stitch.primary, backgroundColor: stitch.primaryLight },
+          ]}
           onPress={() => setShowFilterModal(true)}
+          activeOpacity={0.8}
         >
-          <Filter size={18} color={Colors.text} />
-          <Text style={styles.filterButtonText}>Filters</Text>
+          <Filter size={16} color={typeFilter !== 'All' || statusFilter !== 'All' ? stitch.primary : stitch.textPrimary} />
+          <Text style={[styles.filterButtonText, { color: typeFilter !== 'All' || statusFilter !== 'All' ? stitch.primary : stitch.textPrimary }]}>
+            {language === 'fr' ? 'Filtres' : 'Filters'}
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* User Table */}
-      <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.tableHead, { flex: 2 }]}>User</Text>
-          <Text style={[styles.tableHead, { flex: 2 }]}>Email</Text>
-          <Text style={[styles.tableHead, { flex: 1 }]}>Type</Text>
-          <Text style={[styles.tableHead, { flex: 1 }]}>Status</Text>
-          <Text style={[styles.tableHead, { flex: 1, textAlign: 'center' }]}>Properties</Text>
-          <Text style={[styles.tableHead, { flex: 1.5 }]}>Joined</Text>
-          <Text style={[styles.tableHead, { flex: 1.5 }]}>Last Active</Text>
-          <Text style={[styles.tableHead, { flex: 0.5, textAlign: 'right' }]}>Action</Text>
+      <View style={[styles.tableContainer, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+        <View style={[styles.tableHeader, { backgroundColor: stitch.tableHeaderBg, borderBottomColor: stitch.cardBorder }]}>
+          <Text style={[styles.tableHead, { flex: 2.2, color: stitch.textSecondary }]}>Utilisateur</Text>
+          <Text style={[styles.tableHead, { flex: 2, color: stitch.textSecondary }]}>Email</Text>
+          <Text style={[styles.tableHead, { flex: 1.2, color: stitch.textSecondary }]}>Type</Text>
+          <Text style={[styles.tableHead, { flex: 1, color: stitch.textSecondary }]}>Statut</Text>
+          <Text style={[styles.tableHead, { flex: 1, textAlign: 'center', color: stitch.textSecondary }]}>Biens</Text>
+          <Text style={[styles.tableHead, { flex: 1.3, color: stitch.textSecondary }]}>Inscrit le</Text>
+          <Text style={[styles.tableHead, { flex: 1.3, color: stitch.textSecondary }]}>Dernière activité</Text>
+          <Text style={[styles.tableHead, { flex: 0.6, textAlign: 'right', color: stitch.textSecondary }]}>Actions</Text>
         </View>
 
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No users found matching your criteria.</Text>
+            <Text style={[styles.emptyStateText, { color: stitch.textSecondary }]}>
+              {language === 'fr' ? 'Aucun utilisateur trouvé.' : 'No users found matching your criteria.'}
+            </Text>
           </View>
         ) : (
-          filteredUsers.map((user) => (
-            <View key={user.id} style={styles.tableRow}>
-              {/* User Column */}
-              <View style={[styles.tableCellView, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {user.avatar || user.name.substring(0, 2).toUpperCase()}
+          filteredUsers.map((user) => {
+            const typeStyle = getTypeStyle(user.type);
+            const statusStyle = getStatusStyle(user.status);
+
+            return (
+              <View key={user.id} style={[styles.tableRow, { borderBottomColor: stitch.tableRowBorder }]}>
+                {/* User Column */}
+                <View style={[styles.tableCellView, { flex: 2.2, flexDirection: 'row', alignItems: 'center', gap: 10 }]}>
+                  <View style={[styles.avatar, { backgroundColor: stitch.primaryLight }]}>
+                    <Text style={[styles.avatarText, { color: stitch.primary }]}>
+                      {user.avatar || user.name.substring(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={[styles.userName, { color: stitch.textPrimary }]} numberOfLines={1}>
+                    {user.name}
                   </Text>
                 </View>
-                <View>
-                  <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
+
+                {/* Email Column */}
+                <Text style={[styles.tableCell, { flex: 2, color: stitch.textSecondary }]} numberOfLines={1}>
+                  {user.email}
+                </Text>
+
+                {/* Type Column */}
+                <View style={[styles.tableCellView, { flex: 1.2 }]}>
+                  <View style={[styles.pill, { backgroundColor: typeStyle.bg }]}>
+                    <Text style={[styles.pillText, { color: typeStyle.text }]}>{user.type}</Text>
+                  </View>
                 </View>
-              </View>
 
-              {/* Email Column */}
-              <Text style={[styles.tableCell, { flex: 2 }]} numberOfLines={1}>{user.email}</Text>
-
-              {/* Type Column */}
-              <View style={[styles.tableCellView, { flex: 1 }]}>
-                <View style={[
-                  styles.pill,
-                  user.type === 'Seller' ? styles.pillSeller :
-                    user.type === 'Buyer' ? styles.pillBuyer :
-                      user.type === 'Landlord' ? styles.pillLandlord : styles.pillRenter
-                ]}>
-                  <Text style={[
-                    styles.pillText,
-                    user.type === 'Seller' ? styles.pillTextSeller :
-                      user.type === 'Buyer' ? styles.pillTextBuyer :
-                        user.type === 'Landlord' ? styles.pillTextLandlord : styles.pillTextRenter
-                  ]}>
-                    {user.type}
-                  </Text>
+                {/* Status Column */}
+                <View style={[styles.tableCellView, { flex: 1 }]}>
+                  <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                    <Text style={[styles.statusText, { color: statusStyle.text }]}>{user.status}</Text>
+                  </View>
                 </View>
+
+                {/* Properties Column */}
+                <Text style={[styles.tableCell, { flex: 1, textAlign: 'center', color: stitch.textPrimary }]}>
+                  {user.propertiesCount}
+                </Text>
+
+                {/* Joined Column */}
+                <Text style={[styles.tableCell, { flex: 1.3, color: stitch.textMuted }]}>{user.joined}</Text>
+
+                {/* Last Active Column */}
+                <Text style={[styles.tableCell, { flex: 1.3, color: stitch.textMuted }]}>{user.lastActive}</Text>
+
+                {/* Actions Column */}
+                <TouchableOpacity
+                  style={[styles.tableCellView, { flex: 0.6, alignItems: 'flex-end' }]}
+                  onPress={() => openActions(user)}
+                >
+                  <MoreHorizontal size={18} color={stitch.textSecondary} />
+                </TouchableOpacity>
               </View>
-
-              {/* Status Column */}
-              <View style={[styles.tableCellView, { flex: 1 }]}>
-                <View style={[
-                  styles.statusBadge,
-                  user.status === 'Active' ? styles.statusActive :
-                    user.status === 'Pending' ? styles.statusPending : styles.statusInactive
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    user.status === 'Active' ? styles.statusTextActive :
-                      user.status === 'Pending' ? styles.statusTextPending : styles.statusTextInactive
-                  ]}>{user.status}</Text>
-                </View>
-              </View>
-
-              {/* Properties Column */}
-              <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>{user.propertiesCount}</Text>
-
-              {/* Joined Column */}
-              <Text style={[styles.tableCell, { flex: 1.5 }]}>{user.joined}</Text>
-
-              {/* Last Active Column */}
-              <Text style={[styles.tableCell, { flex: 1.5 }]}>{user.lastActive}</Text>
-
-              {/* Actions Column */}
-              <TouchableOpacity
-                style={[styles.tableCellView, { flex: 0.5, alignItems: 'flex-end' }]}
-                onPress={() => openActions(user)}
-              >
-                <MoreHorizontal size={18} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
 
       {/* Edit User Modal */}
-      <Modal
-        visible={showEditModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowEditModal(false)}
-      >
+      <Modal visible={showEditModal} transparent animationType="fade" onRequestClose={() => setShowEditModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContent, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: stitch.cardBorder }]}>
               <View>
-                <Text style={styles.modalTitle}>Edit User</Text>
-                <Text style={styles.modalSubtitle}>Make changes to the user&apos;s profile information here.</Text>
+                <Text style={[styles.modalTitle, { color: stitch.textPrimary }]}>
+                  {selectedUser?.id === 'new' ? 'Ajouter Utilisateur' : 'Modifier Utilisateur'}
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: stitch.textSecondary }]}>
+                  Mettez à jour les informations du profil
+                </Text>
               </View>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <X size={24} color={Colors.textSecondary} />
+                <X size={20} color={stitch.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Name</Text>
+                <Text style={[styles.label, { color: stitch.textPrimary }]}>Nom complet</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
                   value={userForm.name}
-                  onChangeText={(t) => setUserForm(prev => ({ ...prev, name: t }))}
+                  onChangeText={(t) => setUserForm((prev) => ({ ...prev, name: t }))}
+                  placeholder="Ex: Kouamé Jean"
+                  placeholderTextColor={stitch.textMuted}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={[styles.label, { color: stitch.textPrimary }]}>Adresse Email</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
                   value={userForm.email}
-                  onChangeText={(t) => setUserForm(prev => ({ ...prev, email: t }))}
+                  onChangeText={(t) => setUserForm((prev) => ({ ...prev, email: t }))}
                   keyboardType="email-address"
+                  placeholder="email@immoci.ci"
+                  placeholderTextColor={stitch.textMuted}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Type</Text>
-                <View style={styles.selectContainer}>
-                  <TouchableOpacity
-                    style={styles.selectButton}
-                    onPress={() => {
-                      const types: UserData['type'][] = ['Seller', 'Buyer', 'Landlord', 'Renter'];
-                      const nextIndex = (types.indexOf(userForm.type as any) + 1) % types.length;
-                      setUserForm(prev => ({ ...prev, type: types[nextIndex] }));
-                    }}
-                  >
-                    <Text style={styles.selectButtonText}>{userForm.type}</Text>
-                    {/* In a real app, this would trigger a dropdown */}
-                  </TouchableOpacity>
+                <Text style={[styles.label, { color: stitch.textPrimary }]}>Type de compte</Text>
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                  {(['Seller', 'Buyer', 'Landlord', 'Renter'] as UserData['type'][]).map((t) => (
+                    <TouchableOpacity
+                      key={t}
+                      style={[
+                        styles.choicePill,
+                        { borderColor: stitch.inputBorder, backgroundColor: stitch.inputBg },
+                        userForm.type === t && { borderColor: stitch.primary, backgroundColor: stitch.primaryLight },
+                      ]}
+                      onPress={() => setUserForm((prev) => ({ ...prev, type: t }))}
+                    >
+                      <Text style={[{ fontSize: 13, color: stitch.textSecondary }, userForm.type === t && { color: stitch.primary, fontWeight: '700' }]}>
+                        {t}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Status</Text>
-                <View style={styles.selectContainer}>
-                  <TouchableOpacity
-                    style={styles.selectButton}
-                    onPress={() => {
-                      const statuses: UserData['status'][] = ['Active', 'Pending', 'Inactive'];
-                      const nextIndex = (statuses.indexOf(userForm.status as any) + 1) % statuses.length;
-                      setUserForm(prev => ({ ...prev, status: statuses[nextIndex] }));
-                    }}
-                  >
-                    <Text style={styles.selectButtonText}>{userForm.status}</Text>
-                  </TouchableOpacity>
+                <Text style={[styles.label, { color: stitch.textPrimary }]}>Statut</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {(['Active', 'Pending', 'Inactive'] as UserData['status'][]).map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={[
+                        styles.choicePill,
+                        { borderColor: stitch.inputBorder, backgroundColor: stitch.inputBg },
+                        userForm.status === s && { borderColor: stitch.primary, backgroundColor: stitch.primaryLight },
+                      ]}
+                      onPress={() => setUserForm((prev) => ({ ...prev, status: s }))}
+                    >
+                      <Text style={[{ fontSize: 13, color: stitch.textSecondary }, userForm.status === s && { color: stitch.primary, fontWeight: '700' }]}>
+                        {s}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
             </View>
 
-            <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowEditModal(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+            <View style={[styles.modalFooter, { borderTopColor: stitch.cardBorder }]}>
+              <TouchableOpacity style={[styles.cancelButton, { borderColor: stitch.inputBorder }]} onPress={() => setShowEditModal(false)}>
+                <Text style={[styles.cancelButtonText, { color: stitch.textSecondary }]}>Annuler</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={saveUser}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
+              <TouchableOpacity style={[styles.saveButton, { backgroundColor: stitch.primary }]} onPress={saveUser}>
+                <Text style={styles.saveButtonText}>Enregistrer</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Action Menu Modal (Simplified implementation of a dropdown/popover) */}
-      <Modal
-        visible={showActionMenu}
-        transparent
-        animationType="none"
-        onRequestClose={() => setShowActionMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.actionMenuOverlay}
-          activeOpacity={1}
-          onPress={() => setShowActionMenu(false)}
-        >
-          <View style={styles.actionMenu}>
-            <TouchableOpacity style={styles.actionMenuItem} onPress={() => { setShowActionMenu(false); /* Nav to profile */ }}>
-              <Shield size={16} color={Colors.text} />
-              <Text style={styles.actionMenuText}>View Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionMenuItem} onPress={() => { setShowActionMenu(false); /* Send Message */ }}>
-              <Mail size={16} color={Colors.text} />
-              <Text style={styles.actionMenuText}>Send Message</Text>
-            </TouchableOpacity>
+      {/* Action Menu Modal */}
+      <Modal visible={showActionMenu} transparent animationType="none" onRequestClose={() => setShowActionMenu(false)}>
+        <TouchableOpacity style={styles.actionMenuOverlay} activeOpacity={1} onPress={() => setShowActionMenu(false)}>
+          <View style={[styles.actionMenu, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
             <TouchableOpacity style={styles.actionMenuItem} onPress={() => selectedUser && handleEditUser(selectedUser)}>
-              <Edit size={16} color={Colors.text} />
-              <Text style={styles.actionMenuText}>Edit User</Text>
+              <Edit size={16} color={stitch.textPrimary} />
+              <Text style={[styles.actionMenuText, { color: stitch.textPrimary }]}>Modifier</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionMenuItem, styles.actionMenuDelete]} onPress={() => selectedUser && handleDeactivateUser(selectedUser.id)}>
-              <Trash2 size={16} color={Colors.error} />
-              <Text style={styles.actionMenuDeleteText}>Delete</Text>
+            <TouchableOpacity
+              style={[styles.actionMenuItem, { borderTopWidth: 1, borderTopColor: stitch.cardBorder }]}
+              onPress={() => selectedUser && handleDeactivateUser(selectedUser.id)}
+            >
+              <Trash2 size={16} color="#EF4444" />
+              <Text style={[styles.actionMenuText, { color: '#EF4444' }]}>Supprimer</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
-
-      {/* Filter Modal */}
-      <Modal visible={showFilterModal} transparent animationType="fade" onRequestClose={() => setShowFilterModal(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowFilterModal(false)}>
-          <View style={styles.filterModalContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Users</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}><X size={20} color={Colors.textSecondary} /></TouchableOpacity>
-            </View>
-            <View style={styles.filterSection}>
-              <Text style={styles.label}>Type</Text>
-              <View style={styles.filterOptions}>
-                {(['All', 'Seller', 'Buyer', 'Landlord', 'Renter'] as const).map(t => (
-                  <TouchableOpacity key={t} style={[styles.filterChip, typeFilter === t && styles.filterChipActive]} onPress={() => setTypeFilter(t)}>
-                    <Text style={[styles.filterChipText, typeFilter === t && styles.filterChipTextActive]}>{t}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <View style={styles.filterSection}>
-              <Text style={styles.label}>Status</Text>
-              <View style={styles.filterOptions}>
-                {(['All', 'Active', 'Pending', 'Inactive'] as const).map(s => (
-                  <TouchableOpacity key={s} style={[styles.filterChip, statusFilter === s && styles.filterChipActive]} onPress={() => setStatusFilter(s)}>
-                    <Text style={[styles.filterChipText, statusFilter === s && styles.filterChipTextActive]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.lg,
+    gap: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: '#111827', // Gray 900
-    letterSpacing: -0.5,
+    fontSize: 22,
+    fontWeight: '700',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6B7280', // Gray 500
-    marginTop: 4,
+    fontSize: 13,
+    marginTop: 2,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   addButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.primary,
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '700',
   },
-
-  // Filter Bar
   filterBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    gap: 12,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: '#E5E7EB', // Gray 200
-    borderRadius: 8,
-    paddingHorizontal: Spacing.md,
-    height: 40,
-    width: 320,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 42,
+    flex: 1,
+    maxWidth: 340,
   },
   searchInput: {
     flex: 1,
-    marginLeft: Spacing.sm,
-    fontSize: 14,
-    color: '#111827',
+    marginLeft: 8,
+    fontSize: 13.5,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.white,
+    gap: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: Spacing.lg,
-    borderRadius: 8,
-    height: 40,
-  },
-  filterButtonActive: {
-    borderColor: Colors.primary,
-    backgroundColor: '#FFF7ED', // Orange 50 (if primary is orange)
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    height: 42,
   },
   filterButtonText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#374151', // Gray 700
+    fontSize: 13.5,
+    fontWeight: '600',
   },
-
-  // Table
   tableContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F9FAFB', // Gray 50
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 18,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   tableHead: {
     fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#6B7280', // Gray 500
-    textTransform: 'none', // Keep it sentence case or normal
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6', // Gray 100
   },
   tableCell: {
-    fontSize: 14,
-    color: '#374151', // Gray 700
+    fontSize: 13,
   },
   tableCellView: {
+    justifyContent: 'center',
   },
   avatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 12,
-    fontWeight: '600' as const,
-    color: '#4B5563', // Gray 600
+    fontWeight: '700',
   },
   userName: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#111827', // Gray 900
+    fontSize: 13.5,
+    fontWeight: '600',
   },
-
-  // Pills
   pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    borderWidth: 1,
-  },
-  pillSeller: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  pillBuyer: {
-    backgroundColor: '#ECFDF5', // Emerald 50
-    borderColor: '#D1FAE5', // Emerald 100
-  },
-  pillLandlord: {
-    backgroundColor: '#F0F9FF', // Sky 50
-    borderColor: '#E0F2FE', // Sky 100
-  },
-  pillRenter: {
-    backgroundColor: '#FAF5FF', // Purple 50
-    borderColor: '#F3E8FF', // Purple 100
   },
   pillText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
+    fontSize: 11.5,
+    fontWeight: '600',
   },
-  pillTextSeller: {
-    color: '#374151',
-  },
-  pillTextBuyer: {
-    color: '#059669', // Emerald 600
-  },
-  pillTextLandlord: {
-    color: '#0284C7', // Sky 600
-  },
-  pillTextRenter: {
-    color: '#9333EA', // Purple 600
-  },
-
-  // Status Badges
   statusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingVertical: 3,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
-  statusActive: { backgroundColor: '#EFF6FF' }, // Blue 50
-  statusPending: { backgroundColor: '#FFFBEB' }, // Amber 50
-  statusInactive: { backgroundColor: '#FEF2F2' }, // Red 50
-
-  statusText: { fontSize: 12, fontWeight: '500' as const },
-  statusTextActive: { color: '#2563EB' }, // Blue 600
-  statusTextPending: { color: '#D97706' }, // Amber 600
-  statusTextInactive: { color: '#DC2626' }, // Red 600
-
+  statusText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
   emptyState: {
-    padding: Spacing.xl * 2,
+    padding: 36,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyStateText: {
-    color: '#6B7280',
+    fontSize: 13,
   },
-
-  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
   modalContent: {
-    backgroundColor: Colors.white,
     width: '100%',
-    maxWidth: 500,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    maxWidth: 460,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: Spacing.xl,
+    alignItems: 'center',
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: '#111827',
+    fontSize: 16,
+    fontWeight: '700',
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 4,
+    fontSize: 12.5,
+    marginTop: 2,
   },
   modalBody: {
-    padding: Spacing.xl,
-    gap: Spacing.lg,
+    padding: 20,
+    gap: 14,
   },
   formGroup: {
     gap: 6,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#374151',
+    fontSize: 13,
+    fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
+    fontSize: 13,
   },
-  selectContainer: {
+  choicePill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  selectButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  selectButtonText: {
-    fontSize: 14,
-    color: '#111827',
   },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
-    padding: Spacing.xl,
-    backgroundColor: '#F9FAFB',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    gap: 10,
+    padding: 16,
+    borderTopWidth: 1,
   },
   cancelButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB', // Gray 300
-    backgroundColor: Colors.white,
   },
   cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: '#374151',
+    fontSize: 13,
+    fontWeight: '600',
   },
   saveButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 6,
-    backgroundColor: '#0F172A', // Slate 900
+    borderRadius: 8,
   },
   saveButtonText: {
-    fontSize: 14,
-    fontWeight: '500' as const,
-    color: Colors.white,
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
-
-  // Action Menu
   actionMenuOverlay: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionMenu: {
-    position: 'absolute',
-    // In a real app we'd calculate this, but for now fixed somewhat centered/right
-    top: '40%',
-    right: '10%',
-    width: 200,
-    backgroundColor: Colors.white,
-    borderRadius: 8,
+    width: 180,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   actionMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   actionMenuText: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 13,
+    fontWeight: '500',
   },
-  actionMenuDelete: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    marginTop: 4,
-  },
-  actionMenuDeleteText: {
-    fontSize: 14,
-    color: '#DC2626',
-  },
-
-  // Filter Modal
-  filterModalContent: {
-    width: 300,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: Spacing.lg,
-    gap: Spacing.lg,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    elevation: 5,
-  },
-  filterSection: { gap: 8 },
-  filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-  },
-  filterChipActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: Colors.primary,
-  },
-  filterChipText: { fontSize: 12, color: '#6B7280' },
-  filterChipTextActive: { color: Colors.primary, fontWeight: '600' as const },
 });

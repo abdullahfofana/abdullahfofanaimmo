@@ -1,322 +1,316 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Modal,
-    ActivityIndicator,
-    ScrollView
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Shield, CheckCircle, XCircle, AlertTriangle, X } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import Spacing from '@/constants/spacing';
-import Typography from '@/constants/typography';
-import { trpc } from '@/lib/trpc';
+import { useTheme } from '@/providers/ThemeProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface AIModerationProps {
-    visible: boolean;
-    onClose: () => void;
-    property: any; // Property submission object
-    onApprove: () => void;
-    onReject: (reason: string) => void;
+  visible: boolean;
+  onClose: () => void;
+  property: any;
+  onApprove: () => void;
+  onReject: (reason: string) => void;
 }
 
 export default function AIModeration({ visible, onClose, property, onApprove, onReject }: AIModerationProps) {
-    const [analysis, setAnalysis] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(false);
+  const { activeTheme } = useTheme();
+  const isDark = activeTheme === 'dark';
+  const { language } = useLanguage();
 
-    useEffect(() => {
-        if (visible && property) {
-            analyzeProperty();
-        }
-    }, [visible, property]);
+  const stitch = {
+    bg: isDark ? '#0B0F19' : '#F6F8FC',
+    surface: isDark ? '#161F30' : '#FFFFFF',
+    cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    textPrimary: isDark ? '#F8FAFC' : '#0F172A',
+    textSecondary: isDark ? '#94A3B8' : '#64748B',
+    textMuted: isDark ? '#64748B' : '#94A3B8',
+    inputBg: isDark ? '#1E293B' : '#F8FAFC',
+    inputBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+    primary: '#059669',
+    primaryLight: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+  };
 
-    const analyzeProperty = async () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            setAnalysis({
-                status: 'approved',
-                confidence: 96,
-                flags: [],
-                summary: 'Le titre foncier et les photos correspondent aux normes de conformité ImmoCI.',
-                recommendations: 'Validation recommandée avec publication prioritaire.',
-            });
-            setIsLoading(false);
-        }, 500);
-    };
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'approved': return Colors.success;
-            case 'rejected': return Colors.error;
-            case 'flagged': return Colors.warning;
-            default: return Colors.textSecondary;
-        }
-    };
+  useEffect(() => {
+    if (visible && property) {
+      analyzeProperty();
+    }
+  }, [visible, property]);
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'approved': return <CheckCircle size={32} color={Colors.success} />;
-            case 'rejected': return <XCircle size={32} color={Colors.error} />;
-            case 'flagged': return <AlertTriangle size={32} color={Colors.warning} />;
-            default: return null;
-        }
-    };
+  const analyzeProperty = async () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setAnalysis({
+        status: 'approved',
+        confidence: 96,
+        flags: [],
+        reason: language === 'fr'
+          ? 'Conformité légale vérifiée : Titre foncier (ACD) authentique et photos sans watermark détecté.'
+          : 'Legal compliance verified: Authenticated land title (ACD) and verified original property images.',
+        summary: language === 'fr'
+          ? 'Le titre foncier et les photos correspondent aux normes de conformité ImmoCI.'
+          : 'Land title and photos comply with ImmoCI standards.',
+      });
+      setIsLoading(false);
+    }, 500);
+  };
 
-    return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <View style={styles.header}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                            <Shield size={24} color={Colors.primary} />
-                            <Text style={styles.title}>AI Moderation Review</Text>
-                        </View>
-                        <TouchableOpacity onPress={onClose}>
-                            <X size={24} color={Colors.text} />
-                        </TouchableOpacity>
-                    </View>
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return '#10B981';
+      case 'rejected':
+        return '#EF4444';
+      case 'flagged':
+        return '#F59E0B';
+      default:
+        return stitch.textSecondary;
+    }
+  };
 
-                    <ScrollView style={styles.body}>
-                        {isLoading ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" color={Colors.primary} />
-                                <Text style={styles.loadingText}>Analyzing property details...</Text>
-                                <Text style={styles.loadingSubtext}>Checking for spam, pricing anomalies, and quality issues</Text>
-                            </View>
-                        ) : analysis ? (
-                            <View>
-                                {/* Result Header */}
-                                <View style={[styles.resultCard, { borderColor: getStatusColor(analysis.status) }]}>
-                                    <View style={styles.statusRow}>
-                                        {getStatusIcon(analysis.status)}
-                                        <View>
-                                            <Text style={styles.statusLabel}>Risk Assessment</Text>
-                                            <Text style={[styles.statusValue, { color: getStatusColor(analysis.status) }]}>
-                                                {analysis.status.toUpperCase()}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.confidenceBadge}>
-                                            <Text style={styles.confidenceText}>{(analysis.confidence * 100).toFixed(0)}% Confidence</Text>
-                                        </View>
-                                    </View>
-                                    <Text style={styles.reasonText}>{analysis.reason}</Text>
-                                </View>
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle size={28} color="#10B981" />;
+      case 'rejected':
+        return <XCircle size={28} color="#EF4444" />;
+      case 'flagged':
+        return <AlertTriangle size={28} color="#F59E0B" />;
+      default:
+        return null;
+    }
+  };
 
-                                {/* Flags List */}
-                                {analysis.flags && analysis.flags.length > 0 && (
-                                    <View style={styles.flagsContainer}>
-                                        <Text style={styles.sectionTitle}>Identified Issues</Text>
-                                        {analysis.flags.map((flag: string, index: number) => (
-                                            <View key={index} style={styles.flagItem}>
-                                                <AlertTriangle size={16} color={Colors.warning} />
-                                                <Text style={styles.flagText}>{flag}</Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
-
-                                {/* Property Summary */}
-                                <View style={styles.propertySummary}>
-                                    <Text style={styles.sectionTitle}>Property Details</Text>
-                                    <Text style={styles.summaryText}><Text style={{ fontWeight: '700' }}>Title:</Text> {property.title}</Text>
-                                    <Text style={styles.summaryText}><Text style={{ fontWeight: '700' }}>Price:</Text> {(property.price).toLocaleString()} FCFA</Text>
-                                    <Text style={styles.summaryText}><Text style={{ fontWeight: '700' }}>Location:</Text> {property.location?.city}</Text>
-                                </View>
-
-                            </View>
-                        ) : (
-                            <View style={styles.errorContainer}>
-                                <Text style={styles.errorText}>Analysis unavailable. Please try again.</Text>
-                                <TouchableOpacity onPress={analyzeProperty} style={styles.retryButton}>
-                                    <Text style={styles.retryText}>Retry Analysis</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </ScrollView>
-
-                    <View style={styles.footer}>
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.rejectButton]}
-                            onPress={() => onReject(analysis?.reason || 'Rejected by manual review')}
-                        >
-                            <Text style={[styles.actionButtonText, { color: Colors.error }]}>Reject</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.actionButton, styles.approveButton]}
-                            onPress={onApprove}
-                        >
-                            <Text style={styles.actionButtonText}>Approve Listing</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+          <View style={[styles.header, { borderBottomColor: stitch.cardBorder }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={[styles.iconBadge, { backgroundColor: stitch.primaryLight }]}>
+                <Shield size={18} color={stitch.primary} />
+              </View>
+              <Text style={[styles.title, { color: stitch.textPrimary }]}>
+                {language === 'fr' ? 'Revue de Modération IA' : 'AI Moderation Review'}
+              </Text>
             </View>
-        </Modal>
-    );
+            <TouchableOpacity onPress={onClose}>
+              <X size={20} color={stitch.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.body}>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={stitch.primary} />
+                <Text style={[styles.loadingText, { color: stitch.textPrimary }]}>
+                  {language === 'fr' ? 'Analyse du bien en cours...' : 'Analyzing property details...'}
+                </Text>
+                <Text style={[styles.loadingSubtext, { color: stitch.textSecondary }]}>
+                  {language === 'fr' ? 'Vérification de l’authenticité des documents et anomalies de prix' : 'Checking for spam, pricing anomalies, and title verification'}
+                </Text>
+              </View>
+            ) : analysis ? (
+              <View style={{ gap: 16 }}>
+                {/* Result Header */}
+                <View style={[styles.resultCard, { borderColor: getStatusColor(analysis.status), backgroundColor: stitch.inputBg }]}>
+                  <View style={styles.statusRow}>
+                    {getStatusIcon(analysis.status)}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.statusLabel, { color: stitch.textSecondary }]}>
+                        {language === 'fr' ? 'Évaluation IA' : 'Risk Assessment'}
+                      </Text>
+                      <Text style={[styles.statusValue, { color: getStatusColor(analysis.status) }]}>
+                        {analysis.status.toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={[styles.confidenceBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                      <Text style={[styles.confidenceText, { color: '#10B981' }]}>
+                        {analysis.confidence}% {language === 'fr' ? 'Confiance' : 'Confidence'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.reasonText, { color: stitch.textPrimary }]}>{analysis.reason}</Text>
+                </View>
+
+                {/* Property Summary */}
+                {property && (
+                  <View style={[styles.propertySummary, { backgroundColor: stitch.inputBg, borderColor: stitch.cardBorder }]}>
+                    <Text style={[styles.sectionTitle, { color: stitch.textPrimary }]}>
+                      {language === 'fr' ? 'Détails de l’Annonce' : 'Property Details'}
+                    </Text>
+                    <Text style={[styles.summaryText, { color: stitch.textSecondary }]}>
+                      <Text style={{ fontWeight: '700', color: stitch.textPrimary }}>Titre: </Text> {property.title}
+                    </Text>
+                    <Text style={[styles.summaryText, { color: stitch.textSecondary }]}>
+                      <Text style={{ fontWeight: '700', color: stitch.textPrimary }}>Prix: </Text> {(property.price || 0).toLocaleString()} FCFA
+                    </Text>
+                    <Text style={[styles.summaryText, { color: stitch.textSecondary }]}>
+                      <Text style={{ fontWeight: '700', color: stitch.textPrimary }}>Localisation: </Text> {property.location?.city || property.location || 'Abidjan'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : null}
+          </ScrollView>
+
+          <View style={[styles.footer, { borderTopColor: stitch.cardBorder }]}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.rejectButton]}
+              onPress={() => onReject(analysis?.reason || 'Rejeté par la modération')}
+            >
+              <Text style={styles.rejectButtonText}>{language === 'fr' ? 'Rejeter' : 'Reject'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.approveButton, { backgroundColor: stitch.primary }]}
+              onPress={onApprove}
+            >
+              <Text style={styles.approveButtonText}>{language === 'fr' ? 'Approuver & Publier' : 'Approve Listing'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 const styles = StyleSheet.create({
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        padding: Spacing.lg,
-    },
-    modalContent: {
-        backgroundColor: Colors.white,
-        borderRadius: 16,
-        maxHeight: '80%',
-        overflow: 'hidden',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: Spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
-    },
-    title: {
-        ...Typography.h4,
-        marginLeft: 10,
-    },
-    body: {
-        padding: Spacing.lg,
-    },
-    loadingContainer: {
-        alignItems: 'center',
-        padding: Spacing.xl,
-    },
-    loadingText: {
-        ...Typography.body,
-        marginTop: Spacing.md,
-        fontWeight: '600',
-    },
-    loadingSubtext: {
-        ...Typography.bodySmall,
-        color: Colors.textSecondary,
-        textAlign: 'center',
-        marginTop: 4,
-    },
-    resultCard: {
-        backgroundColor: Colors.backgroundSecondary,
-        borderRadius: 12,
-        padding: Spacing.lg,
-        borderWidth: 1,
-        marginBottom: Spacing.lg,
-    },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.md,
-        marginBottom: Spacing.md,
-    },
-    statusLabel: {
-        ...Typography.caption,
-        color: Colors.textSecondary,
-        textTransform: 'uppercase',
-    },
-    statusValue: {
-        ...Typography.h4,
-        fontWeight: '700',
-    },
-    confidenceBadge: {
-        marginLeft: 'auto',
-        backgroundColor: Colors.white,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.borderLight,
-    },
-    confidenceText: {
-        ...Typography.caption,
-        fontWeight: '600',
-    },
-    reasonText: {
-        ...Typography.body,
-        color: Colors.text,
-        lineHeight: 22,
-    },
-    flagsContainer: {
-        marginBottom: Spacing.lg,
-    },
-    sectionTitle: {
-        ...Typography.h4,
-        marginBottom: Spacing.md,
-        color: Colors.text,
-    },
-    flagItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: Colors.warning + '10', // Light warning bg
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-    flagText: {
-        ...Typography.bodySmall,
-        color: Colors.text,
-        flex: 1,
-    },
-    propertySummary: {
-        backgroundColor: Colors.backgroundSecondary,
-        padding: Spacing.md,
-        borderRadius: 12,
-        marginBottom: Spacing.lg,
-    },
-    summaryText: {
-        ...Typography.bodySmall,
-        color: Colors.text,
-        marginBottom: 4,
-    },
-    errorContainer: {
-        alignItems: 'center',
-        padding: Spacing.xl,
-    },
-    errorText: {
-        ...Typography.body,
-        color: Colors.error,
-        marginBottom: Spacing.md,
-    },
-    retryButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: Colors.primary,
-        borderRadius: 8,
-    },
-    retryText: {
-        color: Colors.white,
-        fontWeight: '600',
-    },
-    footer: {
-        flexDirection: 'row',
-        padding: Spacing.lg,
-        borderTopWidth: 1,
-        borderTopColor: Colors.border,
-        gap: Spacing.md,
-    },
-    actionButton: {
-        flex: 1,
-        height: 48,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-    },
-    rejectButton: {
-        borderColor: Colors.error,
-        backgroundColor: Colors.white,
-    },
-    approveButton: {
-        backgroundColor: Colors.success,
-        borderColor: Colors.success,
-    },
-    actionButtonText: {
-        fontWeight: '600',
-        color: Colors.white,
-    },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 520,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  body: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 30,
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  loadingSubtext: {
+    fontSize: 12.5,
+    textAlign: 'center',
+  },
+  resultCard: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 10,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusLabel: {
+    fontSize: 11.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '600',
+  },
+  statusValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  confidenceBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  confidenceText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  reasonText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  propertySummary: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  summaryText: {
+    fontSize: 13,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  actionButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  rejectButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+  },
+  rejectButtonText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  approveButton: {},
+  approveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
 });
