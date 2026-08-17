@@ -352,10 +352,9 @@ class AdminErrorBoundary extends React.Component<
 }
 
 export default function AdminDashboardWrapper() {
-  // Hydration guard: only render on client, never during SSR/static export.
-  // This prevents React Error #310 caused by hook count mismatches
-  // between the pre-rendered HTML and the client-side JS bundle.
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -371,21 +370,25 @@ export default function AdminDashboardWrapper() {
     );
   }
 
+  if (!isLoggedIn) {
+    return (
+      <View style={{ flex: 1, width: '100%' }}>
+        <AdminLogin onLogin={() => setIsLoggedIn(true)} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, width: '100%' }}>
       <AdminErrorBoundary>
-        <AdminDashboard />
+        <AdminDashboard onLogout={() => setIsLoggedIn(false)} />
       </AdminErrorBoundary>
     </View>
   );
 }
 
-
-function AdminDashboard() {
+function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const { user, signOut } = useAuth();
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return user?.role === 'admin' || user?.role === 'agent' || false;
-  });
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [activeRole, setActiveRole] = useState<AdminRoleType>('Super Admin');
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -569,7 +572,7 @@ function AdminDashboard() {
     try {
       if (signOut) await signOut();
     } catch {}
-    setIsLoggedIn(false);
+    onLogout();
     showToast(language === 'fr' ? 'Déconnexion réussie' : 'Logged out successfully');
   };
 
@@ -697,13 +700,7 @@ function AdminDashboard() {
     return allNavItems.filter((item) => currentRoleDef.allowedSections.includes(item.id));
   }, [allNavItems, currentRoleDef]);
 
-  if (!isLoggedIn) {
-    return (
-      <View style={{ flex: 1, width: '100%' }}>
-        <AdminLogin onLogin={() => setIsLoggedIn(true)} />
-      </View>
-    );
-  }
+
 
   // ── Render Views ───────────────────────────────────────────────────────────
   const renderDashboard = () => (
