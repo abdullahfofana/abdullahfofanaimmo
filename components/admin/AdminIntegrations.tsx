@@ -72,7 +72,7 @@ function IntegrationCard({ definition, connected, onConnect, onDisconnect, onMan
 
 export default function AdminIntegrations() {
   const { activeTheme } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const isDark = activeTheme !== 'light';
   const { language } = useLanguage();
 
   const stitch = {

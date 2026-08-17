@@ -9,14 +9,14 @@ type ThemeMode = 'light' | 'dark' | 'system';
 
 export const [ThemeProvider, useTheme] = createContextHook(() => {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [isLoaded, setIsLoaded] = useState(false);
 
   const activeTheme = useMemo(() => {
     if (themeMode === 'system') {
-      return systemColorScheme ?? 'light';
+      return systemColorScheme ?? 'dark';
     }
-    return themeMode;
+    return themeMode || 'dark';
   }, [themeMode, systemColorScheme]);
 
   const loadTheme = useCallback(async () => {

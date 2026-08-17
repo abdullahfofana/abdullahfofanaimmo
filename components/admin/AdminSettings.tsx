@@ -8,7 +8,7 @@ type SettingsTab = 'general' | 'security' | 'notifications' | 'email' | 'appeara
 
 export default function AdminSettings() {
   const { activeTheme } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const isDark = activeTheme !== 'light';
   const { t, language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');

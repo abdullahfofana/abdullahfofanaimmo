@@ -26,7 +26,7 @@ const mockUsers: UserData[] = [
 
 export default function UserManagement() {
   const { activeTheme } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const isDark = activeTheme !== 'light';
   const { language } = useLanguage();
 
   const stitch = {

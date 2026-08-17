@@ -401,7 +401,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const { t, language, setLanguage } = useLanguage();
   const { activeTheme, setTheme } = useTheme();
-  const isDark = activeTheme === 'dark';
+  const isDark = activeTheme !== 'light';
 
   // Google Stitch Pro Theme Palette
   const stitchTheme = useMemo(() => ({
