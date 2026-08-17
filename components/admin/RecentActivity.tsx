@@ -1,20 +1,61 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Home, Users, FileText, MessageCircle, DollarSign, Clock } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import Spacing from '@/constants/spacing';
-import { trpc } from '@/lib/trpc';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Home, Users, FileText, MessageCircle, DollarSign, Clock, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
+
+interface ActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
+const DEFAULT_ACTIVITIES: ActivityItem[] = [
+  {
+    id: '1',
+    type: 'payment_processed',
+    title: 'Paiement reçu',
+    description: 'Abonnement Agence Platinum — 150 000 FCFA',
+    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+  },
+  {
+    id: '2',
+    type: 'property_listed',
+    title: 'Nouvelle propriété',
+    description: 'Villa Triplex 6 Pièces — Cocody Ambassades',
+    timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+  },
+  {
+    id: '3',
+    type: 'user_registered',
+    title: 'Nouvel utilisateur vérifié',
+    description: 'Kouassi Marc (Agent Immobilier Agréé)',
+    timestamp: new Date(Date.now() - 42 * 60 * 1000).toISOString(),
+  },
+  {
+    id: '4',
+    type: 'property_verified',
+    title: 'Document Validé',
+    description: 'Titre Foncier (ACD) #CI-2024-8842 approuvé',
+    timestamp: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+  },
+  {
+    id: '5',
+    type: 'inquiry_received',
+    title: 'Demande de visite',
+    description: 'Appartement Standing 4P — Marcory Zone 4',
+    timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+  },
+];
 
 export default function RecentActivity() {
   const { activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
   const { t, language } = useLanguage();
 
-  const { data: activities, isLoading, refetch } = trpc.activities.getRecent.useQuery(undefined, {
-    refetchInterval: 15000,
-  });
+  const activities = DEFAULT_ACTIVITIES;
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -84,14 +125,6 @@ export default function RecentActivity() {
   const textPrimary = isDark ? '#F8FAFC' : '#0F172A';
   const textSecondary = isDark ? '#94A3B8' : '#64748B';
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: surfaceBg, borderColor }]}>
-        <ActivityIndicator size="small" color="#10B981" />
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: surfaceBg, borderColor }]}>
       <View style={styles.header}>
@@ -107,55 +140,40 @@ export default function RecentActivity() {
       </View>
 
       <View style={styles.list}>
-        {(!activities || activities.length === 0) ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
-            <Text style={{ color: textSecondary }}>{language === 'fr' ? 'Aucune activité récente' : 'No recent activity'}</Text>
-          </View>
-        ) : (
-          activities.map((activity) => (
-            <View key={activity.id} style={[styles.item, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9' }]}>
-              <View style={[styles.iconContainer, { backgroundColor: getBackground(activity.type) }]}>
-                {getIcon(activity.type)}
-              </View>
-              <View style={styles.content}>
-                <View style={styles.row}>
-                  <Text style={[styles.message, { color: textPrimary }]}>{activity.message}</Text>
-                  <Text style={[styles.time, { color: textSecondary }]}>
-                    {formatTimeAgo(activity.timestamp)}
-                  </Text>
-                </View>
-                <Text style={[styles.user, { color: textSecondary }]}>{activity.user}</Text>
-              </View>
+        {activities.map((activity) => (
+          <View key={activity.id} style={[styles.item, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: getBackground(activity.type) }]}>
+              {getIcon(activity.type)}
             </View>
-          ))
-        )}
+            <View style={styles.content}>
+              <Text style={[styles.itemTitle, { color: textPrimary }]}>{activity.title}</Text>
+              <Text style={[styles.description, { color: textSecondary }]}>{activity.description}</Text>
+            </View>
+            <Text style={[styles.time, { color: textSecondary }]}>{formatTimeAgo(activity.timestamp)}</Text>
+          </View>
+        ))}
       </View>
-
-      <TouchableOpacity
-        style={[styles.footer, { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}
-        onPress={() => refetch()}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.footerText}>{t('admin_load_more')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 20,
-    padding: 22,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
+    marginTop: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 16,
+    shadowRadius: 8,
     elevation: 2,
-    flex: 1,
   },
   header: {
-    marginBottom: Spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -163,69 +181,50 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 17,
-    fontWeight: '800' as const,
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '700',
   },
   subtitle: {
-    fontSize: 12.5,
-    marginTop: 1,
+    fontSize: 12,
+    marginTop: 2,
   },
   list: {
-    gap: 4,
+    gap: 12,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
+    gap: 12,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
     flex: 1,
-    gap: 2,
   },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  message: {
+  itemTitle: {
     fontSize: 13.5,
-    fontWeight: '700' as const,
-    flex: 1,
-    marginRight: 8,
+    fontWeight: '600',
+  },
+  description: {
+    fontSize: 12,
+    marginTop: 2,
   },
   time: {
-    fontSize: 11.5,
-    fontWeight: '500' as const,
-  },
-  user: {
-    fontSize: 12,
-  },
-  footer: {
-    marginTop: Spacing.md,
-    paddingTop: Spacing.md,
-    alignItems: 'center',
-    borderTopWidth: 1,
-  },
-  footerText: {
-    fontSize: 13.5,
-    color: '#10B981',
-    fontWeight: '700' as const,
+    fontSize: 11,
+    fontWeight: '500',
   },
 });

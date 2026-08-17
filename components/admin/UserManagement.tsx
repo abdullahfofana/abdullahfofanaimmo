@@ -27,28 +27,12 @@ const mockUsers: UserData[] = [
 import { trpc } from '@/lib/trpc';
 
 export default function UserManagement() {
-  const utils = trpc.useUtils();
-  const { data: usersData, isLoading, refetch } = trpc.users.list.useQuery();
-  const createUserMutation = trpc.users.create.useMutation({
-    onSuccess: () => {
-      utils.users.list.invalidate();
-      refetch();
-    }
-  });
-  const updateUserMutation = trpc.users.update.useMutation({
-    onSuccess: () => {
-      utils.users.list.invalidate();
-      refetch();
-    }
-  });
-  const deleteUserMutation = trpc.users.delete.useMutation({
-    onSuccess: () => {
-      utils.users.list.invalidate();
-      refetch();
-    }
+  const { data: usersData, isLoading } = trpc.users.list.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
-  const users = useMemo(() => usersData || [], [usersData]);
+  const [userList, setUserList] = useState<UserData[]>(mockUsers);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'All' | 'Seller' | 'Buyer' | 'Landlord' | 'Renter'>('All');
@@ -69,7 +53,7 @@ export default function UserManagement() {
   });
 
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    return userList.filter(user => {
       const matchesSearch =
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -79,7 +63,7 @@ export default function UserManagement() {
 
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [users, searchQuery, typeFilter, statusFilter]);
+  }, [userList, searchQuery, typeFilter, statusFilter]);
 
   const handleEditUser = (user: UserData) => {
     setSelectedUser(user);
@@ -89,62 +73,36 @@ export default function UserManagement() {
   };
 
   const handleDeactivateUser = (id: string) => {
-    const confirmDelete = async () => {
-      try {
-        await deleteUserMutation.mutateAsync({ id });
-      } catch (error) {
-        if (Platform.OS === 'web') {
-          alert('Failed to delete user');
-        } else {
-          Alert.alert('Error', 'Failed to delete user');
-        }
-      }
-      setShowActionMenu(false);
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to delete this user?')) {
-        confirmDelete();
-      }
-    } else {
-      Alert.alert('Delete User', 'Are you sure you want to delete this user?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: confirmDelete }
-      ]);
-    }
+    setUserList((prev) => prev.filter((u) => u.id !== id));
+    setShowActionMenu(false);
   };
 
-  const saveUser = async () => {
+  const saveUser = () => {
     if (!userForm.name || !userForm.email) return;
 
-    try {
-      if (selectedUser && selectedUser.id !== 'new') {
-        // Update existing
-        await updateUserMutation.mutateAsync({
-          id: selectedUser.id,
-          name: userForm.name,
-          email: userForm.email,
-          type: userForm.type,
-          status: userForm.status,
-        });
-      } else {
-        // Create new
-        await createUserMutation.mutateAsync({
-          name: userForm.name,
-          email: userForm.email,
-          type: userForm.type || 'Seller',
-          status: userForm.status || 'Active',
-        });
-      }
-      setShowEditModal(false);
-    } catch (error) {
-      console.error('Failed to save user:', error);
-      if (Platform.OS === 'web') {
-        alert('Failed to save user details');
-      } else {
-        Alert.alert('Error', 'Failed to save user details');
-      }
+    if (selectedUser && selectedUser.id !== 'new') {
+      setUserList((prev) =>
+        prev.map((u) =>
+          u.id === selectedUser.id
+            ? { ...u, name: userForm.name!, email: userForm.email!, type: userForm.type || u.type, status: userForm.status || u.status }
+            : u
+        )
+      );
+    } else {
+      const newUser: UserData = {
+        id: String(Date.now()),
+        name: userForm.name!,
+        email: userForm.email!,
+        type: userForm.type || 'Seller',
+        status: userForm.status || 'Active',
+        propertiesCount: 0,
+        joined: new Date().toISOString().split('T')[0],
+        lastActive: 'Just now',
+        avatar: userForm.name!.substring(0, 2).toUpperCase(),
+      };
+      setUserList((prev) => [newUser, ...prev]);
     }
+    setShowEditModal(false);
   };
 
   const openActions = (user: UserData) => {
