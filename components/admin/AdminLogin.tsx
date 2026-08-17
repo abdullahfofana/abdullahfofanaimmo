@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     height: '100%',
     fontSize: 14,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}),
   },
   eyeIcon: {
     padding: 6,

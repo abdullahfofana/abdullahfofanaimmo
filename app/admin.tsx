@@ -539,6 +539,10 @@ function AdminDashboard() {
     setReplyText(draft);
   };
 
+  const handleDownloadReport = (reportName: string) => {
+    showToast(language === 'fr' ? `Téléchargement de ${reportName}` : `Downloading ${reportName}`);
+  };
+
   const handleLogout = async () => {
     try {
       if (signOut) await signOut();
