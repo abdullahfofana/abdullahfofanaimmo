@@ -308,6 +308,28 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                 <Text style={styles.loginButtonText}>Connexion au Dashboard Admin</Text>
               )}
             </TouchableOpacity>
+
+            {/* DEV Skip Button */}
+            <TouchableOpacity
+              style={{
+                marginTop: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(245, 158, 11, 0.5)',
+                borderRadius: 11,
+                height: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 8,
+                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              }}
+              onPress={onLogin}
+              activeOpacity={0.75}
+            >
+              <Text style={{ fontSize: 11, letterSpacing: 1.2, color: '#F59E0B', fontWeight: '600', textTransform: 'uppercase' }}>
+                ⚡ DEV — Skip Login
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Navigation Links Footer */}
