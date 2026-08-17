@@ -573,14 +573,6 @@ function AdminDashboard() {
     showToast(language === 'fr' ? 'Déconnexion réussie' : 'Logged out successfully');
   };
 
-  if (!isLoggedIn) {
-    return (
-      <View style={{ flex: 1, width: '100%' }}>
-        <AdminLogin onLogin={() => setIsLoggedIn(true)} />
-      </View>
-    );
-  }
-
   // Stitch Tonal Metric Cards
   const stats = [
     {
@@ -704,6 +696,14 @@ function AdminDashboard() {
   const filteredNavItems = useMemo(() => {
     return allNavItems.filter((item) => currentRoleDef.allowedSections.includes(item.id));
   }, [allNavItems, currentRoleDef]);
+
+  if (!isLoggedIn) {
+    return (
+      <View style={{ flex: 1, width: '100%' }}>
+        <AdminLogin onLogin={() => setIsLoggedIn(true)} />
+      </View>
+    );
+  }
 
   // ── Render Views ───────────────────────────────────────────────────────────
   const renderDashboard = () => (

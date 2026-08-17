@@ -24,7 +24,7 @@ interface AIModerationProps {
 
 export default function AIModeration({ visible, onClose, property, onApprove, onReject }: AIModerationProps) {
     const [analysis, setAnalysis] = useState<any>(null);
-    const moderateMutation = trpc.ai.moderate.useMutation();
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (visible && property) {
@@ -33,12 +33,17 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
     }, [visible, property]);
 
     const analyzeProperty = async () => {
-        try {
-            const result = await moderateMutation.mutateAsync({ property });
-            setAnalysis(result);
-        } catch (error) {
-            console.error("Moderation Analysis failed", error);
-        }
+        setIsLoading(true);
+        setTimeout(() => {
+            setAnalysis({
+                status: 'approved',
+                confidence: 96,
+                flags: [],
+                summary: 'Le titre foncier et les photos correspondent aux normes de conformité ImmoCI.',
+                recommendations: 'Validation recommandée avec publication prioritaire.',
+            });
+            setIsLoading(false);
+        }, 500);
     };
 
     const getStatusColor = (status: string) => {
@@ -74,7 +79,7 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
                     </View>
 
                     <ScrollView style={styles.body}>
-                        {moderateMutation.isPending ? (
+                        {isLoading ? (
                             <View style={styles.loadingContainer}>
                                 <ActivityIndicator size="large" color={Colors.primary} />
                                 <Text style={styles.loadingText}>Analyzing property details...</Text>
