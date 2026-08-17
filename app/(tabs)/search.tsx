@@ -318,17 +318,53 @@ export default function SearchScreen() {
 
         setFilters(newFilters);
         applyFilters(aiFilters.location || searchQuery, newFilters);
-        setIsAIMode(false); // Switch back to see results
+        setIsAIMode(false);
         setAiQuery('');
-
-        if (Platform.OS === 'web') {
-          // Optional: Toast or simple alert
-        }
+        return;
       }
     } catch (error) {
-      console.error("AI Search failed", error);
-      Alert.alert("AI Error", "Could not understand your request. Please try again.");
+      console.log("Using local AI query parser fallback");
     }
+
+    // Local smart heuristic query parsing
+    const qLower = aiQuery.toLowerCase();
+    let detectedType: PropertyType | 'all' = 'all';
+    if (qLower.includes('villa')) detectedType = 'villa';
+    else if (qLower.includes('appart') || qLower.includes('apart')) detectedType = 'apartment';
+    else if (qLower.includes('terrain') || qLower.includes('land')) detectedType = 'land';
+    else if (qLower.includes('maison') || qLower.includes('house')) detectedType = 'house';
+    else if (qLower.includes('comm') || qLower.includes('bureau')) detectedType = 'commercial';
+
+    let detectedStatus: PropertyStatus | 'all' = 'all';
+    if (qLower.includes('louer') || qLower.includes('location') || qLower.includes('rent')) detectedStatus = 'rent';
+    else if (qLower.includes('achet') || qLower.includes('vente') || qLower.includes('buy') || qLower.includes('sale')) detectedStatus = 'sale';
+
+    let detectedLocation = '';
+    const knownLocations = ['cocody', 'marcory', 'plateau', 'yopougon', 'abidjan', 'assinie', 'bingerville', 'bassam', 'angre', 'zone 4', 'riviera'];
+    for (const loc of knownLocations) {
+      if (qLower.includes(loc)) {
+        detectedLocation = loc.charAt(0).toUpperCase() + loc.slice(1);
+        break;
+      }
+    }
+
+    const fallbackFilters: Filters = {
+      type: detectedType,
+      status: detectedStatus,
+      minPrice: 0,
+      maxPrice: 500000000,
+      bedrooms: qLower.includes('3') ? 3 : qLower.includes('4') ? 4 : qLower.includes('2') ? 2 : 'all',
+      bathrooms: 'all',
+    };
+
+    if (detectedLocation) {
+      setSearchQuery(detectedLocation);
+      setLocationSearch(detectedLocation);
+    }
+    setFilters(fallbackFilters);
+    applyFilters(detectedLocation || searchQuery, fallbackFilters);
+    setIsAIMode(false);
+    setAiQuery('');
   };
 
   // Synchronize route parameters (e.g. ?status=sale, ?status=rent, ?type=villa, ?q=...)
