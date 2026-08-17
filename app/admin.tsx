@@ -48,7 +48,7 @@ import {
   RefreshCw,
   LogOut,
 } from 'lucide-react-native';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -352,6 +352,25 @@ class AdminErrorBoundary extends React.Component<
 }
 
 export default function AdminDashboardWrapper() {
+  // Hydration guard: only render on client, never during SSR/static export.
+  // This prevents React Error #310 caused by hook count mismatches
+  // between the pre-rendered HTML and the client-side JS bundle.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <View style={{ flex: 1, width: '100%', backgroundColor: '#0B0F19', alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: 'rgba(5, 150, 105, 0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <Text style={{ fontSize: 24 }}>🏢</Text>
+        </View>
+        <Text style={{ color: '#94A3B8', fontSize: 14, letterSpacing: 0.5 }}>Loading Admin Dashboard...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, width: '100%' }}>
       <AdminErrorBoundary>
