@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
 import { CreditCard, Mail, MessageSquare, Database, HardDrive, Zap, Plus, Check, X, Code, Trash2, Copy } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
-import Colors from '@/constants/colors';
-import Spacing from '@/constants/spacing';
-import Typography from '@/constants/typography';
 import { useIntegrations, IntegrationDefinition, IntegrationType } from '@/providers/IntegrationProvider';
+import { useTheme } from '@/providers/ThemeProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface IntegrationCardProps {
   definition: IntegrationDefinition;
@@ -13,42 +12,57 @@ interface IntegrationCardProps {
   onConnect: () => void;
   onDisconnect: () => void;
   onManage: () => void;
+  stitch: any;
 }
 
-function IntegrationCard({ definition, connected, onConnect, onDisconnect, onManage }: IntegrationCardProps) {
+function IntegrationCard({ definition, connected, onConnect, onDisconnect, onManage, stitch }: IntegrationCardProps) {
   const Icon = definition.icon;
-  
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
       <View style={styles.cardHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: connected ? definition.color + '20' : '#F1F5F9' }]}>
-           <Icon size={24} color={connected ? definition.color : '#64748B'} />
+        <View style={[styles.iconContainer, { backgroundColor: connected ? definition.color + '22' : stitch.iconBg }]}>
+          <Icon size={22} color={connected ? definition.color : stitch.textSecondary} />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.cardTitle}>{definition.name}</Text>
-          <View style={[styles.statusBadge, connected ? styles.statusConnected : styles.statusDisconnected]}>
-            {connected ? <Check size={10} color={Colors.white} /> : <X size={10} color={Colors.white} />}
-            <Text style={styles.statusText}>{connected ? 'Connected' : 'Not Connected'}</Text>
+          <Text style={[styles.cardTitle, { color: stitch.textPrimary }]}>{definition.name}</Text>
+          <View style={[styles.statusBadge, connected ? styles.statusConnected : { backgroundColor: stitch.statusInactiveBg }]}>
+            {connected ? <Check size={10} color="#FFFFFF" /> : <X size={10} color={stitch.textMuted} />}
+            <Text style={[styles.statusText, connected ? { color: '#FFFFFF' } : { color: stitch.textSecondary }]}>
+              {connected ? 'Connected' : 'Not Connected'}
+            </Text>
           </View>
         </View>
       </View>
-      
-      <Text style={styles.cardDescription}>{definition.description}</Text>
-      
+
+      <Text style={[styles.cardDescription, { color: stitch.textSecondary }]}>{definition.description}</Text>
+
       <View style={styles.cardActions}>
         {connected ? (
           <>
-            <TouchableOpacity style={styles.manageButton} onPress={onManage}>
-              <Text style={styles.manageButtonText}>Configure</Text>
+            <TouchableOpacity
+              style={[styles.manageButton, { backgroundColor: stitch.buttonSecondaryBg, borderColor: stitch.cardBorder }]}
+              onPress={onManage}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.manageButtonText, { color: stitch.textPrimary }]}>Configure</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.disconnectButton} onPress={onDisconnect}>
+            <TouchableOpacity
+              style={[styles.disconnectButton, { borderColor: 'rgba(239, 68, 68, 0.3)', backgroundColor: 'rgba(239, 68, 68, 0.08)' }]}
+              onPress={onDisconnect}
+              activeOpacity={0.8}
+            >
               <Text style={styles.disconnectButtonText}>Disconnect</Text>
             </TouchableOpacity>
           </>
         ) : (
-          <TouchableOpacity style={styles.connectButton} onPress={onConnect}>
-            <Plus size={16} color={Colors.text} />
-            <Text style={styles.connectButtonText}>Connect</Text>
+          <TouchableOpacity
+            style={[styles.connectButton, { borderColor: stitch.inputBorder, backgroundColor: stitch.buttonSecondaryBg }]}
+            onPress={onConnect}
+            activeOpacity={0.8}
+          >
+            <Plus size={16} color={stitch.primary} />
+            <Text style={[styles.connectButtonText, { color: stitch.primary }]}>Connect</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -57,15 +71,38 @@ function IntegrationCard({ definition, connected, onConnect, onDisconnect, onMan
 }
 
 export default function AdminIntegrations() {
+  const { activeTheme } = useTheme();
+  const isDark = activeTheme === 'dark';
+  const { language } = useLanguage();
+
+  const stitch = {
+    bg: isDark ? '#0B0F19' : '#F6F8FC',
+    surface: isDark ? '#161F30' : '#FFFFFF',
+    surfaceHover: isDark ? '#1E293B' : '#F8FAFC',
+    cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    textPrimary: isDark ? '#F8FAFC' : '#0F172A',
+    textSecondary: isDark ? '#94A3B8' : '#64748B',
+    textMuted: isDark ? '#64748B' : '#94A3B8',
+    inputBg: isDark ? '#1E293B' : '#F8FAFC',
+    inputBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+    tabBg: isDark ? '#111827' : '#F1F5F9',
+    tabActiveBg: isDark ? '#1E293B' : '#FFFFFF',
+    buttonSecondaryBg: isDark ? '#1E293B' : '#F1F5F9',
+    iconBg: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+    statusInactiveBg: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+    primary: '#059669',
+    primaryLight: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+  };
+
   const [activeTab, setActiveTab] = useState<IntegrationType | 'developer'>('payment');
-  const { 
-    definitions, 
-    isConnected, 
-    connectIntegration, 
+  const {
+    definitions,
+    isConnected,
+    connectIntegration,
     disconnectIntegration,
     apiKeys,
     generateApiKey,
-    revokeApiKey 
+    revokeApiKey,
   } = useIntegrations();
 
   // Modal State
@@ -78,13 +115,13 @@ export default function AdminIntegrations() {
   const [newKeyName, setNewKeyName] = useState('');
 
   const tabs: { id: IntegrationType | 'developer'; label: string; icon: any }[] = [
-    { id: 'payment', label: 'Payment', icon: CreditCard },
+    { id: 'payment', label: language === 'fr' ? 'Paiements' : 'Payment', icon: CreditCard },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'sms', label: 'SMS', icon: MessageSquare },
     { id: 'crm', label: 'CRM', icon: Database },
-    { id: 'storage', label: 'Storage', icon: HardDrive },
+    { id: 'storage', label: language === 'fr' ? 'Stockage' : 'Storage', icon: HardDrive },
     { id: 'automation', label: 'Automation', icon: Zap },
-    { id: 'developer', label: 'Developer API', icon: Code },
+    { id: 'developer', label: language === 'fr' ? 'Clés API' : 'Developer API', icon: Code },
   ];
 
   const handleConnectClick = (def: IntegrationDefinition) => {
@@ -96,10 +133,9 @@ export default function AdminIntegrations() {
   const handleSubmitConnection = async () => {
     if (!selectedIntegration) return;
 
-    // Basic validation
     const missingFields = selectedIntegration.fields
-      .filter(f => f.required && !formValues[f.name])
-      .map(f => f.label);
+      .filter((f) => f.required && !formValues[f.name])
+      .map((f) => f.label);
 
     if (missingFields.length > 0) {
       if (Platform.OS === 'web') {
@@ -111,15 +147,14 @@ export default function AdminIntegrations() {
     }
 
     setIsConnecting(true);
-    
-    // Simulate API call
+
     setTimeout(() => {
       connectIntegration(selectedIntegration.id, formValues);
       setIsConnecting(false);
       setShowModal(false);
       setFormValues({});
       setSelectedIntegration(null);
-    }, 1000);
+    }, 800);
   };
 
   const handleDisconnect = (id: string, name: string) => {
@@ -128,14 +163,10 @@ export default function AdminIntegrations() {
         disconnectIntegration(id);
       }
     } else {
-      Alert.alert(
-        'Disconnect Integration',
-        `Are you sure you want to disconnect ${name}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Disconnect', style: 'destructive', onPress: () => disconnectIntegration(id) }
-        ]
-      );
+      Alert.alert('Disconnect Integration', `Are you sure you want to disconnect ${name}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Disconnect', style: 'destructive', onPress: () => disconnectIntegration(id) },
+      ]);
     }
   };
 
@@ -147,83 +178,84 @@ export default function AdminIntegrations() {
 
   const copyToClipboard = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    // Could add toast here
   };
 
   const renderIntegrationContent = () => {
     if (activeTab === 'developer') {
       return (
         <View style={styles.developerContainer}>
-          <View style={styles.apiHeader}>
-            <View>
-               <Text style={styles.sectionTitle}>API Access</Text>
-               <Text style={styles.sectionSubtitle}>Manage API keys for external software integration.</Text>
-            </View>
-          </View>
-
-          <View style={styles.createKeyCard}>
-            <Text style={styles.cardLabel}>Create New API Key</Text>
+          <View style={[styles.createKeyCard, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+            <Text style={[styles.cardLabel, { color: stitch.textPrimary }]}>
+              {language === 'fr' ? 'Générer une Nouvelle Clé API' : 'Create New API Key'}
+            </Text>
             <View style={styles.createKeyRow}>
-              <TextInput 
-                style={styles.keyInput} 
-                placeholder="Key Name (e.g. Mobile App, Website)"
+              <TextInput
+                style={[styles.keyInput, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
+                placeholder={language === 'fr' ? 'Nom de la clé (ex: App Mobile, CRM)' : 'Key Name (e.g. Mobile App, Website)'}
+                placeholderTextColor={stitch.textMuted}
                 value={newKeyName}
                 onChangeText={setNewKeyName}
               />
-              <TouchableOpacity style={styles.generateButton} onPress={handleGenerateKey}>
-                <Plus size={16} color={Colors.white} />
-                <Text style={styles.generateButtonText}>Generate Key</Text>
+              <TouchableOpacity
+                style={[styles.generateButton, { backgroundColor: stitch.primary }]}
+                onPress={handleGenerateKey}
+                activeOpacity={0.85}
+              >
+                <Plus size={16} color="#FFFFFF" />
+                <Text style={styles.generateButtonText}>{language === 'fr' ? 'Générer' : 'Generate Key'}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.keysList}>
-            <Text style={styles.keysListTitle}>Active API Keys</Text>
+            <Text style={[styles.keysListTitle, { color: stitch.textPrimary }]}>
+              {language === 'fr' ? 'Clés API Actives' : 'Active API Keys'}
+            </Text>
             {apiKeys.length === 0 ? (
-              <View style={styles.emptyKeys}>
-                <Code size={48} color={Colors.textLight} />
-                <Text style={styles.emptyKeysText}>No API keys generated yet.</Text>
+              <View style={[styles.emptyKeys, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+                <Code size={40} color={stitch.textMuted} />
+                <Text style={[styles.emptyKeysText, { color: stitch.textSecondary }]}>
+                  {language === 'fr' ? 'Aucune clé API active.' : 'No API keys generated yet.'}
+                </Text>
               </View>
             ) : (
               apiKeys.map((key) => (
-                <View key={key.key} style={styles.keyItem}>
+                <View key={key.key} style={[styles.keyItem, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
                   <View style={styles.keyInfo}>
-                    <Text style={styles.keyName}>{key.name}</Text>
+                    <Text style={[styles.keyName, { color: stitch.textPrimary }]}>{key.name}</Text>
                     <View style={styles.keyValueContainer}>
-                      <Text style={styles.keyValue}>{key.key}</Text>
-                      <TouchableOpacity onPress={() => copyToClipboard(key.key)}>
-                        <Copy size={14} color={Colors.primary} />
+                      <Text style={[styles.keyValue, { color: stitch.textSecondary }]}>{key.key}</Text>
+                      <TouchableOpacity onPress={() => copyToClipboard(key.key)} style={{ padding: 4 }}>
+                        <Copy size={14} color={stitch.primary} />
                       </TouchableOpacity>
                     </View>
-                    <Text style={styles.keyDate}>Created: {new Date(key.created).toLocaleDateString()}</Text>
+                    <Text style={[styles.keyDate, { color: stitch.textMuted }]}>
+                      Created: {new Date(key.created).toLocaleDateString()}
+                    </Text>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.revokeButton}
+                  <TouchableOpacity
+                    style={[styles.revokeButton, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
                     onPress={() => revokeApiKey(key.key)}
                   >
-                    <Trash2 size={16} color={Colors.error} />
+                    <Trash2 size={16} color="#EF4444" />
                   </TouchableOpacity>
                 </View>
               ))
             )}
           </View>
-          
-          <View style={styles.docsLink}>
-            <Text style={styles.docsText}>
-              Need help integrating? <Text style={styles.linkText}>Read the API Documentation</Text>
-            </Text>
-          </View>
         </View>
       );
     }
 
-    const filteredDefinitions = definitions.filter(d => d.type === activeTab);
+    const filteredDefinitions = definitions.filter((d) => d.type === activeTab);
 
     if (filteredDefinitions.length === 0) {
       return (
-         <View style={styles.placeholder}>
-           <Text style={styles.placeholderText}>No integrations available for {activeTab} yet.</Text>
-         </View>
+        <View style={[styles.placeholder, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+          <Text style={[styles.placeholderText, { color: stitch.textSecondary }]}>
+            {language === 'fr' ? `Aucune intégration disponible pour ${activeTab}.` : `No integrations available for ${activeTab} yet.`}
+          </Text>
+        </View>
       );
     }
 
@@ -235,8 +267,9 @@ export default function AdminIntegrations() {
             definition={def}
             connected={isConnected(def.id)}
             onConnect={() => handleConnectClick(def)}
-            onManage={() => handleConnectClick(def)} // Re-open modal to edit config
+            onManage={() => handleConnectClick(def)}
             onDisconnect={() => handleDisconnect(def.id, def.name)}
+            stitch={stitch}
           />
         ))}
       </View>
@@ -246,64 +279,77 @@ export default function AdminIntegrations() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Platform Integrations</Text>
-        <Text style={styles.subtitle}>Connect and manage third-party services to enhance your platform capabilities</Text>
+        <Text style={[styles.title, { color: stitch.textPrimary }]}>
+          {language === 'fr' ? 'Intégrations & Passerelles' : 'Platform Integrations'}
+        </Text>
+        <Text style={[styles.subtitle, { color: stitch.textSecondary }]}>
+          {language === 'fr'
+            ? 'Connectez vos passerelles de paiement (Orange Money, MTN, Wave, Stripe) et services tiers'
+            : 'Connect and manage third-party services to enhance your platform capabilities'}
+        </Text>
       </View>
 
-      <View style={styles.tabsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
-              onPress={() => setActiveTab(tab.id as IntegrationType | 'developer')}
-            >
-              <View style={styles.tabContent}>
-                 <tab.icon size={16} color={activeTab === tab.id ? Colors.primary : Colors.textSecondary} />
-                 <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
-                   {tab.label}
-                 </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+      <View style={[styles.tabsContainer, { backgroundColor: stitch.tabBg, borderColor: stitch.cardBorder }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.tab,
+                  isActive && [styles.tabActive, { backgroundColor: stitch.tabActiveBg, borderColor: stitch.cardBorder }],
+                ]}
+                onPress={() => setActiveTab(tab.id as IntegrationType | 'developer')}
+              >
+                <tab.icon size={15} color={isActive ? stitch.primary : stitch.textSecondary} />
+                <Text
+                  style={[
+                    styles.tabText,
+                    { color: isActive ? stitch.textPrimary : stitch.textSecondary },
+                    isActive && { fontWeight: '700' },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
       {renderIntegrationContent()}
 
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowModal(false)}
-      >
+      {/* Configuration Modal */}
+      <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContent, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: stitch.cardBorder }]}>
               <View style={styles.modalTitleContainer}>
-                 {selectedIntegration && (
-                   <selectedIntegration.icon size={24} color={selectedIntegration.color} />
-                 )}
-                 <Text style={styles.modalTitle}>
-                   {isConnected(selectedIntegration?.id || '') ? 'Manage' : 'Connect'} {selectedIntegration?.name}
-                 </Text>
+                {selectedIntegration && <selectedIntegration.icon size={22} color={selectedIntegration.color} />}
+                <Text style={[styles.modalTitle, { color: stitch.textPrimary }]}>
+                  {isConnected(selectedIntegration?.id || '') ? 'Manage' : 'Connect'} {selectedIntegration?.name}
+                </Text>
               </View>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <X size={24} color={Colors.textSecondary} />
+                <X size={20} color={stitch.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.modalDescription}>{selectedIntegration?.description}</Text>
-              
+              <Text style={[styles.modalDescription, { color: stitch.textSecondary }]}>
+                {selectedIntegration?.description}
+              </Text>
+
               {selectedIntegration?.fields.map((field) => (
                 <View key={field.name} style={styles.formGroup}>
-                  <Text style={styles.label}>
-                    {field.label} {field.required && <Text style={{ color: Colors.error }}>*</Text>}
+                  <Text style={[styles.label, { color: stitch.textPrimary }]}>
+                    {field.label} {field.required && <Text style={{ color: '#EF4444' }}>*</Text>}
                   </Text>
                   <TextInput
-                    style={styles.input}
-                    placeholder={field.placeholder}
+                    style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
+                    placeholder={field.placeholder || `Enter ${field.label}`}
+                    placeholderTextColor={stitch.textMuted}
                     secureTextEntry={field.type === 'password'}
                     value={formValues[field.name] || ''}
                     onChangeText={(text) => setFormValues({ ...formValues, [field.name]: text })}
@@ -313,23 +359,20 @@ export default function AdminIntegrations() {
               ))}
             </View>
 
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+            <View style={[styles.modalFooter, { borderTopColor: stitch.cardBorder }]}>
+              <TouchableOpacity style={[styles.cancelButton, { borderColor: stitch.inputBorder }]} onPress={() => setShowModal(false)}>
+                <Text style={[styles.cancelButtonText, { color: stitch.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.saveButton}
+                style={[styles.saveButton, { backgroundColor: stitch.primary }]}
                 onPress={handleSubmitConnection}
                 disabled={isConnecting}
               >
                 {isConnecting ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
+                  <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Text style={styles.saveButtonText}>
-                    {isConnected(selectedIntegration?.id || '') ? 'Update Configuration' : 'Connect Integration'}
+                    {isConnected(selectedIntegration?.id || '') ? 'Save Configuration' : 'Connect Integration'}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -343,429 +386,330 @@ export default function AdminIntegrations() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.xl,
+    gap: 20,
   },
   header: {
     gap: 4,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: Colors.text,
   },
   subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 13,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
-    padding: 4,
-    borderRadius: 8,
+    padding: 6,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   tab: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    minWidth: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabActive: {
-    backgroundColor: Colors.white,
-    shadowColor: Colors.shadow.sm,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  tabContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  tabActive: {
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
   tabText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 13,
     fontWeight: '500',
-  },
-  tabTextActive: {
-    color: Colors.primary,
-    fontWeight: '600',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.lg,
+    gap: 16,
   },
   card: {
     flex: 1,
-    minWidth: 300,
-    maxWidth: 400,
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: Spacing.xl,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
-    gap: Spacing.lg,
+    minWidth: 280,
+    maxWidth: 380,
+    borderRadius: 14,
+    padding: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 14,
   },
   cardHeader: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    alignItems: 'center',
+    gap: 12,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerText: {
     flex: 1,
-    justifyContent: 'center',
     gap: 4,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: Colors.text,
   },
   cardDescription: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    minHeight: 40,
+    fontSize: 13,
+    lineHeight: 18,
+    minHeight: 36,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 100,
+    borderRadius: 6,
     alignSelf: 'flex-start',
   },
   statusConnected: {
-    backgroundColor: Colors.success,
-  },
-  statusDisconnected: {
-    backgroundColor: Colors.textLight,
+    backgroundColor: '#059669',
   },
   statusText: {
-    fontSize: 10,
-    color: Colors.white,
+    fontSize: 10.5,
     fontWeight: '600',
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 10,
     marginTop: 'auto',
+    paddingTop: 8,
   },
   connectButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
+    gap: 6,
+    paddingVertical: 9,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 8,
   },
   manageButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: Colors.backgroundSecondary,
+    paddingVertical: 9,
     borderRadius: 8,
+    borderWidth: 1,
   },
   disconnectButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: 8,
   },
   connectButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.text,
   },
   manageButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
   },
   disconnectButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.error,
+    color: '#EF4444',
   },
   placeholder: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.xl * 3,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 24,
+    padding: 40,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
   },
   placeholderText: {
-    color: Colors.textSecondary,
-    fontSize: 16,
+    fontSize: 13,
   },
-  
-  // Developer Tab
   developerContainer: {
-    gap: Spacing.xl,
-  },
-  apiHeader: {
-    marginBottom: Spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 4,
+    gap: 20,
   },
   createKeyCard: {
-    backgroundColor: Colors.white,
-    padding: Spacing.lg,
-    borderRadius: 24,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
-    gap: Spacing.md,
+    borderRadius: 14,
+    padding: 20,
+    borderWidth: 1,
+    gap: 12,
   },
   cardLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
+    fontWeight: '700',
   },
   createKeyRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 12,
+    flexWrap: 'wrap',
   },
   keyInput: {
     flex: 1,
+    minWidth: 240,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.md,
-    height: 44,
-    fontSize: 14,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13,
   },
   generateButton: {
-    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    borderRadius: 8,
-    gap: 8,
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   generateButtonText: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   keysList: {
-    gap: Spacing.md,
+    gap: 12,
   },
   keysListTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  emptyKeys: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 36,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  emptyKeysText: {
+    fontSize: 13,
   },
   keyItem: {
-    backgroundColor: Colors.white,
-    padding: Spacing.lg,
-    borderRadius: 24,
-    borderWidth: 0,
-    shadowColor: 'rgba(0, 0, 0, 0.04)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   keyInfo: {
     gap: 4,
     flex: 1,
   },
   keyName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
+    fontSize: 13.5,
+    fontWeight: '700',
   },
   keyValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.backgroundSecondary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
   },
   keyValue: {
-    fontSize: 12,
-    fontFamily: Platform.select({ ios: 'Courier', default: 'monospace' }),
-    color: Colors.text,
+    fontFamily: 'monospace',
+    fontSize: 12.5,
   },
   keyDate: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
+    fontSize: 11.5,
   },
   revokeButton: {
-    padding: 8,
+    padding: 10,
     borderRadius: 8,
-    backgroundColor: '#FEF2F2',
   },
-  emptyKeys: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl * 2,
-    gap: Spacing.md,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-  },
-  emptyKeysText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-  },
-  docsLink: {
-    alignItems: 'center',
-    marginTop: Spacing.md,
-  },
-  docsText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-  },
-  linkText: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-
-  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
   },
   modalContent: {
     width: '100%',
-    maxWidth: 500,
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    shadowColor: 'rgba(0,0,0,0.15)',
-    shadowOffset: { width: 0, height: 24 },
-    shadowOpacity: 1,
-    shadowRadius: 48,
-    elevation: 24,
+    maxWidth: 480,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.xl,
+    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   modalTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 10,
   },
   modalTitle: {
-    ...Typography.h3,
-    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '700',
   },
   modalBody: {
-    padding: Spacing.xl,
-    gap: Spacing.lg,
+    padding: 20,
+    gap: 14,
   },
   modalDescription: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    marginBottom: Spacing.sm,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 4,
   },
   formGroup: {
-    gap: Spacing.sm,
+    gap: 6,
   },
   label: {
-    ...Typography.bodySmall,
-    color: Colors.text,
+    fontSize: 13,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: 14,
-    color: Colors.text,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13,
   },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: Spacing.md,
-    padding: Spacing.xl,
+    gap: 10,
+    padding: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.backgroundSecondary,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
   },
   cancelButton: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
   },
   cancelButtonText: {
-    ...Typography.body,
-    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
   saveButton: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: Colors.primary,
-    minWidth: 120,
-    alignItems: 'center',
   },
   saveButtonText: {
-    ...Typography.body,
-    color: Colors.white,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

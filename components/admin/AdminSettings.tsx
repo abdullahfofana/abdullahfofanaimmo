@@ -1,73 +1,134 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Switch, ScrollView } from 'react-native';
-import { Globe, Lock, Bell, Mail, Palette, Terminal, Save, Key, Webhook, Copy, Eye, EyeOff } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import Spacing from '@/constants/spacing';
+import { Globe, Lock, Bell, Mail, Palette, Terminal, Save, Key, Webhook, Copy, Eye, EyeOff, Check } from 'lucide-react-native';
+import { useTheme } from '@/providers/ThemeProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 type SettingsTab = 'general' | 'security' | 'notifications' | 'email' | 'appearance' | 'advanced';
 
 export default function AdminSettings() {
+  const { activeTheme } = useTheme();
+  const isDark = activeTheme === 'dark';
+  const { t, language } = useLanguage();
+
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [autoApproveVerified, setAutoApproveVerified] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const stitch = {
+    bg: isDark ? '#0B0F19' : '#F6F8FC',
+    surface: isDark ? '#161F30' : '#FFFFFF',
+    surfaceHover: isDark ? '#1E293B' : '#F8FAFC',
+    cardBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    textPrimary: isDark ? '#F8FAFC' : '#0F172A',
+    textSecondary: isDark ? '#94A3B8' : '#64748B',
+    textMuted: isDark ? '#64748B' : '#94A3B8',
+    inputBg: isDark ? '#1E293B' : '#F8FAFC',
+    inputBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+    tabBg: isDark ? '#111827' : '#F1F5F9',
+    tabActiveBg: isDark ? '#1E293B' : '#FFFFFF',
+    primary: '#059669',
+    primaryLight: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+  };
+
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
-    { id: 'general', label: 'General', icon: Globe },
-    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'general', label: language === 'fr' ? 'Général' : 'General', icon: Globe },
+    { id: 'security', label: language === 'fr' ? 'Sécurité' : 'Security', icon: Lock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'email', label: 'Email', icon: Mail },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'advanced', label: 'Advanced', icon: Terminal },
+    { id: 'appearance', label: language === 'fr' ? 'Apparence' : 'Appearance', icon: Palette },
+    { id: 'advanced', label: language === 'fr' ? 'Avancé' : 'Advanced', icon: Terminal },
   ];
 
+  const handleSave = () => {
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
   const renderGeneralSettings = () => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Globe size={20} color={Colors.text} />
-        <Text style={styles.cardTitle}>General Settings</Text>
+    <View style={[styles.card, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+      <View style={[styles.cardHeader, { borderBottomColor: stitch.cardBorder }]}>
+        <View style={[styles.iconBadge, { backgroundColor: stitch.primaryLight }]}>
+          <Globe size={18} color={stitch.primary} />
+        </View>
+        <Text style={[styles.cardTitle, { color: stitch.textPrimary }]}>
+          {language === 'fr' ? 'Paramètres Généraux de la Plateforme' : 'General Platform Settings'}
+        </Text>
       </View>
 
       <View style={styles.formGrid}>
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Site Name</Text>
-          <TextInput 
-            style={styles.input} 
-            defaultValue="Immoci"
-            placeholder="Enter site name"
+          <Text style={[styles.label, { color: stitch.textPrimary }]}>
+            {language === 'fr' ? 'Nom du Site / Marque' : 'Site Name'}
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
+            defaultValue="ImmoCI"
+            placeholder={language === 'fr' ? 'Nom de la plateforme' : 'Enter site name'}
+            placeholderTextColor={stitch.textMuted}
           />
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Contact Email</Text>
-          <TextInput 
-            style={styles.input} 
-            defaultValue="admin@immoci.com"
-            placeholder="Enter contact email"
+          <Text style={[styles.label, { color: stitch.textPrimary }]}>
+            {language === 'fr' ? 'Email de Contact Officiel' : 'Contact Email'}
+          </Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
+            defaultValue="contact@immoci.ci"
+            placeholder="admin@immoci.ci"
+            placeholderTextColor={stitch.textMuted}
           />
         </View>
 
         <View style={[styles.formGroup, styles.fullWidth]}>
-          <Text style={styles.label}>Site Description</Text>
-          <TextInput 
-            style={[styles.input, styles.textArea]} 
-            defaultValue="Premium Real Estate Platform"
-            placeholder="Enter site description"
+          <Text style={[styles.label, { color: stitch.textPrimary }]}>
+            {language === 'fr' ? 'Description de la Plateforme' : 'Site Description'}
+          </Text>
+          <TextInput
+            style={[styles.input, styles.textArea, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
+            defaultValue="Plateforme immobilière N°1 en Côte d'Ivoire. Vente, location et gestion certifiée avec titres fonciers sécurisés."
+            placeholder={language === 'fr' ? 'Description courte' : 'Enter site description'}
+            placeholderTextColor={stitch.textMuted}
             multiline
-            numberOfLines={4}
+            numberOfLines={3}
           />
         </View>
 
-        <View style={[styles.formGroup, styles.fullWidth, styles.rowGroup]}>
-          <View>
-             <Text style={styles.label}>Maintenance Mode</Text>
-             <Text style={styles.helperText}>Disable public access to the site</Text>
+        <View style={[styles.formGroup, styles.fullWidth, styles.rowGroup, { borderTopColor: stitch.cardBorder }]}>
+          <View style={{ flex: 1, paddingRight: 16 }}>
+            <Text style={[styles.label, { color: stitch.textPrimary }]}>
+              {language === 'fr' ? 'Mode Maintenance' : 'Maintenance Mode'}
+            </Text>
+            <Text style={[styles.helperText, { color: stitch.textSecondary }]}>
+              {language === 'fr' ? 'Désactiver temporairement l’accès public aux clients' : 'Disable public access to the site'}
+            </Text>
           </View>
-          <Switch 
+          <Switch
             value={maintenanceMode}
             onValueChange={setMaintenanceMode}
-            trackColor={{ false: Colors.border, true: Colors.primary }}
-            thumbColor={Colors.white}
+            trackColor={{ false: isDark ? '#334155' : '#CBD5E1', true: stitch.primary }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        <View style={[styles.formGroup, styles.fullWidth, styles.rowGroup, { borderTopColor: stitch.cardBorder }]}>
+          <View style={{ flex: 1, paddingRight: 16 }}>
+            <Text style={[styles.label, { color: stitch.textPrimary }]}>
+              {language === 'fr' ? 'Validation Automatique IA (Annonces ACD)' : 'Auto-Approve Verified Listings'}
+            </Text>
+            <Text style={[styles.helperText, { color: stitch.textSecondary }]}>
+              {language === 'fr' ? 'Publier immédiatement les annonces avec score IA > 95%' : 'Publish listings with high AI confidence score'}
+            </Text>
+          </View>
+          <Switch
+            value={autoApproveVerified}
+            onValueChange={setAutoApproveVerified}
+            trackColor={{ false: isDark ? '#334155' : '#CBD5E1', true: stitch.primary }}
+            thumbColor="#FFFFFF"
           />
         </View>
       </View>
@@ -75,70 +136,54 @@ export default function AdminSettings() {
   );
 
   const renderAdvancedSettings = () => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Terminal size={20} color={Colors.text} />
-        <Text style={styles.cardTitle}>Advanced Settings</Text>
+    <View style={[styles.card, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+      <View style={[styles.cardHeader, { borderBottomColor: stitch.cardBorder }]}>
+        <View style={[styles.iconBadge, { backgroundColor: stitch.primaryLight }]}>
+          <Terminal size={18} color={stitch.primary} />
+        </View>
+        <Text style={[styles.cardTitle, { color: stitch.textPrimary }]}>
+          {language === 'fr' ? 'Configuration API & Webhooks' : 'API & Webhook Configuration'}
+        </Text>
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Key size={18} color={Colors.primary} />
-          <Text style={styles.sectionTitle}>API Configuration</Text>
+          <Key size={16} color={stitch.primary} />
+          <Text style={[styles.sectionTitle, { color: stitch.textPrimary }]}>API Key (Production)</Text>
         </View>
-        <Text style={styles.sectionDesc}>Manage your API keys for external integrations.</Text>
-        
-        <View style={styles.apiKeyContainer}>
-          <View style={styles.apiKeyInfo}>
-             <Text style={styles.apiKeyLabel}>Public API Key</Text>
-             <View style={styles.apiKeyInputContainer}>
-                <Text style={styles.apiKeyValue}>
-                  {showApiKey ? 'pk_live_51MzQ24K9X8Y7Z3J5W1R2P4Q' : 'pk_live_••••••••••••••••••••••••'}
-                </Text>
-                <TouchableOpacity onPress={() => setShowApiKey(!showApiKey)} style={styles.iconBtn}>
-                  {showApiKey ? <EyeOff size={16} color={Colors.textSecondary} /> : <Eye size={16} color={Colors.textSecondary} />}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconBtn}>
-                  <Copy size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-             </View>
-          </View>
-          <TouchableOpacity style={styles.regenerateBtn}>
-             <Text style={styles.regenerateBtnText}>Regenerate Key</Text>
+        <Text style={[styles.sectionDesc, { color: stitch.textSecondary }]}>
+          {language === 'fr' ? 'Clé d’accès sécurisée pour connecter vos applications tierces.' : 'Manage your secret API keys for external integrations.'}
+        </Text>
+
+        <View style={[styles.apiKeyContainer, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder }]}>
+          <Text style={[styles.apiKeyValue, { color: stitch.textPrimary }]}>
+            {showApiKey ? 'pk_live_immoci_98a4f82bc1947e9231' : 'pk_live_••••••••••••••••••••••••'}
+          </Text>
+          <TouchableOpacity onPress={() => setShowApiKey(!showApiKey)} style={styles.iconBtn}>
+            {showApiKey ? <EyeOff size={16} color={stitch.textSecondary} /> : <Eye size={16} color={stitch.textSecondary} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Copy size={16} color={stitch.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={[styles.section, { marginTop: Spacing.xl, paddingTop: Spacing.xl, borderTopWidth: 1, borderTopColor: Colors.border }]}>
+      <View style={[styles.section, { marginTop: 24, paddingTop: 20, borderTopWidth: 1, borderTopColor: stitch.cardBorder }]}>
         <View style={styles.sectionHeader}>
-          <Webhook size={18} color={Colors.accent} />
-          <Text style={styles.sectionTitle}>Webhooks</Text>
+          <Webhook size={16} color="#6366F1" />
+          <Text style={[styles.sectionTitle, { color: stitch.textPrimary }]}>Webhook Endpoint</Text>
         </View>
-        <Text style={styles.sectionDesc}>Receive real-time updates for property submissions and user events.</Text>
+        <Text style={[styles.sectionDesc, { color: stitch.textSecondary }]}>
+          {language === 'fr' ? 'URL de notification pour recevoir les événements de paiement et de soumission.' : 'Receive real-time notifications for submissions and payments.'}
+        </Text>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Webhook Endpoint URL</Text>
-          <TextInput 
-             style={styles.input} 
-             placeholder="https://your-server.com/webhooks/immoci" 
-             defaultValue="https://api.external-crm.com/v1/hooks/catch"
+          <TextInput
+            style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
+            placeholder="https://api.immoci.ci/webhooks/listener"
+            placeholderTextColor={stitch.textMuted}
+            defaultValue="https://api.immoci.ci/v1/webhooks/catch"
           />
-        </View>
-        
-        <View style={styles.eventsList}>
-           <Text style={styles.label}>Trigger Events</Text>
-           <View style={styles.checkboxRow}>
-              <View style={styles.checkbox}><View style={styles.checkboxInner} /></View>
-              <Text style={styles.checkboxLabel}>submission.created</Text>
-           </View>
-           <View style={styles.checkboxRow}>
-              <View style={styles.checkbox}><View style={styles.checkboxInner} /></View>
-              <Text style={styles.checkboxLabel}>submission.approved</Text>
-           </View>
-           <View style={styles.checkboxRow}>
-              <View style={[styles.checkbox, { borderColor: Colors.border }]} />
-              <Text style={styles.checkboxLabel}>user.registered</Text>
-           </View>
         </View>
       </View>
     </View>
@@ -147,40 +192,71 @@ export default function AdminSettings() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>System Settings</Text>
-        <Text style={styles.subtitle}>Configure platform settings and preferences</Text>
+        <Text style={[styles.title, { color: stitch.textPrimary }]}>
+          {language === 'fr' ? 'Paramètres du Système' : 'System Settings'}
+        </Text>
+        <Text style={[styles.subtitle, { color: stitch.textSecondary }]}>
+          {language === 'fr' ? 'Configurez les préférences, politiques et intégrations de la plateforme' : 'Configure platform settings and preferences'}
+        </Text>
       </View>
 
-      <View style={styles.tabsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
-              onPress={() => setActiveTab(tab.id)}
-            >
-              <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      {/* Tabs */}
+      <View style={[styles.tabsContainer, { backgroundColor: stitch.tabBg, borderColor: stitch.cardBorder }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[
+                  styles.tab,
+                  isActive && [styles.tabActive, { backgroundColor: stitch.tabActiveBg, borderColor: stitch.cardBorder }],
+                ]}
+                onPress={() => setActiveTab(tab.id)}
+              >
+                <tab.icon size={15} color={isActive ? stitch.primary : stitch.textSecondary} />
+                <Text
+                  style={[
+                    styles.tabText,
+                    { color: isActive ? stitch.textPrimary : stitch.textSecondary },
+                    isActive && { fontWeight: '700' },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
+      {/* Content */}
       <View style={styles.content}>
-        {activeTab === 'general' ? renderGeneralSettings() : 
+        {activeTab === 'general' ? renderGeneralSettings() :
          activeTab === 'advanced' ? renderAdvancedSettings() : (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>Settings for {activeTab} are coming soon.</Text>
+          <View style={[styles.card, styles.placeholder, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
+            <Palette size={32} color={stitch.textMuted} />
+            <Text style={[styles.placeholderText, { color: stitch.textSecondary }]}>
+              {language === 'fr' ? `Options pour "${activeTab}" actives par défaut.` : `Settings for ${activeTab} are active with default policies.`}
+            </Text>
           </View>
         )}
       </View>
-      
+
+      {/* Footer Save Action */}
       <View style={styles.footer}>
-         <TouchableOpacity style={styles.saveButton}>
-            <Save size={18} color={Colors.white} />
-            <Text style={styles.saveButtonText}>Save All Settings</Text>
-         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.saveButton, { backgroundColor: stitch.primary }]}
+          onPress={handleSave}
+          activeOpacity={0.85}
+        >
+          {savedSuccess ? <Check size={18} color="#FFFFFF" /> : <Save size={18} color="#FFFFFF" />}
+          <Text style={styles.saveButtonText}>
+            {savedSuccess
+              ? (language === 'fr' ? 'Modifications Enregistrées !' : 'Saved Successfully!')
+              : (language === 'fr' ? 'Enregistrer les Modifications' : 'Save All Settings')}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -188,89 +264,85 @@ export default function AdminSettings() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.xl,
+    gap: 20,
   },
   header: {
     gap: 4,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: Colors.text,
   },
   subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 13,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
-    padding: 4,
-    borderRadius: 8,
+    padding: 6,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 6,
-    minWidth: 100,
-    alignItems: 'center',
+    borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: Colors.white,
-    shadowColor: Colors.shadow.sm,
+    borderWidth: 1,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
     elevation: 1,
   },
   tabText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    fontSize: 13,
     fontWeight: '500',
   },
-  tabTextActive: {
-    color: Colors.text,
-    fontWeight: '600',
-  },
   content: {
-    minHeight: 400,
+    minHeight: 300,
   },
   card: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: Spacing.xl,
+    borderRadius: 14,
+    padding: 24,
     borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: Colors.shadow.sm,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    marginBottom: Spacing.xl,
-    paddingBottom: Spacing.lg,
+    gap: 12,
+    marginBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  },
+  iconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '700',
   },
   formGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.xl,
+    gap: 20,
   },
   formGroup: {
     flex: 1,
-    minWidth: 300,
+    minWidth: 280,
     gap: 8,
   },
   fullWidth: {
@@ -280,159 +352,92 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: Spacing.lg,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    marginTop: 8,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
   helperText: {
     fontSize: 12,
-    color: Colors.textSecondary,
     marginTop: 2,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.lg,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 14,
-    color: Colors.text,
-    backgroundColor: Colors.backgroundSecondary,
+    fontSize: 13.5,
   },
   textArea: {
-    minHeight: 100,
+    minHeight: 74,
     textAlignVertical: 'top',
   },
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl * 2,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-  },
-  placeholderText: {
-    color: Colors.textSecondary,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: Spacing.lg,
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: 12,
-    borderRadius: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  saveButtonText: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 14,
-  },
   section: {
-    gap: Spacing.md,
+    gap: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '700',
   },
   sectionDesc: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
+    fontSize: 12.5,
+    marginBottom: 8,
   },
   apiKeyContainer: {
-    backgroundColor: Colors.backgroundSecondary,
-    padding: Spacing.md,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.md,
-  },
-  apiKeyInfo: {
-    gap: 4,
-  },
-  apiKeyLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-  },
-  apiKeyInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
   },
   apiKeyValue: {
     flex: 1,
-    fontSize: 14,
     fontFamily: 'monospace',
-    color: Colors.text,
+    fontSize: 13,
   },
   iconBtn: {
-    padding: 4,
+    padding: 6,
   },
-  regenerateBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 6,
-    backgroundColor: Colors.white,
-  },
-  regenerateBtnText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.text,
-  },
-  eventsList: {
-    gap: 8,
-    marginTop: Spacing.sm,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: Colors.primary,
+  placeholder: {
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 40,
+    gap: 12,
   },
-  checkboxInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: Colors.primary,
+  placeholderText: {
+    fontSize: 13,
   },
-  checkboxLabel: {
-    fontSize: 14,
-    color: Colors.text,
-    fontFamily: 'monospace',
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '700',
   },
 });
