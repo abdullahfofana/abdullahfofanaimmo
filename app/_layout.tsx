@@ -10,8 +10,6 @@ import { IntegrationProvider } from "@/providers/IntegrationProvider";
 import { FavoritesProvider } from "@/providers/FavoritesProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
-import AIChatbot from '../components/AIChatbot';
-import SellerAIAssistant from '../components/SellerAIAssistant';
 import { View, Platform } from "react-native";
 import { trpc, getBaseUrl } from "@/lib/trpc";
 import { httpLink } from "@trpc/client";
@@ -167,10 +165,8 @@ export default function RootLayout() {
                 <PropertySubmissionProvider>
                   <LanguageProvider>
                     <GestureHandlerRootView style={{ flex: 1 }}>
-                      <View style={{ flex: 1, position: 'relative' }}>
+                      <View style={{ flex: 1 }}>
                         <RootLayoutNav />
-                        <AIChatbot />
-                        <SellerAIAssistant />
                       </View>
                     </GestureHandlerRootView>
                   </LanguageProvider>
