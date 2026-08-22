@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Navigation,
   Sparkles,
+  Zap,
   Lock,
   CheckCircle2,
   Check,
@@ -798,6 +799,26 @@ export default function AddPropertyStandaloneScreen() {
               {t('auth_gate_subtitle') || 'Pour garantir la sécurité et l\'authenticité des offres sur ImmoCI, vous devez vous connecter ou créer un compte vérifié avant de soumettre un bien.'}
             </Text>
 
+            {/* 1-Click Instant Skip Button (Like Admin Page) */}
+            <TouchableOpacity
+              style={styles.instantAccessBtn}
+              onPress={() => setBypassAuth(true)}
+              activeOpacity={0.88}
+            >
+              <LinearGradient
+                colors={['#059669', '#10B981']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.instantAccessGradient}
+              >
+                <Zap size={20} color="#FFFFFF" fill="#FFFFFF" />
+                <Text style={styles.instantAccessText}>
+                  {language === 'fr' ? '⚡ Accès Direct — Publier sans Compte (1-Clic)' : '⚡ Direct Access — Post Without Login (1-Click)'}
+                </Text>
+                <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.5} />
+              </LinearGradient>
+            </TouchableOpacity>
+
             <View style={styles.authBenefitsList}>
               <View style={styles.authBenefitItem}>
                 <View style={styles.authBenefitIconCircle}>
@@ -844,6 +865,16 @@ export default function AddPropertyStandaloneScreen() {
 
             <View style={styles.authGateActions}>
               <TouchableOpacity
+                style={styles.guestAccessBtn}
+                onPress={() => setBypassAuth(true)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.guestAccessBtnText}>
+                  {language === 'fr' ? '⚡ Accéder directement au formulaire d\'annonce' : '⚡ Go directly to property submission form'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.authPrimaryBtn}
                 onPress={() => router.push('/auth')}
                 activeOpacity={0.88}
@@ -869,16 +900,6 @@ export default function AddPropertyStandaloneScreen() {
               >
                 <Text style={styles.authSecondaryBtnText}>
                   {t('auth_gate_browse_btn') || 'Explorer les biens'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.devBypassBtn}
-                onPress={() => setBypassAuth(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.devBypassText}>
-                  {language === 'fr' ? '⚡ Accéder au formulaire (Mode Test / Démo)' : '⚡ Skip Auth for Testing / Demo'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -3151,6 +3172,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#64748B',
+  },
+  instantAccessBtn: {
+    width: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  instantAccessGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  instantAccessText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
+  guestAccessBtn: {
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(5, 150, 105, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestAccessBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#059669',
   },
   devBypassBtn: {
     marginTop: 6,

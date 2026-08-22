@@ -148,11 +148,7 @@ export default function WebNavbar() {
   };
 
   const handleAddProperty = () => {
-    if (user || session) {
-      handleNav('/(tabs)/add-property');
-    } else {
-      handleNav('/auth');
-    }
+    handleNav('/(tabs)/add-property');
   };
 
   return (
