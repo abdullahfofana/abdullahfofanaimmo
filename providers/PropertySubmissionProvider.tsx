@@ -31,14 +31,27 @@ async function fetchPropertiesFromSupabase(): Promise<PropertySubmission[]> {
 }
 
 async function insertPropertyToSupabase(submission: PropertySubmission): Promise<PropertySubmission> {
+  // Strip fields that may not exist in the schema to avoid 400 errors
+  const { id, submittedAt, submissionStatus, ...rest } = submission as any;
+  const payload = {
+    ...rest,
+    id: id ?? crypto.randomUUID(),
+    submittedAt: submittedAt ?? new Date().toISOString(),
+    submissionStatus: submissionStatus ?? 'pending',
+    // Ensure arrays are valid JSON
+    photos: Array.isArray(rest.photos) ? rest.photos : [],
+    features: Array.isArray(rest.features) ? rest.features : [],
+  };
+
   const { data, error } = await supabase
     .from('properties')
-    .insert(submission)
+    .insert(payload)
     .select()
     .single();
+
   if (error) {
-    console.warn('[PropertySubmission] Supabase insert error:', error.message);
-    // Return the local submission as fallback — data is not lost
+    console.warn('[PropertySubmission] Supabase insert error:', error.message, error.details);
+    // Return the local submission as fallback so data is not lost
     return submission;
   }
   return (data ?? submission) as PropertySubmission;
@@ -157,38 +170,49 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
     try {
       const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      // On web, browser file picker gives blob: URLs; on native, file:// URLs
+      const isUploadable = (uri?: string | null) =>
+        !!uri && (uri.startsWith('file://') || uri.startsWith('blob:'));
+
       const hasLocalFiles =
-        submission.photos.some(p => p.startsWith('file://')) ||
-        (submission.video && submission.video.startsWith('file://')) ||
-        (submission.document && submission.document.startsWith('file://'));
+        submission.photos.some(isUploadable) ||
+        isUploadable(submission.video) ||
+        isUploadable(submission.document);
 
       let uploadedPhotos = submission.photos;
       let uploadedVideo = submission.video;
       let uploadedDocument = submission.document;
 
       if (hasLocalFiles) {
-        // Try to upload to Supabase Storage — fall back to local URIs if unavailable
-        if (submission.photos.some(p => p.startsWith('file://'))) {
+        // Upload photos (file:// or blob:)
+        const photosToUpload = submission.photos.filter(isUploadable);
+        const photosAlreadyUrl = submission.photos.filter(p => !isUploadable(p));
+        if (photosToUpload.length > 0) {
           try {
-            uploadedPhotos = await storageService.uploadMultiplePhotos(
-              submission.photos, tempId, () => {}
+            const uploaded = await storageService.uploadMultiplePhotos(
+              photosToUpload, tempId, () => {}
             );
+            uploadedPhotos = [...photosAlreadyUrl, ...uploaded];
           } catch (e) {
-            console.warn('[PropertySubmission] Photo upload failed, using local URIs');
+            console.warn('[PropertySubmission] Photo upload failed, dropping local URIs');
+            // On web, blob: URLs cannot be saved to DB — remove them, keep remote URLs
+            uploadedPhotos = photosAlreadyUrl.length > 0 ? photosAlreadyUrl : submission.photos.filter(p => p.startsWith('http'));
           }
         }
-        if (submission.video?.startsWith('file://')) {
+        if (isUploadable(submission.video)) {
           try {
-            uploadedVideo = await storageService.uploadVideo(submission.video, tempId);
+            uploadedVideo = await storageService.uploadVideo(submission.video!, tempId);
           } catch (e) {
-            console.warn('[PropertySubmission] Video upload failed, using local URI');
+            console.warn('[PropertySubmission] Video upload failed, dropping');
+            uploadedVideo = undefined;
           }
         }
-        if (submission.document?.startsWith('file://')) {
+        if (isUploadable(submission.document)) {
           try {
-            uploadedDocument = await storageService.uploadDocument(submission.document, tempId);
+            uploadedDocument = await storageService.uploadDocument(submission.document!, tempId);
           } catch (e) {
-            console.warn('[PropertySubmission] Document upload failed, using local URI');
+            console.warn('[PropertySubmission] Document upload failed, dropping');
+            uploadedDocument = undefined;
           }
         }
       }
@@ -205,7 +229,7 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
 
       let newSubmission: PropertySubmission;
 
-      // Try tRPC first, then fall back to Supabase directly
+      // On web (Vercel static), always use Supabase directly — no tRPC server
       const useTrpc = await isTrpcAvailable();
       if (useTrpc) {
         const client = await getTrpcClient();
@@ -218,14 +242,9 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
               document: uploadedDocument ?? '',
             });
           } catch (trpcErr: any) {
-            const msg = trpcErr?.message ?? '';
-            // If tRPC is unavailable at runtime, fall through to Supabase
-            if (msg.includes('404') || msg.includes('Not found') || msg.includes('fetch') || msg.includes('connect')) {
-              console.warn('[PropertySubmission] tRPC unavailable, switching to Supabase direct');
-              newSubmission = await insertPropertyToSupabase(fullSubmission);
-            } else {
-              throw trpcErr;
-            }
+            // Any tRPC failure on web → fall through to Supabase (do NOT rethrow)
+            console.warn('[PropertySubmission] tRPC failed, switching to Supabase direct:', trpcErr?.message);
+            newSubmission = await insertPropertyToSupabase(fullSubmission);
           }
         } else {
           newSubmission = await insertPropertyToSupabase(fullSubmission);

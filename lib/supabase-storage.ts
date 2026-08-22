@@ -7,7 +7,9 @@ export interface UploadProgress {
 }
 
 async function uriToFileData(uri: string): Promise<Blob> {
+  // blob: URLs (web browser file picker) and file:// URLs (native) both work via fetch
   const response = await fetch(uri);
+  if (!response.ok) throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
   return await response.blob();
 }
 

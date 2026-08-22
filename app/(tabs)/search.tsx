@@ -52,6 +52,8 @@ export default function SearchScreen() {
     q?: string;
     location?: string;
     filter?: string;
+    view?: string;
+    mode?: string;
   }>();
 
   const [searchQuery, setSearchQuery] = useState<string>(params.q || '');
@@ -65,7 +67,7 @@ export default function SearchScreen() {
   const { isTablet, isDesktop } = useResponsive();
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>((params.view === 'map' || params.mode === 'map') ? 'map' : 'list');
   const [userId, setUserId] = useState<string | null>(null);
   const saveIntentMutation = trpc.search.saveIntent.useMutation();
   const parseSearchMutation = trpc.ai.parseSearch.useMutation();
@@ -88,6 +90,8 @@ export default function SearchScreen() {
   useEffect(() => {
     if (params.q) setSearchQuery(params.q);
     if (params.location) setLocationSearch(params.location);
+    if (params.view === 'map' || params.mode === 'map') setViewMode('map');
+    else if (params.view === 'list') setViewMode('list');
     if (params.status || params.type) {
       setFilters(prev => ({
         ...prev,
@@ -96,7 +100,7 @@ export default function SearchScreen() {
       }));
       setActiveStatus((params.status as PropertyStatus) || 'all');
     }
-  }, [params.q, params.location, params.status, params.type]);
+  }, [params.q, params.location, params.status, params.type, params.view, params.mode]);
 
   useEffect(() => {
     // Get or create a persistent user ID for notifications

@@ -45,10 +45,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-      
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = row not found
+
       if (data) {
         setUser(data as User);
+      } else {
+        // Row doesn't exist yet (e.g. first OAuth sign-in) — auto-create it
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const newUser: User = {
+            id: authUser.id,
+            email: authUser.email || '',
+            name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+            phone: authUser.user_metadata?.phone || '',
+            role: 'user',
+          };
+          const { error: insertError } = await supabase.from('users').upsert(newUser, { onConflict: 'id' });
+          if (!insertError) setUser(newUser);
+        }
       }
     } catch (err) {
       console.error('[Auth] Error loading user:', err);

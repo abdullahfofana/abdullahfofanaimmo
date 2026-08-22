@@ -13,6 +13,15 @@ import {
   Bell,
   TrendingUp,
   ArrowRight,
+  SlidersHorizontal,
+  Phone,
+  MessageCircle,
+  Map as MapIcon,
+  Heart,
+  Bed,
+  Bath,
+  Maximize2,
+  CheckCircle2,
 } from 'lucide-react-native';
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -27,6 +36,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -39,15 +49,15 @@ import { mockProperties } from '@/mocks/properties';
 import { getColumns, getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
+import { useFavorites } from '@/providers/FavoritesProvider';
 import { Property } from '@/types/property';
 
 function getCarouselWidth(screenWidth: number): number {
   if (screenWidth >= 1440) return 500;
   if (screenWidth >= 1024) return 450;
   if (screenWidth >= 768) return 400;
-  return screenWidth * 0.82;
+  return screenWidth * 0.84;
 }
-
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -59,16 +69,22 @@ export default function HomeScreen() {
   const [priceRange, setPriceRange] = useState<string>('');
   const [userName] = useState('Jean');
   const colors = useColors();
+  const { isFavorite, toggleFavorite } = useFavorites();
   
-  // 3D Carousel state for recent listings
+  // Selected category filter on mobile
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  // Listing filter: 'all' | 'sale' | 'rent'
+  const [listingFilter, setListingFilter] = useState<'all' | 'sale' | 'rent'>('all');
+
+  // 3D Carousel state for desktop recent listings
   const [recentIndex, setRecentIndex] = useState(0);
   const carouselAnim = useRef(new Animated.Value(0)).current;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return t('greeting_morning');
-    if (hour < 18) return t('greeting_afternoon');
-    return t('greeting_evening');
+    if (hour < 12) return t('greeting_morning') || (language === 'fr' ? 'Bonjour' : 'Good Morning');
+    if (hour < 18) return t('greeting_afternoon') || (language === 'fr' ? 'Bon après-midi' : 'Good Afternoon');
+    return t('greeting_evening') || (language === 'fr' ? 'Bonsoir' : 'Good Evening');
   };
 
   useEffect(() => {
@@ -87,15 +103,14 @@ export default function HomeScreen() {
         Animated.timing(bellAnimation, { toValue: 0, duration: 100, useNativeDriver: true }),
       ]).start();
     };
-    const interval = setInterval(animateBell, 5000);
+    const interval = setInterval(animateBell, 6000);
     return () => clearInterval(interval);
   }, [bellAnimation]);
-
 
   const carouselWidth = getCarouselWidth(dimensions.width);
   const maxContentWidth = getMaxContentWidth(dimensions.width);
   const columns = getColumns(dimensions.width);
-  const contentPadding = isDesktop ? Math.max((dimensions.width - maxContentWidth) / 2, Spacing.xl) : Spacing.xl;
+  const contentPadding = isDesktop ? Math.max((dimensions.width - maxContentWidth) / 2, Spacing.xl) : Spacing.md;
 
   const isWeb = Platform.OS === 'web';
   const { t, toggleLanguage, language } = useLanguage();
@@ -128,8 +143,8 @@ export default function HomeScreen() {
     features: submission.features,
     agent: {
       id: 'agent-' + submission.id,
-      name: submission.agent.name,
-      phone: submission.agent.phone,
+      name: submission.agent?.name || 'Agent ImmoCI',
+      phone: submission.agent?.phone || '+225 07 48 22 19 00',
       avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
     },
     isFeatured: false,
@@ -143,14 +158,12 @@ export default function HomeScreen() {
 
   const allProperties = React.useMemo(() => [...realProperties, ...mockProperties], [realProperties]);
   const featuredProperties = React.useMemo(() =>
-    allProperties.filter((p) => p.isFeatured || p.price > 100000000).slice(0, 5),
+    allProperties.filter((p) => p.isFeatured || p.price > 100000000).slice(0, 6),
     [allProperties]);
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Search states for hero
   const [searchLocation, setSearchLocation] = useState<string>('');
-  // Listing filter: 'all' | 'sale' | 'rent'
-  const [listingFilter, setListingFilter] = useState<'all' | 'sale' | 'rent'>('all');
 
   const handleHeroSearch = () => {
     let typeParam: string | undefined = undefined;
@@ -174,12 +187,22 @@ export default function HomeScreen() {
 
   // Category filter chips data
   const categories = [
-    { key: 'apartment', label: t('search_apartment') || 'Apartment', icon: '🏢' },
-    { key: 'house', label: t('search_house') || 'House', icon: '🏡' },
-    { key: 'villa', label: t('search_villa') || 'Villa', icon: '🏖️' },
-    { key: 'land', label: t('search_land') || 'Land', icon: '🌿' },
-    { key: 'commercial', label: t('search_commercial') || 'Commercial', icon: '🏬' },
+    { key: 'all', label: language === 'fr' ? 'Tous les biens' : 'All Properties', icon: '✨' },
+    { key: 'apartment', label: t('search_apartment') || 'Appartements', icon: '🏢' },
+    { key: 'villa', label: t('search_villa') || 'Villas', icon: '🏖️' },
+    { key: 'house', label: t('search_house') || 'Maisons', icon: '🏡' },
+    { key: 'land', label: t('search_land') || 'Terrains', icon: '🌿' },
+    { key: 'commercial', label: t('search_commercial') || 'Bureaux & Pro', icon: '🏬' },
   ];
+
+  // Filtered properties based on current status and category
+  const filteredFeedProperties = useMemo(() => {
+    return allProperties.filter(p => {
+      const matchesStatus = listingFilter === 'all' || p.status === listingFilter;
+      const matchesCategory = selectedCategory === 'all' || p.type === selectedCategory;
+      return matchesStatus && matchesCategory;
+    });
+  }, [allProperties, listingFilter, selectedCategory]);
 
   const recentItems = useMemo(() =>
     (listingFilter === 'all'
@@ -199,9 +222,9 @@ export default function HomeScreen() {
     setRecentIndex(nextIndex);
   }, [carouselAnim]);
 
-  // Auto-advance every 3 seconds
+  // Auto-advance desktop 3D carousel
   useEffect(() => {
-    if (recentItems.length === 0) return;
+    if (!isWeb || recentItems.length === 0) return;
     const timer = setInterval(() => {
       setRecentIndex(prev => {
         const next = (prev + 1) % recentItems.length;
@@ -213,159 +236,233 @@ export default function HomeScreen() {
         }).start();
         return next;
       });
-    }, 3000);
+    }, 4000);
     return () => clearInterval(timer);
-  }, [recentItems.length, carouselAnim]);
+  }, [isWeb, recentItems.length, carouselAnim]);
+
+  const handleWhatsAppContact = (phone: string, title: string) => {
+    const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    const text = encodeURIComponent(
+      language === 'fr'
+        ? `Bonjour, je vous contacte concernant l'annonce : ${title} sur ImmoCI.`
+        : `Hello, I'm contacting you regarding the listing: ${title} on ImmoCI.`
+    );
+    Linking.openURL(`https://wa.me/${cleanPhone}?text=${text}`);
+  };
+
+  const handleCallContact = (phone: string) => {
+    const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    Linking.openURL(`tel:${cleanPhone}`);
+  };
 
   return (
     <View style={styles.container}>
-      {/* === MOBILE HEADER (Native App Only) === */}
+      {/* ═════════════════════════════════════════════════════════════════
+          NATIVE MOBILE HOME HEADER & AIRBNB-STYLE SEARCH CAPSULE
+      ═════════════════════════════════════════════════════════════════ */}
       {!isWeb && (
-        <View style={[styles.mobileHeader, { paddingTop: insets.top + 12 }]}>
-          <View style={styles.headerTop}>
-            <View style={styles.headerGreeting}>
-              <Text style={styles.greeting}>{getGreeting()}, {userName} 👋</Text>
-              <Text style={styles.greetingSubtitle}>{t('home_greeting_subtitle')}</Text>
-            </View>
-            <TouchableOpacity style={styles.notificationButton}>
-              <Animated.View style={{
-                transform: [{
-                  rotate: bellAnimation.interpolate({ inputRange: [-1, 1], outputRange: ['-20deg', '20deg'] }),
-                }],
-              }}>
-                <Bell size={20} color={colors.text} strokeWidth={2} />
-              </Animated.View>
-              <View style={styles.notificationDot} />
+        <View style={[styles.mobileNativeHeader, { paddingTop: insets.top + 8 }]}>
+          {/* Top Bar: Location & Avatar */}
+          <View style={styles.mobileTopBar}>
+            <TouchableOpacity
+              style={styles.mobileLocationPill}
+              onPress={() => router.push({ pathname: '/(tabs)/search', params: { view: 'map' } })}
+              activeOpacity={0.8}
+            >
+              <MapPin size={15} color="#059669" />
+              <View>
+                <Text style={styles.mobileLocationSub}>{language === 'fr' ? 'Explorer' : 'Explore'}</Text>
+                <Text style={styles.mobileLocationTitle}>Abidjan, Côte d'Ivoire</Text>
+              </View>
+              <ChevronDown size={14} color="#64748B" />
             </TouchableOpacity>
+
+            <View style={styles.mobileHeaderActions}>
+              <TouchableOpacity
+                style={styles.mobileNotificationBtn}
+                onPress={() => router.push('/(tabs)/search')}
+                activeOpacity={0.8}
+              >
+                <Animated.View style={{
+                  transform: [{
+                    rotate: bellAnimation.interpolate({ inputRange: [-1, 1], outputRange: ['-18deg', '18deg'] }),
+                  }],
+                }}>
+                  <Bell size={19} color="#0F172A" strokeWidth={2} />
+                </Animated.View>
+                <View style={styles.notificationDot} />
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {/* Floating Search Capsule (Airbnb / Google Stitch Mobile Style) */}
+          <TouchableOpacity
+            style={styles.mobileSearchCapsule}
+            onPress={() => router.push('/(tabs)/search')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.searchCapsuleIconBox}>
+              <Search size={18} color="#FFFFFF" strokeWidth={2.5} />
+            </View>
+            <View style={styles.searchCapsuleTextWrap}>
+              <Text style={styles.searchCapsuleTitle}>
+                {language === 'fr' ? 'Où souhaitez-vous habiter ?' : 'Where would you like to live?'}
+              </Text>
+              <Text style={styles.searchCapsuleSub}>
+                {language === 'fr' ? 'Cocody · Riviera · Plateau · Tous prix' : 'Cocody · Riviera · Plateau · Any price'}
+              </Text>
+            </View>
+            <View style={styles.searchCapsuleFilterBtn}>
+              <SlidersHorizontal size={15} color="#059669" strokeWidth={2.4} />
+            </View>
+          </TouchableOpacity>
         </View>
       )}
 
+      {/* ═════════════════════════════════════════════════════════════════
+          MAIN SCROLL CONTENT
+      ═════════════════════════════════════════════════════════════════ */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: !isWeb ? 90 : Spacing.xxxl }}
+        contentContainerStyle={{ paddingBottom: !isWeb ? 110 : Spacing.xxxl }}
         testID="home-scroll"
       >
-        {/* === HERO === */}
-        <View style={[styles.hero, isDesktop && styles.heroDesktop]} testID="hero-section">
-          <Image
-            source={require('@/assets/images/ivory_coast_real_estate_bg.jpg')}
-            style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={['rgba(10,10,20,0.38)', 'rgba(10,10,20,0.72)'] as any}
-            style={StyleSheet.absoluteFill}
-          />
+        {/* ─── WEB-ONLY HERO BANNER ─────────────────────────────────── */}
+        {isWeb && (
+          <View style={[styles.hero, isDesktop && styles.heroDesktop]} testID="hero-section">
+            <Image
+              source={require('@/assets/images/ivory_coast_real_estate_bg.jpg')}
+              style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['rgba(10,10,20,0.38)', 'rgba(10,10,20,0.72)'] as any}
+              style={StyleSheet.absoluteFill}
+            />
 
-          <View style={[styles.heroContent, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
-            {/* Badge */}
-            <View style={styles.heroBadge}>
-              <Sparkles size={11} color={colors.accentLight} strokeWidth={2.5} />
-              <Text style={styles.heroBadgeText}>{t('home_hero_badge')}</Text>
-            </View>
-
-            <Text style={[styles.heroTitle, isDesktop && styles.heroTitleDesktop]}>
-              {t('home_hero_title')}
-            </Text>
-            <Text style={[styles.heroSubtitle, isDesktop && styles.heroSubtitleDesktop]}>
-              {t('home_hero_subtitle')}
-            </Text>
-
-            {/* Search bar */}
-            <View style={[styles.searchContainer, isDesktop && styles.searchContainerDesktop]}>
-              <View style={[styles.searchBar, isDesktop && styles.searchBarDesktop]}>
-                <MapPin size={18} color={colors.primary} strokeWidth={2.5} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder={t('home_search_placeholder')}
-                  placeholderTextColor={colors.textLight}
-                  value={searchLocation}
-                  onChangeText={setSearchLocation}
-                  onSubmitEditing={handleHeroSearch}
-                />
+            <View style={[styles.heroContent, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
+              {/* Badge */}
+              <View style={styles.heroBadge}>
+                <Sparkles size={11} color={colors.accentLight} strokeWidth={2.5} />
+                <Text style={styles.heroBadgeText}>{t('home_hero_badge')}</Text>
               </View>
-              {isDesktop && (
-                <>
-                  <View style={styles.searchDivider} />
-                  <View style={styles.searchBar}>
-                    <HomeIcon size={18} color={colors.textSecondary} strokeWidth={2.5} />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder={t('home_property_type')}
-                      placeholderTextColor={colors.textLight}
-                      value={propertyType}
-                      onChangeText={setPropertyType}
-                      onSubmitEditing={handleHeroSearch}
-                    />
-                  </View>
-                  <View style={styles.searchDivider} />
-                  <View style={styles.searchBar}>
-                    <DollarSign size={18} color={colors.textSecondary} strokeWidth={2.5} />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder={t('home_price_range')}
-                      placeholderTextColor={colors.textLight}
-                      value={priceRange}
-                      onChangeText={setPriceRange}
-                      onSubmitEditing={handleHeroSearch}
-                    />
-                  </View>
-                </>
-              )}
-              <TouchableOpacity
-                style={styles.searchButton}
-                onPress={handleHeroSearch}
-                activeOpacity={0.85}
-              >
-                <Search size={18} color={colors.white} strokeWidth={2.5} />
-                {isDesktop && <Text style={styles.searchButtonText}>{t('home_search_button')}</Text>}
-              </TouchableOpacity>
-            </View>
 
-            {/* Stats row */}
-            <View style={styles.heroStats}>
-              {[
-                { value: '2,400+', label: t('home_stat_properties') || 'Properties' },
-                { value: '120+', label: t('home_stat_agents') || 'Agents' },
-                { value: '98%', label: t('home_stat_satisfaction') || 'Satisfaction' },
-              ].map((stat, i) => (
-                <View key={i} style={styles.heroStat}>
-                  <Text style={styles.heroStatValue}>{stat.value}</Text>
-                  <Text style={styles.heroStatLabel}>{stat.label}</Text>
+              <Text style={[styles.heroTitle, isDesktop && styles.heroTitleDesktop]}>
+                {t('home_hero_title')}
+              </Text>
+              <Text style={[styles.heroSubtitle, isDesktop && styles.heroSubtitleDesktop]}>
+                {t('home_hero_subtitle')}
+              </Text>
+
+              {/* Desktop Multi-Field Search bar */}
+              <View style={[styles.searchContainer, isDesktop && styles.searchContainerDesktop]}>
+                <View style={[styles.searchBar, isDesktop && styles.searchBarDesktop]}>
+                  <MapPin size={18} color={colors.primary} strokeWidth={2.5} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder={t('home_search_placeholder')}
+                    placeholderTextColor={colors.textLight}
+                    value={searchLocation}
+                    onChangeText={setSearchLocation}
+                    onSubmitEditing={handleHeroSearch}
+                  />
                 </View>
-              ))}
+                {isDesktop && (
+                  <>
+                    <View style={styles.searchDivider} />
+                    <View style={styles.searchBar}>
+                      <HomeIcon size={18} color={colors.textSecondary} strokeWidth={2.5} />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder={t('home_property_type')}
+                        placeholderTextColor={colors.textLight}
+                        value={propertyType}
+                        onChangeText={setPropertyType}
+                        onSubmitEditing={handleHeroSearch}
+                      />
+                    </View>
+                    <View style={styles.searchDivider} />
+                    <View style={styles.searchBar}>
+                      <DollarSign size={18} color={colors.textSecondary} strokeWidth={2.5} />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder={t('home_price_range')}
+                        placeholderTextColor={colors.textLight}
+                        value={priceRange}
+                        onChangeText={setPriceRange}
+                        onSubmitEditing={handleHeroSearch}
+                      />
+                    </View>
+                  </>
+                )}
+                <TouchableOpacity
+                  style={styles.searchButton}
+                  onPress={handleHeroSearch}
+                  activeOpacity={0.85}
+                >
+                  <Search size={18} color={colors.white} strokeWidth={2.5} />
+                  {isDesktop && <Text style={styles.searchButtonText}>{t('home_search_button')}</Text>}
+                </TouchableOpacity>
+              </View>
+
+              {/* Stats row */}
+              <View style={styles.heroStats}>
+                {[
+                  { value: '2,400+', label: t('home_stat_properties') || 'Properties' },
+                  { value: '120+', label: t('home_stat_agents') || 'Agents' },
+                  { value: '98%', label: t('home_stat_satisfaction') || 'Satisfaction' },
+                ].map((stat, i) => (
+                  <View key={i} style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>{stat.value}</Text>
+                    <Text style={styles.heroStatLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
+        )}
+
+        {/* ─── CATEGORY STORY CHIPS BAR (Mobile & Web) ──────────────── */}
+        <View style={styles.categoriesWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.categoriesScrollContent,
+              { paddingHorizontal: contentPadding, maxWidth: maxContentWidth },
+            ]}
+          >
+            {categories.map((cat) => {
+              const isSelected = selectedCategory === cat.key;
+              return (
+                <TouchableOpacity
+                  key={cat.key}
+                  style={[
+                    styles.categoryStoryChip,
+                    isSelected && styles.categoryStoryChipActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedCategory(cat.key);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.categoryEmoji}>{cat.icon}</Text>
+                  <Text
+                    style={[
+                      styles.categoryLabel,
+                      isSelected && styles.categoryLabelActive,
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                  {isSelected && <View style={styles.categoryActiveDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
-        {/* === CATEGORY CHIPS === */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: contentPadding,
-            gap: 10,
-            paddingVertical: Spacing.lg,
-            maxWidth: maxContentWidth,
-            alignSelf: 'center',
-            width: '100%',
-          }}
-        >
-          {categories.map((cat, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.categoryChip}
-              onPress={() => router.push({ pathname: '/(tabs)/search', params: { type: cat.key } })}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.categoryChipEmoji}>{cat.icon}</Text>
-              <Text style={styles.categoryChipLabel}>{cat.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* === FEATURED CAROUSEL === */}
+        {/* ─── FEATURED / EXCLUSIVE PICKS CAROUSEL ─────────────────── */}
         <View style={styles.section}>
           <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
             <View>
@@ -373,19 +470,15 @@ export default function HomeScreen() {
                 <Sparkles size={11} color="#D97706" />
                 <Text style={styles.sectionBadgeText}>{language === 'fr' ? 'SÉLECTION EXCLUSIVE' : 'EXCLUSIVE PICKS'}</Text>
               </View>
-              <Text style={styles.sectionTitle}>{t('home_featured_title')}</Text>
-              <Text style={styles.sectionSubtitle}>{t('home_featured_subtitle')}</Text>
+              <Text style={styles.sectionTitle}>{t('home_featured_title') || 'Biens en vedette'}</Text>
+              <Text style={styles.sectionSubtitle}>{t('home_featured_subtitle') || 'Les meilleures opportunités sélectionnées pour vous'}</Text>
             </View>
             <TouchableOpacity
-              // @ts-ignore
-              className="immoci-see-all-btn"
-              // @ts-ignore
-              dataSet={{ class: 'immoci-see-all-btn' }}
               style={styles.seeAllButton}
               onPress={() => router.push('/(tabs)/search')}
               activeOpacity={0.8}
             >
-              <Text style={styles.seeAll}>{t('home_see_all')}</Text>
+              <Text style={styles.seeAll}>{t('home_see_all') || 'Voir tout'}</Text>
               <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
             </TouchableOpacity>
           </View>
@@ -394,19 +487,14 @@ export default function HomeScreen() {
             data={featuredProperties}
             horizontal
             showsHorizontalScrollIndicator={false}
-            snapToInterval={carouselWidth + Spacing.lg}
+            snapToInterval={carouselWidth + Spacing.md}
             decelerationRate="fast"
             contentContainerStyle={[styles.carousel, { paddingLeft: contentPadding, paddingRight: contentPadding }]}
             onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
             renderItem={({ item, index }) => {
-              const inputRange = [
-                (index - 1) * (carouselWidth + Spacing.lg),
-                index * (carouselWidth + Spacing.lg),
-                (index + 1) * (carouselWidth + Spacing.lg),
-              ];
-              const scale = scrollX.interpolate({ inputRange, outputRange: [0.94, 1, 0.94], extrapolate: 'clamp' });
+              const isFav = isFavorite(item.id);
               return (
-                <Animated.View style={[styles.carouselItem, { width: carouselWidth, transform: [{ scale }] }]}>
+                <View style={[styles.featuredCardWrapper, { width: carouselWidth }]}>
                   <TouchableOpacity
                     style={styles.featuredCard}
                     onPress={() => router.push(`/property/${item.id}`)}
@@ -414,595 +502,850 @@ export default function HomeScreen() {
                   >
                     <Image source={{ uri: item.images[0] }} style={styles.featuredImage} resizeMode="cover" />
                     <LinearGradient
-                      colors={['transparent', 'rgba(5,5,15,0.85)'] as any}
+                      colors={['rgba(0,0,0,0.15)', 'rgba(5,5,15,0.88)'] as any}
                       style={styles.featuredOverlay}
                     >
-                      <View style={styles.featuredBadge}>
-                        <Sparkles size={10} color="#fff" strokeWidth={2.5} />
-                        <Text style={styles.featuredBadgeText}>{t('home_featured_badge')}</Text>
+                      <View style={styles.featuredCardTopRow}>
+                        <View style={styles.featuredBadge}>
+                          <Sparkles size={10} color="#fff" strokeWidth={2.5} />
+                          <Text style={styles.featuredBadgeText}>
+                            {item.status === 'sale' ? (language === 'fr' ? 'VENTE' : 'FOR SALE') : (language === 'fr' ? 'LOCATION' : 'FOR RENT')}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.featuredFavBtn, isFav && styles.featuredFavBtnActive]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(item.id);
+                          }}
+                        >
+                          <Heart size={16} color={isFav ? '#EF4444' : '#FFFFFF'} fill={isFav ? '#EF4444' : 'transparent'} />
+                        </TouchableOpacity>
                       </View>
+
                       <View style={styles.featuredInfo}>
                         <Text style={styles.featuredPrice}>
                           {(item.price / 1000000).toFixed(1)}M <Text style={styles.featuredCurrency}>FCFA</Text>
+                          {item.status === 'rent' && <Text style={styles.featuredRentPerMonth}> /mois</Text>}
                         </Text>
                         <Text style={styles.featuredTitle} numberOfLines={1}>{item.title}</Text>
                         <View style={styles.featuredLocation}>
-                          <MapPin size={12} color="rgba(255,255,255,0.8)" strokeWidth={2.5} />
+                          <MapPin size={12} color="rgba(255,255,255,0.85)" strokeWidth={2.5} />
                           <Text style={styles.featuredLocationText}>{item.location.district}, {item.location.city}</Text>
                         </View>
                       </View>
                     </LinearGradient>
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               );
             }}
             keyExtractor={(item) => item.id}
           />
         </View>
 
-        {/* === AI RECOMMENDATIONS === */}
-        <View style={styles.section}>
-          <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={styles.aiIconContainer}>
-                <Sparkles size={14} color="#fff" />
-              </View>
-              <View>
-                <Text style={styles.sectionTitle}>{t('home_recommended_title') || 'Picked for You'}</Text>
-                <Text style={styles.sectionSubtitle}>{t('home_recommended_subtitle') || 'AI-curated based on your preferences'}</Text>
-              </View>
-            </View>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: contentPadding, gap: 14 }}
-            style={{ marginTop: 12 }}
-          >
-            {allProperties.slice(1, 5).map((property) => (
-              <View key={property.id} style={{ width: 260 }}>
-                <PropertyCard property={property} />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* === RECENT LISTINGS === */}
+        {/* ─── FEED DE PROPRIÉTÉS (Mobile-First Native Feed) ───────── */}
         <View style={styles.section}>
           <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
             <View>
               <View style={[styles.sectionBadge, styles.sectionBadgeRecent]}>
                 <Zap size={11} color="#059669" />
-                <Text style={[styles.sectionBadgeText, styles.sectionBadgeTextRecent]}>{language === 'fr' ? 'DERNIÈRES OPPORTUNITÉS' : 'LATEST LISTINGS'}</Text>
+                <Text style={[styles.sectionBadgeText, styles.sectionBadgeTextRecent]}>
+                  {language === 'fr' ? 'ANNONCES RÉCENTES' : 'RECENT LISTINGS'}
+                </Text>
               </View>
-              <Text style={styles.sectionTitle}>{t('home_recent_title')}</Text>
-              <Text style={styles.sectionSubtitle}>{t('home_recent_subtitle')}</Text>
+              <Text style={styles.sectionTitle}>
+                {language === 'fr' ? 'Découvrir les offres' : 'Explore Properties'}
+              </Text>
+              <Text style={styles.sectionSubtitle}>
+                {filteredFeedProperties.length} {language === 'fr' ? 'biens disponibles vérifiés' : 'verified listings available'}
+              </Text>
             </View>
-            <TouchableOpacity
-              // @ts-ignore
-              className="immoci-see-all-btn"
-              // @ts-ignore
-              dataSet={{ class: 'immoci-see-all-btn' }}
-              style={styles.seeAllButton}
-              onPress={() => router.push('/(tabs)/search')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.seeAll}>{t('home_see_all')}</Text>
-              <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
-            </TouchableOpacity>
-          </View>
 
-          {/* Buy / Rent filter pills */}
-          <View style={{
-            flexDirection: 'row',
-            gap: 8,
-            paddingHorizontal: contentPadding,
-            marginTop: 12,
-            marginBottom: 4,
-          }}>
-            {(['all', 'sale', 'rent'] as const).map((f) => {
-              const label = f === 'all'
-                ? (language === 'fr' ? 'Tout' : 'All')
-                : f === 'sale'
-                  ? (language === 'fr' ? 'Acheter' : 'Buy')
-                  : (language === 'fr' ? 'Louer' : 'Rent');
-              const isActive = listingFilter === f;
-              return (
-                <TouchableOpacity
-                  key={f}
-                  onPress={() => setListingFilter(f)}
-                  activeOpacity={0.8}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 7,
-                    borderRadius: 20,
-                    backgroundColor: isActive ? colors.primary : (colors.surface || '#F1F5F9'),
-                    borderWidth: isActive ? 0 : 1,
-                    borderColor: colors.border || '#E2E8F0',
-                    shadowColor: isActive ? colors.primary : 'transparent',
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 6,
-                    elevation: isActive ? 4 : 0,
-                  }}
-                >
-                  <Text style={{
-                    fontSize: 13,
-                    fontWeight: '700',
-                    color: isActive ? '#FFFFFF' : (colors.textSecondary || '#64748B'),
-                    letterSpacing: 0.1,
-                  } as any}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* 3D Carousel */}
-          <View style={{ width: '100%', marginTop: 12, overflow: 'hidden' }}>
-            <View style={{
-              height: isDesktop ? 380 : 340,
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}>
-              {recentItems.map((item, i) => {
-                const offset = i - recentIndex;
-                const CARD_W = isDesktop ? 300 : 250;
-                const GAP = isDesktop ? 320 : 268;
-                // translateX based on offset from active
-                const translateX = carouselAnim.interpolate({
-                  inputRange: [i - 1, i, i + 1],
-                  outputRange: [GAP, 0, -GAP],
-                  extrapolate: 'clamp',
-                });
-                // scale: center=1, sides=0.84
-                const scale = carouselAnim.interpolate({
-                  inputRange: [i - 1, i, i + 1],
-                  outputRange: [0.82, 1, 0.82],
-                  extrapolate: 'clamp',
-                });
-                // opacity: center=1, sides=0.55
-                const opacity = carouselAnim.interpolate({
-                  inputRange: [i - 1, i, i + 1],
-                  outputRange: [0.55, 1, 0.55],
-                  extrapolate: 'clamp',
-                });
-                // rotateY: center=0deg, left=18deg, right=-18deg
-                const rotateY = carouselAnim.interpolate({
-                  inputRange: [i - 1, i, i + 1],
-                  outputRange: ['18deg', '0deg', '-18deg'],
-                  extrapolate: 'clamp',
-                });
-                // zIndex: active card on top
-                const isActive = i === recentIndex;
-                const isVisible = Math.abs(offset) <= 1;
-                if (!isVisible) return null;
+            {/* Quick Status Filter Pills */}
+            <View style={styles.statusFilterPillRow}>
+              {(['all', 'sale', 'rent'] as const).map((f) => {
+                const label = f === 'all'
+                  ? (language === 'fr' ? 'Tout' : 'All')
+                  : f === 'sale'
+                    ? (language === 'fr' ? 'Acheter' : 'Buy')
+                    : (language === 'fr' ? 'Louer' : 'Rent');
+                const isActive = listingFilter === f;
                 return (
-                  <Animated.View
-                    key={item.id}
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setListingFilter(f)}
+                    activeOpacity={0.8}
                     style={[
-                      {
-                        position: 'absolute',
-                        width: CARD_W,
-                        zIndex: isActive ? 10 : 5,
-                      },
-                      {
-                        transform: [
-                          { perspective: 900 },
-                          { translateX },
-                          { scale },
-                          { rotateY },
-                        ],
-                        opacity,
-                      },
+                      styles.statusFilterPill,
+                      isActive && styles.statusFilterPillActive,
                     ]}
                   >
-                    <TouchableOpacity
-                      activeOpacity={isActive ? 1 : 0.8}
-                      onPress={() => !isActive && goToSlide(i)}
-                    >
-                      <PropertyCard property={item} />
-                    </TouchableOpacity>
-                  </Animated.View>
+                    <Text style={[
+                      styles.statusFilterPillText,
+                      isActive && styles.statusFilterPillTextActive,
+                    ]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
                 );
               })}
             </View>
+          </View>
 
-            {/* Dot indicators */}
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 6,
-              marginTop: 14,
-              marginBottom: 4,
-            }}>
-              {recentItems.map((_, i) => (
-                <TouchableOpacity key={i} onPress={() => goToSlide(i)} activeOpacity={0.7}>
-                  <Animated.View
-                    style={{
-                      width: i === recentIndex ? 22 : 7,
-                      height: 7,
-                      borderRadius: 4,
-                      backgroundColor: i === recentIndex ? colors.primary : (colors.border || '#CBD5E1'),
-                    }}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
+          {/* Property Cards Stream */}
+          <View style={[styles.feedGrid, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
+            {filteredFeedProperties.map((property) => {
+              const isFav = isFavorite(property.id);
+              return (
+                <View key={property.id} style={styles.feedCardContainer}>
+                  <TouchableOpacity
+                    style={styles.mobileNativeCard}
+                    onPress={() => router.push(`/property/${property.id}`)}
+                    activeOpacity={0.92}
+                  >
+                    {/* Image Box */}
+                    <View style={styles.mobileCardImageWrap}>
+                      <Image source={{ uri: property.images[0] }} style={styles.mobileCardImage} />
+                      <LinearGradient
+                        colors={['rgba(0,0,0,0.3)', 'transparent']}
+                        style={styles.mobileCardImageTopGrad}
+                      />
+                      <View style={styles.mobileCardStatusPill}>
+                        <Text style={styles.mobileCardStatusText}>
+                          {property.status === 'sale' ? (language === 'fr' ? 'VENTE' : 'SALE') : (language === 'fr' ? 'LOCATION' : 'RENT')}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.mobileCardFavBtn}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(property.id);
+                        }}
+                      >
+                        <Heart size={16} color={isFav ? '#EF4444' : '#FFFFFF'} fill={isFav ? '#EF4444' : 'transparent'} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Card Content */}
+                    <View style={styles.mobileCardBody}>
+                      <View style={styles.mobileCardPriceRow}>
+                        <Text style={styles.mobileCardPrice}>
+                          {(property.price / 1000000).toFixed(1)}M <Text style={styles.mobileCardCurrency}>FCFA</Text>
+                          {property.status === 'rent' && <Text style={styles.mobileCardUnit}> /mois</Text>}
+                        </Text>
+                        <View style={styles.verifiedTag}>
+                          <CheckCircle2 size={12} color="#059669" />
+                          <Text style={styles.verifiedTagText}>ACD Vérifié</Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.mobileCardTitle} numberOfLines={1}>{property.title}</Text>
+                      
+                      <View style={styles.mobileCardLocationRow}>
+                        <MapPin size={13} color="#64748B" />
+                        <Text style={styles.mobileCardLocationText}>{property.location.district}, {property.location.city}</Text>
+                      </View>
+
+                      {/* Specs Row */}
+                      <View style={styles.mobileCardSpecsRow}>
+                        {property.bedrooms ? (
+                          <View style={styles.specChip}>
+                            <Bed size={13} color="#059669" />
+                            <Text style={styles.specChipText}>{property.bedrooms} {language === 'fr' ? 'ch' : 'bd'}</Text>
+                          </View>
+                        ) : null}
+                        {property.bathrooms ? (
+                          <View style={styles.specChip}>
+                            <Bath size={13} color="#059669" />
+                            <Text style={styles.specChipText}>{property.bathrooms} {language === 'fr' ? 'sdb' : 'ba'}</Text>
+                          </View>
+                        ) : null}
+                        <View style={styles.specChip}>
+                          <Maximize2 size={13} color="#059669" />
+                          <Text style={styles.specChipText}>{property.area} m²</Text>
+                        </View>
+                      </View>
+
+                      {/* Contact Shortcuts Bar */}
+                      <View style={styles.mobileCardContactRow}>
+                        <TouchableOpacity
+                          style={styles.mobileWhatsAppBtn}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleWhatsAppContact(property.agent.phone, property.title);
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <MessageCircle size={15} color="#FFFFFF" strokeWidth={2.4} />
+                          <Text style={styles.mobileWhatsAppBtnText}>WhatsApp</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.mobileCallBtn}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleCallContact(property.agent.phone);
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <Phone size={15} color="#059669" strokeWidth={2.4} />
+                          <Text style={styles.mobileCallBtnText}>{language === 'fr' ? 'Appeler' : 'Call'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         </View>
 
-        {/* === FEATURES GRID (web only) === */}
+        {/* ─── WEB-ONLY FEATURES & FOOTER ──────────────────────────── */}
         {isWeb && (
-          <View style={[styles.featuresSection, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]} testID="features-grid">
-            <View style={styles.featuresSectionHeader}>
-              <Text style={styles.featuresSectionTitle}>{language === 'fr' ? 'Pourquoi choisir ImmoCI ?' : 'Why Choose ImmoCI?'}</Text>
-              <Text style={styles.featuresSectionSubtitle}>{language === 'fr' ? 'La plateforme immobilière la plus fiable en Côte d\'Ivoire' : 'The most trusted real estate platform in Ivory Coast'}</Text>
+          <>
+            <View style={[styles.featuresSection, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]} testID="features-grid">
+              <View style={styles.featuresSectionHeader}>
+                <Text style={styles.featuresSectionTitle}>{language === 'fr' ? 'Pourquoi choisir ImmoCI ?' : 'Why Choose ImmoCI?'}</Text>
+                <Text style={styles.featuresSectionSubtitle}>{language === 'fr' ? 'La plateforme immobilière la plus fiable en Côte d\'Ivoire' : 'The most trusted real estate platform in Ivory Coast'}</Text>
+              </View>
+              <View style={styles.featuresGrid}>
+                {[
+                  { icon: <Search size={22} color={colors.primary} />, title: t('features_search_title'), desc: t('features_search_desc') },
+                  { icon: <HomeIcon size={22} color={colors.primary} />, title: t('features_buy_title'), desc: t('features_buy_desc') },
+                  { icon: <MapPin size={22} color={colors.primary} />, title: t('features_location_title'), desc: t('features_location_desc') },
+                  { icon: <Users size={22} color={colors.primary} />, title: t('features_community_title'), desc: t('features_community_desc') },
+                  { icon: <Shield size={22} color={colors.primary} />, title: t('features_security_title'), desc: t('features_security_desc') },
+                  { icon: <Zap size={22} color={colors.primary} />, title: t('features_quick_title'), desc: t('features_quick_desc') },
+                ].map((f, i) => (
+                  <View key={i} style={styles.featureCard}>
+                    <View style={styles.featureIconBox}>{f.icon}</View>
+                    <Text style={styles.featureTitle}>{f.title}</Text>
+                    <Text style={styles.featureDesc}>{f.desc}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            <View style={styles.featuresGrid}>
-              {[
-                { icon: <Search size={22} color={colors.primary} />, title: t('features_search_title'), desc: t('features_search_desc') },
-                { icon: <HomeIcon size={22} color={colors.primary} />, title: t('features_buy_title'), desc: t('features_buy_desc') },
-                { icon: <MapPin size={22} color={colors.primary} />, title: t('features_location_title'), desc: t('features_location_desc') },
-                { icon: <Users size={22} color={colors.primary} />, title: t('features_community_title'), desc: t('features_community_desc') },
-                { icon: <Shield size={22} color={colors.primary} />, title: t('features_security_title'), desc: t('features_security_desc') },
-                { icon: <Zap size={22} color={colors.primary} />, title: t('features_quick_title'), desc: t('features_quick_desc') },
-              ].map((f, i) => (
-                <View key={i} style={styles.featureCard}>
-                  <View style={styles.featureIconBox}>{f.icon}</View>
-                  <Text style={styles.featureTitle}>{f.title}</Text>
-                  <Text style={styles.featureDesc}>{f.desc}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
 
-        {/* === MARKET TREND BANNER (mobile) === */}
-        {!isWeb && (
-          <TouchableOpacity
-            style={[styles.trendBanner, { marginHorizontal: contentPadding }]}
-            onPress={() => router.push('/(tabs)/search')}
-            activeOpacity={0.9}
-          >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryLight] as any}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-            <View style={styles.trendBannerIcon}>
-              <TrendingUp size={22} color={colors.primary} strokeWidth={2.5} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trendBannerTitle}>{language === 'fr' ? 'Le marché s\'enflamme 🔥' : 'Market is Heating Up 🔥'}</Text>
-              <Text style={styles.trendBannerSubtitle}>{language === 'fr' ? '12% de nouvelles annonces cette semaine — explorez maintenant' : '12% more listings this week — browse now'}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* === FOOTER (web) === */}
-        {isWeb && (
-          <View style={styles.footer} testID="web-footer">
-            <View style={[styles.footerContent, { maxWidth: maxContentWidth, paddingHorizontal: contentPadding }]}>
-              <View style={styles.footerBrand}>
-                <View style={styles.footerLogo}>
-                  <HomeIcon size={18} color="#fff" strokeWidth={2.5} />
+            <View style={styles.footer} testID="web-footer">
+              <View style={[styles.footerContent, { maxWidth: maxContentWidth, paddingHorizontal: contentPadding }]}>
+                <View style={styles.footerBrand}>
+                  <View style={styles.footerLogo}>
+                    <HomeIcon size={18} color="#fff" strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.footerBrandName}>ImmoCI</Text>
+                  <Text style={styles.footerText}>{t('home_footer_description')}</Text>
                 </View>
-                <Text style={styles.footerBrandName}>ImmoCI</Text>
-                <Text style={styles.footerText}>{t('home_footer_description')}</Text>
-              </View>
-              <View style={styles.footerSection}>
-                <Text style={styles.footerTitle}>{t('home_footer_quick_links')}</Text>
-                <TouchableOpacity
-                  onPress={() => router.push({ pathname: '/(tabs)/search', params: { status: 'sale' } })}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.footerLink}>{t('nav_buy')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => router.push({ pathname: '/(tabs)/search', params: { status: 'rent' } })}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.footerLink}>{t('nav_rent')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => router.push('/admin')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.footerLink}>{t('home_footer_admin')}</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.footerSection}>
-                <Text style={styles.footerTitle}>{t('home_footer_support')}</Text>
-                <TouchableOpacity
-                  onPress={() => router.push('/help')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.footerLink}>{t('home_footer_contact') || 'Contact Us'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => router.push('/help')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.footerLink}>{t('home_footer_help') || 'Help Center'}</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.footerSection}>
-                <Text style={styles.footerTitle}>{t('home_footer_follow')}</Text>
-                <View style={styles.socialLinks}>
+                <View style={styles.footerSection}>
+                  <Text style={styles.footerTitle}>{t('home_footer_quick_links')}</Text>
                   <TouchableOpacity
-                    style={styles.socialIconBtn}
-                    onPress={() => router.push('/help')}
+                    onPress={() => router.push({ pathname: '/(tabs)/search', params: { status: 'sale' } })}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.socialIcon}>f</Text>
+                    <Text style={styles.footerLink}>{t('nav_buy')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.socialIconBtn}
-                    onPress={() => router.push('/help')}
+                    onPress={() => router.push({ pathname: '/(tabs)/search', params: { status: 'rent' } })}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.socialIcon}>in</Text>
+                    <Text style={styles.footerLink}>{t('nav_rent')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.socialIconBtn}
-                    onPress={() => router.push('/help')}
+                    onPress={() => router.push('/admin')}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.socialIcon}>ig</Text>
+                    <Text style={styles.footerLink}>{t('home_footer_admin')}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.footerSection}>
+                  <Text style={styles.footerTitle}>{t('home_footer_support')}</Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/help')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.footerLink}>{t('home_footer_contact') || 'Contact Us'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => router.push('/help')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.footerLink}>{t('home_footer_help') || 'Help Center'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-            <View style={styles.footerBottom}>
-              <View style={[styles.footerBottomContent, { maxWidth: maxContentWidth, paddingHorizontal: contentPadding }]}>
-                <Text style={styles.footerCopyright}>{t('home_footer_copyright')}</Text>
-              </View>
-            </View>
-          </View>
+          </>
         )}
       </ScrollView>
+
+      {/* ═════════════════════════════════════════════════════════════════
+          FLOATING MAP PILL BUTTON (Mobile App Viewport)
+      ═════════════════════════════════════════════════════════════════ */}
+      {!isWeb && (
+        <TouchableOpacity
+          style={styles.floatingMapPill}
+          onPress={() => router.push({ pathname: '/(tabs)/search', params: { view: 'map' } })}
+          activeOpacity={0.88}
+        >
+          <MapIcon size={16} color="#FFFFFF" strokeWidth={2.4} />
+          <Text style={styles.floatingMapPillText}>
+            {language === 'fr' ? 'Afficher la Carte' : 'Show Map'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// STYLES
+// ══════════════════════════════════════════════════════════════════════════════
 const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F8FAFC',
   },
 
-  // --- Web Navbar ---
-  navbar: {
-    backgroundColor: colors.surface,
+  // ── Mobile Native Header ─────────────────────────────────────
+  mobileNativeHeader: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: 14,
-    zIndex: 100,
+    borderBottomColor: 'rgba(226, 232, 240, 0.8)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: 20,
   },
-  navbarContent: {
+  mobileTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    alignSelf: 'center',
+    marginBottom: 12,
   },
-  navbarLogo: {
+  mobileLocationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  logoIconWeb: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  mobileLocationSub: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  navbarLogoText: {
-    fontSize: 20,
-    fontWeight: '800' as const,
-    color: colors.text,
-    letterSpacing: -0.5,
+  mobileLocationTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  navbarLinks: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-  },
-  navbarLink: {
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  navbarLinkText: {
-    ...Typography.body,
-    color: colors.text,
-    fontWeight: '500' as const,
-  },
-  navbarActions: {
+  mobileHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  navbarLanguagePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  navbarLanguageText: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: colors.text,
-  },
-  navbarAuthButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  navbarAuthText: {
-    ...Typography.body,
-    color: colors.text,
-    fontWeight: '600' as const,
-  },
-  navbarSignupButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 8,
-    borderRadius: 9,
-  },
-  navbarSignupText: {
-    ...Typography.body,
-    color: colors.white,
-    fontWeight: '600' as const,
-  },
-
-  // --- Mobile Header ---
-  mobileHeader: {
-    backgroundColor: colors.background,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerGreeting: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: colors.text,
-    letterSpacing: -0.5,
-    marginBottom: 2,
-  },
-  greetingSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '400' as const,
-  },
-  notificationButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+  mobileNotificationBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   notificationDot: {
     position: 'absolute',
-    top: 8,
-    right: 9,
+    top: 7,
+    right: 8,
     width: 7,
     height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
+    borderRadius: 3.5,
+    backgroundColor: '#EF4444',
     borderWidth: 1.5,
-    borderColor: colors.backgroundSecondary,
+    borderColor: '#FFFFFF',
   },
 
-  // --- Desktop Native Header ---
-  desktopHeader: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: Spacing.lg,
-  },
-  desktopHeaderContent: {
+  // ── Floating Search Capsule (Airbnb / Stitch style) ─────────
+  mobileSearchCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 7,
+    paddingLeft: 8,
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  searchCapsuleIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchCapsuleTextWrap: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+  searchCapsuleTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  searchCapsuleSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  searchCapsuleFilterBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Categories Bar ───────────────────────────────────────────
+  categoriesWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingVertical: 8,
+  },
+  categoriesScrollContent: {
+    gap: 8,
+    alignItems: 'center',
     width: '100%',
     alignSelf: 'center',
   },
-  desktopLogo: {
+  categoryStoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    position: 'relative',
   },
-  desktopLogoTextWeb: {
-    fontSize: 20,
-    fontWeight: '800' as const,
-    color: colors.text,
-    letterSpacing: -0.5,
+  categoryStoryChipActive: {
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+    borderColor: '#059669',
   },
-  desktopNav: {
+  categoryEmoji: {
+    fontSize: 14,
+  },
+  categoryLabel: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  categoryLabelActive: {
+    color: '#059669',
+    fontWeight: '800',
+  },
+  categoryActiveDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#059669',
+  },
+
+  // ── Sections ─────────────────────────────────────────────────
+  section: {
+    marginTop: 20,
+  },
+  sectionHeader: {
     flexDirection: 'row',
-    gap: Spacing.xxl,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 14,
   },
-  desktopNavItemWeb: {
-    paddingVertical: 6,
-  },
-  desktopNavTextWeb: {
-    ...Typography.body,
-    color: colors.text,
-    fontWeight: '500' as const,
-  },
-  desktopActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  desktopLanguageWeb: {
+  sectionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: 'rgba(217, 119, 6, 0.1)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(217, 119, 6, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
   },
-  desktopLanguageTextWeb: {
+  sectionBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D97706',
+    letterSpacing: 0.8,
+  },
+  sectionBadgeRecent: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  sectionBadgeTextRecent: {
+    color: '#059669',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  sectionSubtitle: {
+    fontSize: 12.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+  },
+  seeAll: {
     fontSize: 12,
-    fontWeight: '600' as const,
-    color: colors.text,
-  },
-  desktopAuthButtonWeb: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  desktopAuthTextWeb: {
-    ...Typography.body,
-    color: colors.text,
-    fontWeight: '600' as const,
-  },
-  desktopSignupButtonWeb: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: 8,
-    borderRadius: 9,
-  },
-  desktopSignupTextWeb: {
-    ...Typography.body,
-    color: colors.white,
-    fontWeight: '600' as const,
+    fontWeight: '700',
+    color: '#059669',
   },
 
-  // --- Hero ---
+  // Status Filter Pill Row
+  statusFilterPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: '#F1F5F9',
+    padding: 3,
+    borderRadius: 10,
+  },
+  statusFilterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  statusFilterPillActive: {
+    backgroundColor: '#059669',
+  },
+  statusFilterPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  statusFilterPillTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // ── Featured Horizontal Carousel ─────────────────────────────
+  carousel: {},
+  featuredCardWrapper: {
+    marginRight: 14,
+  },
+  featuredCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    height: 240,
+    position: 'relative',
+    backgroundColor: '#0F172A',
+  },
+  featuredImage: {
+    width: '100%',
+    height: '100%',
+  },
+  featuredOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    padding: 14,
+  },
+  featuredCardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  featuredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(5, 150, 105, 0.9)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  featuredBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  featuredFavBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredFavBtnActive: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  featuredInfo: {
+    gap: 3,
+  },
+  featuredPrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  featuredCurrency: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FBBF24',
+  },
+  featuredRentPerMonth: {
+    fontSize: 12,
+    color: '#CBD5E1',
+    fontWeight: '500',
+  },
+  featuredTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  featuredLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  featuredLocationText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+
+  // ── Native Mobile Property Feed ──────────────────────────────
+  feedGrid: {
+    gap: 16,
+  },
+  feedCardContainer: {
+    width: '100%',
+  },
+  mobileNativeCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.9)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  mobileCardImageWrap: {
+    height: 190,
+    width: '100%',
+    position: 'relative',
+    backgroundColor: '#0F172A',
+  },
+  mobileCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mobileCardImageTopGrad: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  mobileCardStatusPill: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: '#059669',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  mobileCardStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  mobileCardFavBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileCardBody: {
+    padding: 14,
+  },
+  mobileCardPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  mobileCardPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  mobileCardCurrency: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  mobileCardUnit: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  verifiedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  verifiedTagText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  mobileCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  mobileCardLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  mobileCardLocationText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  mobileCardSpecsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  specChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  specChipText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  mobileCardContactRow: {
+    flexDirection: 'row',
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 10,
+  },
+  mobileWhatsAppBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  mobileWhatsAppBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  mobileCallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(5, 150, 105, 0.25)',
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  mobileCallBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#059669',
+  },
+
+  // ── Floating Map Button ──────────────────────────────────────
+  floatingMapPill: {
+    position: 'absolute',
+    bottom: 95,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 99,
+  },
+  floatingMapPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
+  },
+
+  // ── Desktop Web-Only Styles ──────────────────────────────────
   hero: {
     minHeight: 380,
     justifyContent: 'flex-end',
     position: 'relative',
   },
   heroDesktop: {
-    minHeight: 520,
+    minHeight: 500,
   },
   heroContent: {
     gap: 16,
@@ -1023,14 +1366,14 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   heroBadgeText: {
     fontSize: 10,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: colors.accentLight,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
   },
   heroTitle: {
     fontSize: 32,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     color: '#fff',
     lineHeight: 40,
     letterSpacing: -0.8,
@@ -1044,7 +1387,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 15,
     color: 'rgba(255,255,255,0.82)',
     lineHeight: 22,
-    fontWeight: '400' as const,
+    fontWeight: '400',
   },
   heroSubtitleDesktop: {
     fontSize: 17,
@@ -1086,7 +1429,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 14,
     color: colors.text,
     paddingVertical: Spacing.md,
-    outlineStyle: 'none' as any,
   },
   searchButton: {
     backgroundColor: colors.primary,
@@ -1097,13 +1439,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
-    marginTop: 10,
   },
   searchButtonText: {
     fontSize: 14,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: '#fff',
-    letterSpacing: 0.1,
   },
   heroStats: {
     flexDirection: 'row',
@@ -1115,238 +1455,16 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   heroStatValue: {
     fontSize: 22,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     color: '#fff',
     letterSpacing: -0.5,
   },
   heroStatLabel: {
     fontSize: 11,
     color: 'rgba(255,255,255,0.65)',
-    fontWeight: '500' as const,
+    fontWeight: '500',
     marginTop: 1,
   },
-
-  // --- Category chips ---
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  categoryChipEmoji: {
-    fontSize: 16,
-  },
-  categoryChipLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: colors.text,
-  },
-
-  // --- Sections ---
-  section: {
-    marginBottom: Spacing.xxl,
-    marginTop: Spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: Spacing.lg,
-  },
-  sectionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(217, 119, 6, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(217, 119, 6, 0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  sectionBadgeText: {
-    fontSize: 10,
-    fontWeight: '800' as const,
-    color: '#D97706',
-    letterSpacing: 0.8,
-  },
-  sectionBadgeRecent: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-  },
-  sectionBadgeTextRecent: {
-    color: '#059669',
-  },
-  sectionTitle: {
-    fontSize: 21,
-    fontWeight: '800' as const,
-    color: colors.text,
-    letterSpacing: -0.4,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 3,
-    fontWeight: '400' as const,
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...Platform.select({
-      web: {
-        // @ts-ignore
-        transition: 'all 0.2s ease',
-        cursor: 'pointer',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      },
-    }),
-  },
-  seeAll: {
-    fontSize: 12.5,
-    color: colors.primary,
-    fontWeight: '700' as const,
-    letterSpacing: 0.2,
-  },
-  aiIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // --- Carousel ---
-  carousel: {},
-  carouselItem: {
-    marginRight: Spacing.lg,
-  },
-  featuredCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    height: 300,
-  },
-  featuredImage: {
-    width: '100%',
-    height: '100%',
-  },
-  featuredOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-    padding: Spacing.lg,
-  },
-  featuredBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  featuredBadgeText: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
-  },
-  featuredInfo: {
-    gap: 4,
-  },
-  featuredPrice: {
-    fontSize: 26,
-    color: '#fff',
-    fontWeight: '800' as const,
-    letterSpacing: -0.5,
-  },
-  featuredCurrency: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: 'rgba(255,255,255,0.75)',
-  },
-  featuredTitle: {
-    fontSize: 15,
-    color: '#fff',
-    fontWeight: '600' as const,
-    lineHeight: 20,
-  },
-  featuredLocation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  featuredLocationText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '500' as const,
-  },
-
-  // --- Property grid ---
-  propertyList: {},
-  propertyGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  propertyGridTablet: {
-    marginHorizontal: -Spacing.sm,
-  },
-  propertyGridDesktop: {
-    marginHorizontal: -Spacing.md,
-  },
-  propertyGridItem: {
-    paddingHorizontal: Spacing.sm,
-  },
-
-  // --- Trend banner ---
-  trendBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: Spacing.lg,
-    marginBottom: Spacing.xl,
-    gap: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  trendBannerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trendBannerTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: '#fff',
-    marginBottom: 2,
-  },
-  trendBannerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '400' as const,
-  },
-
-  // --- Features grid ---
   featuresSection: {
     paddingVertical: Spacing.xxl,
   },
@@ -1356,7 +1474,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   featuresSectionTitle: {
     fontSize: 28,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     color: colors.text,
     letterSpacing: -0.5,
     marginBottom: 6,
@@ -1395,19 +1513,16 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   featureTitle: {
     fontSize: 15,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 5,
-    letterSpacing: -0.2,
   },
   featureDesc: {
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 19,
-    fontWeight: '400' as const,
+    fontWeight: '400',
   },
-
-  // --- Footer ---
   footer: {
     backgroundColor: colors.primary,
     paddingTop: Spacing.xxl,
@@ -1437,15 +1552,14 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   footerBrandName: {
     fontSize: 18,
-    fontWeight: '800' as const,
+    fontWeight: '800',
     color: '#fff',
-    letterSpacing: -0.3,
   },
   footerText: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.55)',
     lineHeight: 20,
-    fontWeight: '400' as const,
+    fontWeight: '400',
   },
   footerSection: {
     minWidth: 160,
@@ -1453,7 +1567,7 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   },
   footerTitle: {
     fontSize: 13,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: '#fff',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -1462,38 +1576,6 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   footerLink: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.55)',
-    fontWeight: '400' as const,
-  },
-  socialLinks: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-  },
-  socialIconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialIcon: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-  footerBottom: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
-    paddingVertical: 16,
-  },
-  footerBottomContent: {
-    width: '100%',
-    alignSelf: 'center',
-  },
-  footerCopyright: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.35)',
-    fontWeight: '400' as const,
+    fontWeight: '400',
   },
 });

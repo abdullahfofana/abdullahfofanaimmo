@@ -89,8 +89,28 @@ async function testConnection() {
         failed++;
     }
 
-    // Test 3: Auth service reachability
-    console.log('3️⃣  Test: Auth service (getSession)');
+    // Test 3: Query activities table
+    console.log('3️⃣  Test: Query activities table');
+    try {
+        const { data, error } = await supabase.from('activities').select('id').limit(1);
+        if (error) {
+            if (error.message?.includes('relation') || error.code === '42P01') {
+                console.log('   ⚠️  Table "activities" does not exist yet — run SQL schema');
+            } else {
+                console.log(`   ❌ FAILED: ${error.message}`);
+                failed++;
+            }
+        } else {
+            console.log(`   ✅ PASSED — Found ${data?.length ?? 0} row(s)`);
+            passed++;
+        }
+    } catch (err) {
+        console.log(`   ❌ EXCEPTION: ${err.message}`);
+        failed++;
+    }
+
+    // Test 4: Auth service reachability
+    console.log('4️⃣  Test: Auth service (getSession)');
     try {
         const { error } = await supabase.auth.getSession();
         if (error) {
@@ -105,8 +125,8 @@ async function testConnection() {
         failed++;
     }
 
-    // Test 4: Storage service
-    console.log('4️⃣  Test: Storage service (list buckets)');
+    // Test 5: Storage service
+    console.log('5️⃣  Test: Storage service (list buckets)');
     try {
         const { data, error } = await supabase.storage.listBuckets();
         if (error) {
@@ -117,13 +137,36 @@ async function testConnection() {
             console.log(`   ✅ PASSED — Buckets: ${bucketNames.length > 0 ? bucketNames.join(', ') : 'none yet'}`);
             const hasPropBucket = bucketNames.includes('property-files');
             if (!hasPropBucket) {
-                console.log('   ⚠️  Bucket "property-files" not found — create it in Supabase Storage dashboard');
+                console.log('   ⚠️  Bucket "property-files" not found in storage');
             }
             passed++;
         }
     } catch (err) {
         console.log(`   ❌ EXCEPTION: ${err.message}`);
         failed++;
+    }
+
+    // Test 6: Insert / Write Test (activities table probe)
+    console.log('6️⃣  Test: Write permissions (Insert activity)');
+    const testActivityId = 'conn-check-' + Date.now();
+    try {
+        const { error: insertErr } = await supabase.from('activities').insert({
+            id: testActivityId,
+            type: 'system_check',
+            message: 'Supabase connectivity validation test',
+            user: 'system_tester',
+            timestamp: new Date().toISOString()
+        });
+        if (insertErr) {
+            console.log(`   ⚠️ Write test failed / restricted: ${insertErr.message} (code: ${insertErr.code || 'N/A'})`);
+        } else {
+            console.log('   ✅ PASSED — Write/Insert is working properly');
+            passed++;
+            // Clean up probe record
+            await supabase.from('activities').delete().eq('id', testActivityId);
+        }
+    } catch (err) {
+        console.log(`   ⚠️ Write test exception: ${err.message}`);
     }
 
     console.log('\n' + '='.repeat(40));
@@ -140,3 +183,4 @@ testConnection().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);
 });
+
