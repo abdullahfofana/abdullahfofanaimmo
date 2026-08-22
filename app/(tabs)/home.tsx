@@ -543,32 +543,32 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* ─── FEED DE PROPRIÉTÉS (Mobile-First Native Feed) ───────── */}
+        {/* ─── EXPLORE PROPERTIES (Responsive Multi-Column Grid on Web & Luxury Cards on Mobile) ─── */}
         <View style={styles.section}>
           <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
             <View>
               <View style={[styles.sectionBadge, styles.sectionBadgeRecent]}>
                 <Zap size={11} color="#059669" />
                 <Text style={[styles.sectionBadgeText, styles.sectionBadgeTextRecent]}>
-                  {language === 'fr' ? 'ANNONCES RÉCENTES' : 'RECENT LISTINGS'}
+                  {language === 'fr' ? 'CATALOGUE IMMOBILIER' : 'PROPERTY CATALOG'}
                 </Text>
               </View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? 'Découvrir les offres' : 'Explore Properties'}
+                {language === 'fr' ? 'Explorer les biens en Côte d\'Ivoire' : 'Explore Properties'}
               </Text>
               <Text style={styles.sectionSubtitle}>
-                {filteredFeedProperties.length} {language === 'fr' ? 'biens disponibles vérifiés' : 'verified listings available'}
+                {filteredFeedProperties.length} {language === 'fr' ? 'annonces vérifiées à Abidjan & environs' : 'verified listings available'}
               </Text>
             </View>
 
-            {/* Quick Status Filter Pills */}
+            {/* Quick Status Filter Switcher */}
             <View style={styles.statusFilterPillRow}>
               {(['all', 'sale', 'rent'] as const).map((f) => {
                 const label = f === 'all'
                   ? (language === 'fr' ? 'Tout' : 'All')
                   : f === 'sale'
-                    ? (language === 'fr' ? 'Acheter' : 'Buy')
-                    : (language === 'fr' ? 'Louer' : 'Rent');
+                    ? (language === 'fr' ? '🏷️ À Vendre' : '🏷️ Buy')
+                    : (language === 'fr' ? '🔑 À Louer' : '🔑 Rent');
                 const isActive = listingFilter === f;
                 return (
                   <TouchableOpacity
@@ -592,111 +592,201 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Property Cards Stream */}
-          <View style={[styles.feedGrid, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
-            {filteredFeedProperties.map((property) => {
-              const isFav = isFavorite(property.id);
-              return (
-                <View key={property.id} style={styles.feedCardContainer}>
-                  <TouchableOpacity
-                    style={styles.mobileNativeCard}
-                    onPress={() => router.push(`/property/${property.id}`)}
-                    activeOpacity={0.92}
+          {/* Desktop/Tablet Multi-Column Grid OR Mobile Touch Cards */}
+          <View style={{ maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }}>
+            {filteredFeedProperties.length === 0 ? (
+              <View style={styles.emptyFeedState}>
+                <HomeIcon size={36} color="#94A3B8" />
+                <Text style={styles.emptyFeedTitle}>
+                  {language === 'fr' ? 'Aucune annonce trouvée' : 'No properties found'}
+                </Text>
+                <Text style={styles.emptyFeedSub}>
+                  {language === 'fr' ? 'Essayez de modifier la catégorie ou le type d\'offre.' : 'Try changing your category or filter selection.'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyFeedResetBtn}
+                  onPress={() => {
+                    setSelectedCategory('all');
+                    setListingFilter('all');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.emptyFeedResetBtnText}>
+                    {language === 'fr' ? 'Afficher tous les biens' : 'Show all listings'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : columns > 1 || isDesktop || isTablet ? (
+              /* Desktop / Tablet: Responsive 2, 3 or 4 Column Grid */
+              <View style={[styles.propertyGrid, isTablet && styles.propertyGridTablet, isDesktop && styles.propertyGridDesktop]}>
+                {filteredFeedProperties.map((property) => (
+                  <View
+                    key={property.id}
+                    style={[
+                      styles.propertyGridItem,
+                      { width: `${100 / columns}%` as any },
+                    ]}
                   >
-                    {/* Image Box */}
-                    <View style={styles.mobileCardImageWrap}>
-                      <Image source={{ uri: property.images[0] }} style={styles.mobileCardImage} />
-                      <LinearGradient
-                        colors={['rgba(0,0,0,0.3)', 'transparent']}
-                        style={styles.mobileCardImageTopGrad}
-                      />
-                      <View style={styles.mobileCardStatusPill}>
-                        <Text style={styles.mobileCardStatusText}>
-                          {property.status === 'sale' ? (language === 'fr' ? 'VENTE' : 'SALE') : (language === 'fr' ? 'LOCATION' : 'RENT')}
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.mobileCardFavBtn}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(property.id);
-                        }}
-                      >
-                        <Heart size={16} color={isFav ? '#EF4444' : '#FFFFFF'} fill={isFav ? '#EF4444' : 'transparent'} />
-                      </TouchableOpacity>
-                    </View>
+                    <PropertyCard property={property} />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              /* Mobile Native: Luxury Clean Cards Feed */
+              <View style={styles.mobileFeedList}>
+                {filteredFeedProperties.map((property) => {
+                  const isFav = isFavorite(property.id);
+                  return (
+                    <TouchableOpacity
+                      key={property.id}
+                      style={styles.mobileCleanCard}
+                      onPress={() => router.push(`/property/${property.id}`)}
+                      activeOpacity={0.92}
+                    >
+                      {/* Image Frame with Badges */}
+                      <View style={styles.mobileCleanImageWrap}>
+                        <Image
+                          source={{ uri: property.images[0] }}
+                          style={styles.mobileCleanImage}
+                          resizeMode="cover"
+                        />
+                        <LinearGradient
+                          colors={['rgba(0,0,0,0.4)', 'transparent', 'rgba(0,0,0,0.6)']}
+                          locations={[0, 0.4, 1]}
+                          style={StyleSheet.absoluteFill}
+                        />
 
-                    {/* Card Content */}
-                    <View style={styles.mobileCardBody}>
-                      <View style={styles.mobileCardPriceRow}>
-                        <Text style={styles.mobileCardPrice}>
-                          {(property.price / 1000000).toFixed(1)}M <Text style={styles.mobileCardCurrency}>FCFA</Text>
-                          {property.status === 'rent' && <Text style={styles.mobileCardUnit}> /mois</Text>}
-                        </Text>
-                        <View style={styles.verifiedTag}>
-                          <CheckCircle2 size={12} color="#059669" />
-                          <Text style={styles.verifiedTagText}>ACD Vérifié</Text>
+                        {/* Top Status & Verified Badges */}
+                        <View style={styles.mobileCleanTopBadges}>
+                          <View style={[
+                            styles.mobileCleanStatusPill,
+                            property.status === 'rent' && styles.mobileCleanStatusPillRent,
+                          ]}>
+                            <Text style={styles.mobileCleanStatusText}>
+                              {property.status === 'sale'
+                                ? (language === 'fr' ? 'À VENDRE' : 'FOR SALE')
+                                : (language === 'fr' ? 'À LOUER' : 'FOR RENT')}
+                            </Text>
+                          </View>
+
+                          <View style={styles.mobileCleanAcdPill}>
+                            <CheckCircle2 size={11} color="#059669" />
+                            <Text style={styles.mobileCleanAcdText}>ACD</Text>
+                          </View>
+                        </View>
+
+                        {/* Top Right Heart Favorite Button */}
+                        <TouchableOpacity
+                          style={[styles.mobileCleanHeartBtn, isFav && styles.mobileCleanHeartBtnActive]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(property.id);
+                          }}
+                          activeOpacity={0.8}
+                          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        >
+                          <Heart
+                            size={17}
+                            color={isFav ? '#EF4444' : '#FFFFFF'}
+                            fill={isFav ? '#EF4444' : 'transparent'}
+                            strokeWidth={2.4}
+                          />
+                        </TouchableOpacity>
+
+                        {/* Bottom Left Photo Count Badge */}
+                        <View style={styles.mobileCleanPhotoCountBadge}>
+                          <Text style={styles.mobileCleanPhotoCountText}>
+                            📷 {property.images?.length || 1} photos
+                          </Text>
                         </View>
                       </View>
 
-                      <Text style={styles.mobileCardTitle} numberOfLines={1}>{property.title}</Text>
-                      
-                      <View style={styles.mobileCardLocationRow}>
-                        <MapPin size={13} color="#64748B" />
-                        <Text style={styles.mobileCardLocationText}>{property.location.district}, {property.location.city}</Text>
-                      </View>
+                      {/* Card Body */}
+                      <View style={styles.mobileCleanBody}>
+                        {/* Price Row */}
+                        <View style={styles.mobileCleanPriceRow}>
+                          <Text style={styles.mobileCleanPrice}>
+                            {(property.price / 1000000).toFixed(1)}M <Text style={styles.mobileCleanCurrency}>FCFA</Text>
+                            {property.status === 'rent' && (
+                              <Text style={styles.mobileCleanUnit}> /mois</Text>
+                            )}
+                          </Text>
+                        </View>
 
-                      {/* Specs Row */}
-                      <View style={styles.mobileCardSpecsRow}>
-                        {property.bedrooms ? (
-                          <View style={styles.specChip}>
-                            <Bed size={13} color="#059669" />
-                            <Text style={styles.specChipText}>{property.bedrooms} {language === 'fr' ? 'ch' : 'bd'}</Text>
+                        {/* Title */}
+                        <Text style={styles.mobileCleanTitle} numberOfLines={1}>
+                          {property.title}
+                        </Text>
+
+                        {/* Location */}
+                        <View style={styles.mobileCleanLocationRow}>
+                          <MapPin size={13} color="#64748B" />
+                          <Text style={styles.mobileCleanLocationText}>
+                            {property.location.district}, {property.location.city}
+                          </Text>
+                        </View>
+
+                        {/* Specs Divider & Chips */}
+                        <View style={styles.mobileCleanSpecsRow}>
+                          {!!property.bedrooms && (
+                            <View style={styles.mobileCleanSpecChip}>
+                              <Bed size={13} color="#059669" />
+                              <Text style={styles.mobileCleanSpecText}>{property.bedrooms} ch</Text>
+                            </View>
+                          )}
+                          {!!property.bathrooms && (
+                            <View style={styles.mobileCleanSpecChip}>
+                              <Bath size={13} color="#059669" />
+                              <Text style={styles.mobileCleanSpecText}>{property.bathrooms} sdb</Text>
+                            </View>
+                          )}
+                          <View style={styles.mobileCleanSpecChip}>
+                            <Maximize2 size={13} color="#059669" />
+                            <Text style={styles.mobileCleanSpecText}>{property.area} m²</Text>
                           </View>
-                        ) : null}
-                        {property.bathrooms ? (
-                          <View style={styles.specChip}>
-                            <Bath size={13} color="#059669" />
-                            <Text style={styles.specChipText}>{property.bathrooms} {language === 'fr' ? 'sdb' : 'ba'}</Text>
+                        </View>
+
+                        {/* Quick 1-Tap Contact Action Bar */}
+                        <View style={styles.mobileCleanActionRow}>
+                          <TouchableOpacity
+                            style={styles.mobileCleanWhatsAppBtn}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleWhatsAppContact(property.agent.phone, property.title);
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <MessageCircle size={15} color="#059669" strokeWidth={2.4} />
+                            <Text style={styles.mobileCleanWhatsAppBtnText}>WhatsApp</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.mobileCleanCallBtn}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleCallContact(property.agent.phone);
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <Phone size={15} color="#475569" strokeWidth={2.4} />
+                            <Text style={styles.mobileCleanCallBtnText}>
+                              {language === 'fr' ? 'Appeler' : 'Call'}
+                            </Text>
+                          </TouchableOpacity>
+
+                          <View style={styles.mobileCleanDetailPill}>
+                            <Text style={styles.mobileCleanDetailPillText}>
+                              {language === 'fr' ? 'Détails' : 'Details'}
+                            </Text>
+                            <ArrowRight size={13} color="#059669" strokeWidth={2.4} />
                           </View>
-                        ) : null}
-                        <View style={styles.specChip}>
-                          <Maximize2 size={13} color="#059669" />
-                          <Text style={styles.specChipText}>{property.area} m²</Text>
                         </View>
                       </View>
-
-                      {/* Contact Shortcuts Bar */}
-                      <View style={styles.mobileCardContactRow}>
-                        <TouchableOpacity
-                          style={styles.mobileWhatsAppBtn}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleWhatsAppContact(property.agent.phone, property.title);
-                          }}
-                          activeOpacity={0.8}
-                        >
-                          <MessageCircle size={15} color="#FFFFFF" strokeWidth={2.4} />
-                          <Text style={styles.mobileWhatsAppBtnText}>WhatsApp</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.mobileCallBtn}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleCallContact(property.agent.phone);
-                          }}
-                          activeOpacity={0.8}
-                        >
-                          <Phone size={15} color="#059669" strokeWidth={2.4} />
-                          <Text style={styles.mobileCallBtnText}>{language === 'fr' ? 'Appeler' : 'Call'}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
         </View>
 
@@ -1135,181 +1225,254 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     color: 'rgba(255,255,255,0.8)',
   },
 
-  // ── Native Mobile Property Feed ──────────────────────────────
-  feedGrid: {
-    gap: 16,
+  // ── Clean Luxury Mobile Cards Feed ────────────────────────────
+  mobileFeedList: {
+    gap: 20,
+    paddingTop: 8,
   },
-  feedCardContainer: {
-    width: '100%',
-  },
-  mobileNativeCard: {
+  mobileCleanCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 22,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.9)',
+    borderColor: 'rgba(226, 232, 240, 0.95)',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  mobileCardImageWrap: {
-    height: 190,
+  mobileCleanImageWrap: {
     width: '100%',
+    height: 210,
     position: 'relative',
     backgroundColor: '#0F172A',
   },
-  mobileCardImage: {
+  mobileCleanImage: {
     width: '100%',
     height: '100%',
   },
-  mobileCardImageTopGrad: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 60,
-  },
-  mobileCardStatusPill: {
+  mobileCleanTopBadges: {
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: '#059669',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    zIndex: 10,
+  },
+  mobileCleanStatusPill: {
+    backgroundColor: 'rgba(5, 150, 105, 0.92)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backdropFilter: 'blur(8px)',
+  },
+  mobileCleanStatusPillRent: {
+    backgroundColor: 'rgba(13, 148, 136, 0.92)',
+  },
+  mobileCleanStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.6,
+  },
+  mobileCleanAcdPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  mobileCleanAcdText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  mobileCleanHeartBtn: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  mobileCleanHeartBtnActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  mobileCleanPhotoCountBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  mobileCardStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
+  mobileCleanPhotoCountText: {
+    fontSize: 10.5,
+    fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
-  mobileCardFavBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  mobileCleanBody: {
+    padding: 16,
   },
-  mobileCardBody: {
-    padding: 14,
-  },
-  mobileCardPriceRow: {
+  mobileCleanPriceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
   },
-  mobileCardPrice: {
-    fontSize: 18,
+  mobileCleanPrice: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
+    letterSpacing: -0.3,
   },
-  mobileCardCurrency: {
-    fontSize: 12,
+  mobileCleanCurrency: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#059669',
   },
-  mobileCardUnit: {
-    fontSize: 12,
+  mobileCleanUnit: {
+    fontSize: 13,
     color: '#64748B',
     fontWeight: '500',
   },
-  verifiedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(5, 150, 105, 0.08)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  verifiedTagText: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#059669',
-  },
-  mobileCardTitle: {
-    fontSize: 14,
+  mobileCleanTitle: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#1E293B',
     marginBottom: 4,
+    lineHeight: 20,
   },
-  mobileCardLocationRow: {
+  mobileCleanLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginBottom: 10,
   },
-  mobileCardLocationText: {
-    fontSize: 12,
+  mobileCleanLocationText: {
+    fontSize: 12.5,
     color: '#64748B',
+    fontWeight: '500',
   },
-  mobileCardSpecsRow: {
+  mobileCleanSpecsRow: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 12,
   },
-  specChip: {
+  mobileCleanSpecChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 8,
   },
-  specChipText: {
-    fontSize: 11.5,
+  mobileCleanSpecText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#334155',
   },
-  mobileCardContactRow: {
+  mobileCleanActionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    paddingTop: 10,
+    paddingTop: 12,
   },
-  mobileWhatsAppBtn: {
-    flex: 1,
+  mobileCleanWhatsAppBtn: {
+    flex: 1.1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#059669',
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  mobileWhatsAppBtnText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  mobileCallBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(5, 150, 105, 0.25)',
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingVertical: 9,
+    borderRadius: 12,
   },
-  mobileCallBtnText: {
+  mobileCleanWhatsAppBtnText: {
     fontSize: 12.5,
     fontWeight: '700',
     color: '#059669',
+  },
+  mobileCleanCallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  mobileCleanCallBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  mobileCleanDetailPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 9,
+  },
+  mobileCleanDetailPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+  },
+
+  // ── Empty State ──────────────────────────────────────────────
+  emptyFeedState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 10,
+  },
+  emptyFeedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyFeedSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emptyFeedResetBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  emptyFeedResetBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   // ── Floating Map Button ──────────────────────────────────────
