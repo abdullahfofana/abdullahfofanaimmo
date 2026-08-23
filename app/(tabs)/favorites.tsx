@@ -10,6 +10,8 @@ import PropertyCard from '@/components/PropertyCard';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useFavorites } from '@/providers/FavoritesProvider';
 
+import WebNavbar from '@/components/WebNavbar';
+
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
@@ -18,7 +20,9 @@ export default function FavoritesScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 0 : insets.top }]}>
+      {Platform.OS === 'web' && <WebNavbar />}
+
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -38,10 +42,14 @@ export default function FavoritesScreen() {
 
       <FlatList
         data={favorites}
-        renderItem={({ item }) => <PropertyCard property={item} />}
+        renderItem={({ item }) => (
+          <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center', marginBottom: 16 }}>
+            <PropertyCard property={item} />
+          </View>
+        )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.list, { paddingBottom: 120 }]}
+        showsVerticalScrollIndicator={true}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconBox}>

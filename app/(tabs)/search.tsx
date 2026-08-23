@@ -456,383 +456,457 @@ export default function SearchScreen() {
 
   const isMobile = !isTablet && !isDesktop;
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <View testID="searchHeader" style={[
-        styles.header,
-        { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding, backgroundColor: colors.background }
-      ]}>
-        <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.shadow.md }]}>
-
-          {/* Segmented Tabs - All / Buy / Rent */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity
-              onPress={() => handleStatusTabSelect('all')}
-              style={[
-                styles.tabItem,
-                activeStatus === 'all' && styles.tabItemActive,
-              ]}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.tabText,
-                activeStatus === 'all' && styles.tabTextActive,
-              ]}>
-                {t('search_all') || 'Tous'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => handleStatusTabSelect('sale')}
-              style={[
-                styles.tabItem,
-                activeStatus === 'sale' && styles.tabItemActive,
-              ]}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.tabText,
-                activeStatus === 'sale' && styles.tabTextActive,
-              ]}>
-                {t('search_buy')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => handleStatusTabSelect('rent')}
-              style={[
-                styles.tabItem,
-                activeStatus === 'rent' && styles.tabItemActive,
-              ]}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.tabText,
-                activeStatus === 'rent' && styles.tabTextActive,
-              ]}>
-                {t('search_rent')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Inputs - Mobile/Desktop Layout */}
-          <View style={styles.inputsContainer}>
-            {isMobile ? (
-              <View style={styles.mobileInputsColumn}>
-                {/* Location */}
-                <TouchableOpacity
-                  testID="locationPickerButton"
-                  onPress={() => setShowLocationPicker(true)}
-                  style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                >
-                  <MapPin size={20} color={colors.textSecondary} style={{ marginRight: Spacing.xs }} />
-                  <Text style={[styles.inputFieldText, { color: searchQuery ? colors.text : colors.textSecondary, flex: 1 }]} numberOfLines={1}>
-                    {searchQuery || t('search_location')}
-                  </Text>
-                  {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => {
-                      setSearchQuery('');
-                      handleSearch('');
-                    }}>
-                      <X size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  )}
-                  {!searchQuery && <ChevronDown size={18} color={colors.textSecondary} />}
-                </TouchableOpacity>
-
-                {/* Property Type */}
-                <TouchableOpacity
-                  testID="typePickerButton"
-                  onPress={() => setShowTypePicker(true)}
-                  style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                >
-                  <Home size={20} color={colors.textSecondary} style={{ marginRight: Spacing.xs }} />
-                  <Text style={[styles.inputFieldText, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-                    {filters.type === 'all' ? t('search_any') : filters.type}
-                  </Text>
-                  <ChevronDown size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Bedrooms */}
-                <TouchableOpacity
-                  testID="bedPickerButton"
-                  onPress={() => setShowBedPicker(true)}
-                  style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                >
-                  <Text style={[styles.inputFieldPrefix, { color: colors.textSecondary, marginRight: Spacing.xs }]}>Beds</Text>
-                  <Text style={[styles.inputFieldText, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-                    {filters.bedrooms === 'all' ? t('search_any') : `${filters.bedrooms}+`}
-                  </Text>
-                  <ChevronDown size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Bathrooms */}
-                <TouchableOpacity
-                  testID="bathPickerButton"
-                  onPress={() => setShowBathPicker(true)}
-                  style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
-                >
-                  <Text style={[styles.inputFieldPrefix, { color: colors.textSecondary, marginRight: Spacing.xs }]}>Baths</Text>
-                  <Text style={[styles.inputFieldText, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-                    {filters.bathrooms === 'all' ? t('search_any') : `${filters.bathrooms}+`}
-                  </Text>
-                  <ChevronDown size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.inputsRow}>
-                {/* Location */}
-                <TouchableOpacity
-                  testID="locationPickerButton"
-                  onPress={() => setShowLocationPicker(true)}
-                  style={[styles.inputPill, { flex: 2, backgroundColor: colors.backgroundSecondary }]}
-                >
-                  <MapPin size={20} color={colors.primary} />
-                  <Text style={[styles.inputPillValue, { color: searchQuery ? colors.text : colors.textSecondary }]} numberOfLines={1}>
-                    {searchQuery || t('search_location')}
-                  </Text>
-                  {searchQuery.length > 0 ? (
-                    <TouchableOpacity onPress={() => {
-                      setSearchQuery('');
-                      handleSearch('');
-                    }}>
-                      <X size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  ) : (
-                    <ChevronDown size={18} color={colors.textSecondary} />
-                  )}
-                </TouchableOpacity>
-
-                {/* Property Type */}
-                <TouchableOpacity
-                  testID="typePickerButton"
-                  onPress={() => setShowTypePicker(true)}
-                  style={[styles.inputPill, { flex: 1.2, backgroundColor: colors.backgroundSecondary }]}
-                >
-                  <Home size={20} color={colors.primary} />
-                  <Text style={[styles.inputPillValue, { color: colors.text }]} numberOfLines={1}>
-                    {filters.type === 'all' ? t('search_any') : filters.type}
-                  </Text>
-                  <ChevronDown size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Bedrooms */}
-                <TouchableOpacity
-                  testID="bedPickerButton"
-                  onPress={() => setShowBedPicker(true)}
-                  style={[styles.inputPill, { flex: 1, backgroundColor: colors.backgroundSecondary }]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.inputPillPrefix, { color: colors.textSecondary }]}>BED</Text>
-                    <Text style={[styles.inputPillValue, { color: colors.text, marginTop: -2 }]} numberOfLines={1}>
-                      {filters.bedrooms === 'all' ? t('search_any') : `${filters.bedrooms}+`}
-                    </Text>
-                  </View>
-                  <ChevronDown size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* Bathrooms */}
-                <TouchableOpacity
-                  testID="bathPickerButton"
-                  onPress={() => setShowBathPicker(true)}
-                  style={[styles.inputPill, { flex: 1, backgroundColor: colors.backgroundSecondary }]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.inputPillPrefix, { color: colors.textSecondary }]}>BTH</Text>
-                    <Text style={[styles.inputPillValue, { color: colors.text, marginTop: -2 }]} numberOfLines={1}>
-                      {filters.bathrooms === 'all' ? t('search_any') : `${filters.bathrooms}+`}
-                    </Text>
-                  </View>
-                  <ChevronDown size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            )}
-
-          </View>
-
-          {/* AI Search Overlay */}
-          {isAIMode && (
-            <View style={[styles.inputsContainer, { marginTop: -10 }]}>
-              <View style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.primary, height: 100, alignItems: 'flex-start', paddingVertical: 12 }]}>
-                <Sparkles size={20} color={colors.primary} style={{ marginRight: Spacing.sm, marginTop: 4 }} />
-                <TextInput
-                  style={[styles.inputFieldText, { color: colors.text, flex: 1, height: '100%', textAlignVertical: 'top' }]}
-                  placeholder={t('search_ai_placeholder') || "Describe what you want (e.g. '3 bedroom villa with pool in Cocody under 100M')"}
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                  value={aiQuery}
-                  onChangeText={setAiQuery}
-                  autoFocus
-                />
-                {parseSearchMutation.isPending && <ActivityIndicator color={colors.primary} style={{ marginLeft: 8 }} />}
-              </View>
-            </View>
-          )}
-
-          {/* Search Button or AI Button */}
+  const renderSearchHeaderContent = () => (
+    <View testID="searchHeader" style={[
+      styles.header,
+      { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding, backgroundColor: 'transparent' }
+    ]}>
+      <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.shadow.md }]}>
+        {/* Segmented Tabs - All / Buy / Rent */}
+        <View style={styles.tabsContainer}>
           <TouchableOpacity
-            testID="searchSubmit"
-            onPress={isAIMode ? handleAISearch : () => {
-              applyFilters(searchQuery, filters);
-              setShowLocationPicker(false);
-            }}
-            style={[styles.searchCTA, { backgroundColor: colors.primary }]}
-            activeOpacity={0.9}
-            disabled={isAIMode && parseSearchMutation.isPending}
+            onPress={() => handleStatusTabSelect('all')}
+            style={[
+              styles.tabItem,
+              activeStatus === 'all' && styles.tabItemActive,
+            ]}
+            activeOpacity={0.8}
           >
-            {isAIMode ? <Wand2 size={20} color={colors.white} /> : <SearchIcon size={20} color={colors.white} />}
-            <Text style={[styles.searchCTAText, { color: colors.white }]}>
-              {isAIMode ? (parseSearchMutation.isPending ? "Analysing..." : "Magic Search") : t('search_properties')}
+            <Text style={[
+              styles.tabText,
+              activeStatus === 'all' && styles.tabTextActive,
+            ]}>
+              {t('search_all') || 'Tous'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => handleStatusTabSelect('sale')}
+            style={[
+              styles.tabItem,
+              activeStatus === 'sale' && styles.tabItemActive,
+            ]}
+            activeOpacity={0.8}
+          >
+            <Text style={[
+              styles.tabText,
+              activeStatus === 'sale' && styles.tabTextActive,
+            ]}>
+              {t('search_buy')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => handleStatusTabSelect('rent')}
+            style={[
+              styles.tabItem,
+              activeStatus === 'rent' && styles.tabItemActive,
+            ]}
+            activeOpacity={0.8}
+          >
+            <Text style={[
+              styles.tabText,
+              activeStatus === 'rent' && styles.tabTextActive,
+            ]}>
+              {t('search_rent')}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* AI Toggle Button */}
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            alignSelf: 'center',
-            marginTop: Spacing.md,
-            backgroundColor: isAIMode ? colors.primary + '20' : 'transparent',
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 20
-          }}
-          onPress={() => setIsAIMode(!isAIMode)}
-        >
-          <Sparkles size={16} color={colors.primary} style={{ marginRight: 6 }} />
-          <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>
-            {isAIMode ? "Switch to Classic Filters" : "Try AI Search"}
-          </Text>
-        </TouchableOpacity>
+        {/* Inputs - Mobile/Desktop Layout */}
+        <View style={styles.inputsContainer}>
+          {isMobile ? (
+            <View style={styles.mobileInputsColumn}>
+              {/* Location */}
+              <TouchableOpacity
+                testID="locationPickerButton"
+                onPress={() => setShowLocationPicker(true)}
+                style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              >
+                <MapPin size={20} color={colors.textSecondary} style={{ marginRight: Spacing.xs }} />
+                <Text style={[styles.inputFieldText, { color: searchQuery ? colors.text : colors.textSecondary, flex: 1 }]} numberOfLines={1}>
+                  {searchQuery || t('search_location')}
+                </Text>
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => {
+                    setSearchQuery('');
+                    handleSearch('');
+                  }}>
+                    <X size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+                {!searchQuery && <ChevronDown size={18} color={colors.textSecondary} />}
+              </TouchableOpacity>
 
-        {/* Quick Area Chips */}
-        <View style={{ marginTop: 12, width: '100%' }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-            {[
-              { id: 'all', label: '🇨🇮 Tout Abidjan', query: '' },
-              { id: 'cocody', label: 'Cocody', query: 'Cocody' },
-              { id: 'riviera', label: 'Riviera 3', query: 'Riviera' },
-              { id: 'deux_plateaux', label: '2 Plateaux', query: '2 Plateaux' },
-              { id: 'plateau', label: 'Plateau', query: 'Plateau' },
-              { id: 'marcory', label: 'Marcory / Zone 4', query: 'Marcory' },
-              { id: 'yopougon', label: 'Yopougon', query: 'Yopougon' },
-              { id: 'bingerville', label: 'Bingerville', query: 'Bingerville' },
-              { id: 'grand_bassam', label: 'Grand-Bassam', query: 'Grand-Bassam' },
-              { id: 'bouake', label: 'Bouaké', query: 'Bouaké' },
-              { id: 'yamoussoukro', label: 'Yamoussoukro', query: 'Yamoussoukro' },
-            ].map((item) => {
-              const isSelected = (searchQuery.toLowerCase() === item.query.toLowerCase()) || (!searchQuery && item.id === 'all');
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 10,
-                    backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
-                    borderWidth: 1,
-                    borderColor: isSelected ? colors.primary : colors.border,
-                  }}
-                  onPress={() => {
-                    setSearchQuery(item.query);
-                    handleSearch(item.query);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? colors.white : colors.text }}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+              {/* Property Type */}
+              <TouchableOpacity
+                testID="typePickerButton"
+                onPress={() => setShowTypePicker(true)}
+                style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              >
+                <Home size={20} color={colors.textSecondary} style={{ marginRight: Spacing.xs }} />
+                <Text style={[styles.inputFieldText, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                  {filters.type === 'all' ? t('search_any') : filters.type}
+                </Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Bedrooms */}
+              <TouchableOpacity
+                testID="bedPickerButton"
+                onPress={() => setShowBedPicker(true)}
+                style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              >
+                <Text style={[styles.inputFieldPrefix, { color: colors.textSecondary, marginRight: Spacing.xs }]}>Beds</Text>
+                <Text style={[styles.inputFieldText, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                  {filters.bedrooms === 'all' ? t('search_any') : `${filters.bedrooms}+`}
+                </Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Bathrooms */}
+              <TouchableOpacity
+                testID="bathPickerButton"
+                onPress={() => setShowBathPicker(true)}
+                style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
+              >
+                <Text style={[styles.inputFieldPrefix, { color: colors.textSecondary, marginRight: Spacing.xs }]}>Baths</Text>
+                <Text style={[styles.inputFieldText, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                  {filters.bathrooms === 'all' ? t('search_any') : `${filters.bathrooms}+`}
+                </Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.inputsRow}>
+              {/* Location */}
+              <TouchableOpacity
+                testID="locationPickerButton"
+                onPress={() => setShowLocationPicker(true)}
+                style={[styles.inputPill, { flex: 2, backgroundColor: colors.backgroundSecondary }]}
+              >
+                <MapPin size={20} color={colors.primary} />
+                <Text style={[styles.inputPillValue, { color: searchQuery ? colors.text : colors.textSecondary }]} numberOfLines={1}>
+                  {searchQuery || t('search_location')}
+                </Text>
+                {searchQuery.length > 0 ? (
+                  <TouchableOpacity onPress={() => {
+                    setSearchQuery('');
+                    handleSearch('');
+                  }}>
+                    <X size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                ) : (
+                  <ChevronDown size={18} color={colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+
+              {/* Property Type */}
+              <TouchableOpacity
+                testID="typePickerButton"
+                onPress={() => setShowTypePicker(true)}
+                style={[styles.inputPill, { flex: 1.5, backgroundColor: colors.backgroundSecondary }]}
+              >
+                <Home size={20} color={colors.primary} />
+                <Text style={[styles.inputPillValue, { color: colors.text }]} numberOfLines={1}>
+                  {filters.type === 'all' ? t('search_any') : filters.type}
+                </Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Bedrooms */}
+              <TouchableOpacity
+                testID="bedPickerButton"
+                onPress={() => setShowBedPicker(true)}
+                style={[styles.inputPill, { flex: 1, backgroundColor: colors.backgroundSecondary }]}
+              >
+                <Text style={[styles.inputPillPrefix, { color: colors.textSecondary }]}>Beds</Text>
+                <Text style={[styles.inputPillValue, { color: colors.text }]} numberOfLines={1}>
+                  {filters.bedrooms === 'all' ? t('search_any') : `${filters.bedrooms}+`}
+                </Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Bathrooms */}
+              <TouchableOpacity
+                testID="bathPickerButton"
+                onPress={() => setShowBedPicker(true)}
+                style={[styles.inputPill, { flex: 1, backgroundColor: colors.backgroundSecondary }]}
+              >
+                <Text style={[styles.inputPillPrefix, { color: colors.textSecondary }]}>Baths</Text>
+                <Text style={[styles.inputPillValue, { color: colors.text }]} numberOfLines={1}>
+                  {filters.bathrooms === 'all' ? t('search_any') : `${filters.bathrooms}+`}
+                </Text>
+                <ChevronDown size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
+
+        {/* AI Prompt Input (When active) */}
+        {isAIMode && (
+          <View style={{
+            marginVertical: Spacing.sm,
+            padding: Spacing.sm,
+            backgroundColor: colors.backgroundSecondary,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.primary + '40',
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Sparkles size={16} color={colors.primary} style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>
+                AI Semantic Search (Natural Language)
+              </Text>
+            </View>
+            <TextInput
+              style={{
+                color: colors.text,
+                fontSize: 14,
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                outlineStyle: 'none' as any,
+              }}
+              placeholder={t('search_ai_placeholder') || "e.g. Modern 3-bedroom villa with private pool in Cocody under 100M FCFA..."}
+              placeholderTextColor={colors.textSecondary}
+              value={aiQuery}
+              onChangeText={setAiQuery}
+              onSubmitEditing={handleAISearch}
+            />
+          </View>
+        )}
+
+        {/* CTA Button */}
+        <TouchableOpacity
+          testID="searchCTA"
+          style={[styles.searchCTA, { backgroundColor: '#1B3B2B' }]}
+          onPress={isAIMode ? handleAISearch : () => applyFilters(searchQuery, filters)}
+          activeOpacity={0.9}
+        >
+          {parseSearchMutation.isPending ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <>
+              <SearchIcon size={20} color={colors.white} />
+              <Text style={[styles.searchCTAText, { color: colors.white }]}>
+                {isAIMode ? (parseSearchMutation.isPending ? "Analysing..." : "Magic Search") : t('search_for_properties')}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
-      {/* Main Results: Desktop Split-Screen or Mobile Toggle */}
+      {/* AI Toggle Button */}
+      <TouchableOpacity
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'center',
+          marginTop: Spacing.md,
+          backgroundColor: isAIMode ? colors.primary + '20' : 'transparent',
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          borderRadius: 20,
+        }}
+        onPress={() => setIsAIMode(!isAIMode)}
+      >
+        <Sparkles size={16} color={colors.primary} style={{ marginRight: 6 }} />
+        <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>
+          {isAIMode ? "Switch to Classic Filters" : "Try AI Search"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Quick Area Chips */}
+      <View style={{ marginTop: 12, width: '100%' }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+          {[
+            { id: 'all', label: '🇨🇮 Tout Abidjan', query: '' },
+            { id: 'cocody', label: 'Cocody', query: 'Cocody' },
+            { id: 'riviera', label: 'Riviera 3', query: 'Riviera' },
+            { id: 'deux_plateaux', label: '2 Plateaux', query: '2 Plateaux' },
+            { id: 'plateau', label: 'Plateau', query: 'Plateau' },
+            { id: 'marcory', label: 'Marcory / Zone 4', query: 'Marcory' },
+            { id: 'yopougon', label: 'Yopougon', query: 'Yopougon' },
+            { id: 'bingerville', label: 'Bingerville', query: 'Bingerville' },
+            { id: 'grand_bassam', label: 'Grand-Bassam', query: 'Grand-Bassam' },
+            { id: 'bouake', label: 'Bouaké', query: 'Bouaké' },
+            { id: 'yamoussoukro', label: 'Yamoussoukro', query: 'Yamoussoukro' },
+          ].map((item) => {
+            const isSelected = (searchQuery.toLowerCase() === item.query.toLowerCase()) || (!searchQuery && item.id === 'all');
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 10,
+                  backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
+                  borderWidth: 1,
+                  borderColor: isSelected ? colors.primary : colors.border,
+                }}
+                onPress={() => {
+                  setSearchQuery(item.query);
+                  handleSearch(item.query);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? colors.white : colors.text }}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* ═══════════════════════════════════════════════════════════
+          DESKTOP VIEW: FULL PAGE SCROLL WITH STICKY MAP
+      ═══════════════════════════════════════════════════════════ */}
       {isDesktop ? (
-        <View style={{ flex: 1, flexDirection: 'row', maxWidth: maxContentWidth, width: '100%', alignSelf: 'center', paddingHorizontal: contentPadding, gap: 24, marginTop: 12 }}>
-          {/* Left Column: Stats & Properties list */}
-          <View style={{ flex: 1.15, minWidth: 420 }}>
-            {activeAreaStats && (
-              <AreaPriceStatsCard
-                stats={activeAreaStats}
-                compact={true}
-                onExplorePress={() => router.push(`/area/${(activeAreaStats.cityName || 'abidjan').toLowerCase()}/${activeAreaStats.areaName.toLowerCase()}` as any)}
-              />
-            )}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 80, paddingTop: insets.top }}
+          showsVerticalScrollIndicator={true}
+        >
+          {/* Top Search Controls */}
+          {renderSearchHeaderContent()}
 
-            {/* Sorting bar & count */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>
-                {sortedProperties.length} {t('search_properties_found') || 'biens trouvés'}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 4, backgroundColor: colors.backgroundSecondary, padding: 3, borderRadius: 8 }}>
-                {(['newest', 'price_asc', 'price_desc', 'distance'] as const).map((mode) => (
-                  <TouchableOpacity
-                    key={mode}
-                    style={{
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 6,
-                      backgroundColor: sortBy === mode ? colors.surface : 'transparent',
-                    }}
-                    onPress={() => setSortBy(mode)}
-                  >
-                    <Text style={{ fontSize: 11, fontWeight: sortBy === mode ? '700' : '500', color: sortBy === mode ? colors.text : colors.textSecondary }}>
-                      {mode === 'newest' ? 'Récents' : mode === 'price_asc' ? 'Prix ↑' : mode === 'price_desc' ? 'Prix ↓' : 'Distance'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <FlatList
-              data={sortedProperties}
-              renderItem={({ item }) => (
-                <View
-                  style={{ marginBottom: 16 }}
-                >
-                  <PropertyCard property={item} />
+          {/* 2-Column Split Content */}
+          <View style={{
+            flexDirection: 'row',
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+            paddingHorizontal: contentPadding,
+            gap: 24,
+            marginTop: 16,
+            alignItems: 'flex-start',
+          }}>
+            {/* Left Column (52% width) */}
+            <View style={{ flex: 1.15, minWidth: 420 }}>
+              {activeAreaStats && (
+                <View style={{ marginBottom: 16 }}>
+                  <AreaPriceStatsCard
+                    stats={activeAreaStats}
+                    compact={true}
+                    onExplorePress={() => router.push(`/area/${(activeAreaStats.cityName || 'abidjan').toLowerCase()}/${activeAreaStats.areaName.toLowerCase()}` as any)}
+                  />
                 </View>
               )}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
+
+              {/* Sorting bar & count */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>
+                  {sortedProperties.length} {t('search_properties_found') || 'biens trouvés'}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 4, backgroundColor: colors.backgroundSecondary, padding: 3, borderRadius: 8 }}>
+                  {(['newest', 'price_asc', 'price_desc', 'distance'] as const).map((mode) => (
+                    <TouchableOpacity
+                      key={mode}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 6,
+                        backgroundColor: sortBy === mode ? colors.surface : 'transparent',
+                        shadowColor: sortBy === mode ? '#000' : 'transparent',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: sortBy === mode ? 0.08 : 0,
+                        shadowRadius: 2,
+                        elevation: sortBy === mode ? 1 : 0,
+                      }}
+                      onPress={() => setSortBy(mode)}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: sortBy === mode ? '700' : '500', color: sortBy === mode ? colors.text : colors.textSecondary }}>
+                        {mode === 'newest' ? 'Récents' : mode === 'price_asc' ? 'Prix ↑' : mode === 'price_desc' ? 'Prix ↓' : 'Distance'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Property cards */}
+              {sortedProperties.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('search_no_properties')}</Text>
                 </View>
-              }
-            />
-          </View>
+              ) : (
+                sortedProperties.map((property) => (
+                  <View key={property.id} style={{ marginBottom: 16 }}>
+                    <PropertyCard property={property} />
+                  </View>
+                ))
+              )}
+            </View>
 
-          {/* Right Column: Sticky Interactive Map */}
-          <View style={{ flex: 1, minHeight: 650, height: 'calc(100vh - 220px)' as any, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
-            <PropertyMap
-              properties={sortedProperties}
-              selectedId={highlightedPropertyId}
-              onPropertySelect={(id) => setHighlightedPropertyId(id)}
-            />
+            {/* Right Column (48% width): Sticky Interactive Map */}
+            <View style={{
+              flex: 1,
+              minHeight: 580,
+              height: 680,
+              borderRadius: 20,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: colors.border,
+              position: Platform.OS === 'web' ? ('sticky' as any) : 'relative',
+              top: 24,
+            }}>
+              <PropertyMap
+                properties={sortedProperties}
+                selectedId={highlightedPropertyId}
+                onPropertySelect={(id) => setHighlightedPropertyId(id)}
+              />
+            </View>
           </View>
-        </View>
+        </ScrollView>
       ) : (
-        /* Mobile: List or Map View */
-        <Animated.View style={{ flex: 1, opacity: viewFadeAnim }}>
+        /* ═══════════════════════════════════════════════════════════
+           MOBILE / TABLET VIEW: FULL SCROLL LIST OR FULL MAP
+        ═══════════════════════════════════════════════════════════ */
+        <View style={{ flex: 1, paddingTop: insets.top }}>
           {viewMode === 'list' ? (
             <FlatList
               data={sortedProperties}
               ListHeaderComponent={
-                activeAreaStats ? (
-                  <View style={{ marginBottom: 12, paddingHorizontal: contentPadding }}>
-                    <AreaPriceStatsCard
-                      stats={activeAreaStats}
-                      compact={true}
-                      onExplorePress={() => router.push(`/area/${(activeAreaStats.cityName || 'abidjan').toLowerCase()}/${activeAreaStats.areaName.toLowerCase()}` as any)}
-                    />
+                <View>
+                  {renderSearchHeaderContent()}
+                  {activeAreaStats && (
+                    <View style={{ marginBottom: 12, paddingHorizontal: contentPadding }}>
+                      <AreaPriceStatsCard
+                        stats={activeAreaStats}
+                        compact={true}
+                        onExplorePress={() => router.push(`/area/${(activeAreaStats.cityName || 'abidjan').toLowerCase()}/${activeAreaStats.areaName.toLowerCase()}` as any)}
+                      />
+                    </View>
+                  )}
+                  {/* Sorting bar & count */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: contentPadding, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>
+                      {sortedProperties.length} {t('search_properties_found') || 'biens trouvés'}
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 4, backgroundColor: colors.backgroundSecondary, padding: 3, borderRadius: 8 }}>
+                      {(['newest', 'price_asc', 'price_desc', 'distance'] as const).map((mode) => (
+                        <TouchableOpacity
+                          key={mode}
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            backgroundColor: sortBy === mode ? colors.surface : 'transparent',
+                          }}
+                          onPress={() => setSortBy(mode)}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: sortBy === mode ? '700' : '500', color: sortBy === mode ? colors.text : colors.textSecondary }}>
+                            {mode === 'newest' ? 'Récents' : mode === 'price_asc' ? 'Prix ↑' : mode === 'price_desc' ? 'Prix ↓' : 'Distance'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                ) : null
+                </View>
               }
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
@@ -840,7 +914,7 @@ export default function SearchScreen() {
               key={columns}
               contentContainerStyle={[
                 styles.list,
-                { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }
+                { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding, paddingBottom: 120 }
               ]}
               columnWrapperStyle={columns > 1 ? styles.columnWrapper : undefined}
               showsVerticalScrollIndicator={false}
@@ -852,32 +926,31 @@ export default function SearchScreen() {
             />
           ) : (
             <View style={{ flex: 1 }}>
+              {renderSearchHeaderContent()}
               <PropertyMap properties={sortedProperties} />
             </View>
           )}
-        </Animated.View>
-      )}
 
-      {/* Floating Toggle Button on Mobile */}
-      {!isDesktop && (
-        <Animated.View style={{ transform: [{ scale: floatingButtonScale }], position: 'absolute', bottom: insets.bottom + Spacing.xl + (isTablet || isDesktop ? 0 : 50), alignSelf: 'center', left: 0, right: 0, alignItems: 'center', zIndex: 100 }}>
-          <TouchableOpacity
-            style={[styles.floatingButton, { backgroundColor: colors.text }]}
-            onPress={() => setViewMode((m) => (m === 'list' ? 'map' : 'list'))}
-            onPressIn={() => Animated.spring(floatingButtonScale, { toValue: 0.94, useNativeDriver: true, speed: 30, bounciness: 4 }).start()}
-            onPressOut={() => Animated.spring(floatingButtonScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()}
-            activeOpacity={1}
-          >
-            {viewMode === 'list' ? (
-              <MapIcon size={20} color={colors.white} />
-            ) : (
-              <ListIcon size={20} color={colors.white} />
-            )}
-            <Text style={[styles.floatingButtonText, { color: colors.white }]}>
-              {viewMode === 'list' ? t('search_map_view') : t('search_list_view')}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+          {/* Floating Toggle Button on Mobile */}
+          <Animated.View style={{ transform: [{ scale: floatingButtonScale }], position: 'absolute', bottom: insets.bottom + Spacing.xl + (isTablet || isDesktop ? 0 : 50), alignSelf: 'center', left: 0, right: 0, alignItems: 'center', zIndex: 100 }}>
+            <TouchableOpacity
+              style={[styles.floatingButton, { backgroundColor: colors.text }]}
+              onPress={() => setViewMode((m) => (m === 'list' ? 'map' : 'list'))}
+              onPressIn={() => Animated.spring(floatingButtonScale, { toValue: 0.94, useNativeDriver: true, speed: 30, bounciness: 4 }).start()}
+              onPressOut={() => Animated.spring(floatingButtonScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()}
+              activeOpacity={1}
+            >
+              {viewMode === 'list' ? (
+                <MapIcon size={20} color={colors.white} />
+              ) : (
+                <ListIcon size={20} color={colors.white} />
+              )}
+              <Text style={[styles.floatingButtonText, { color: colors.white }]}>
+                {viewMode === 'list' ? t('search_map_view') : t('search_list_view')}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
       )}
 
       <Modal visible={showLocationPicker} animationType="fade" transparent onRequestClose={() => setShowLocationPicker(false)}>

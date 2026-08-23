@@ -157,7 +157,7 @@ export default function PropertyDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
         {Platform.OS === 'web' && <WebNavbar />}
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={[styles.imageContainer, isDesktop && { alignItems: 'center' }]}>
             <View style={{ width: imageWidth }}>
               <ScrollView

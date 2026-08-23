@@ -162,7 +162,7 @@ export default function AreaLandingPage() {
       <View style={styles.container}>
         {Platform.OS === 'web' && <WebNavbar />}
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Hero Banner */}
           <View style={styles.heroWrap}>
             <Image source={{ uri: areaInfo.bannerImage }} style={styles.heroImage} />
