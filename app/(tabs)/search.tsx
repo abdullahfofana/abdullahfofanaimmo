@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Search as SearchIcon, X, Home, ChevronDown, MapPin, Map as MapIcon, List as ListIcon, Bell, Sparkles, Wand2, SlidersHorizontal } from 'lucide-react-native';
+import { Search as SearchIcon, X, Home, ChevronDown, MapPin, Map as MapIcon, List as ListIcon, Bell, SlidersHorizontal } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { trpc } from '@/lib/trpc';
@@ -654,9 +654,9 @@ export default function SearchScreen() {
             borderColor: colors.primary + '40',
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Sparkles size={16} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>
-                AI Semantic Search (Natural Language)
+              <SearchIcon size={14} color="#059669" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669' }}>
+                {language === 'fr' ? 'Recherche par description détaillée' : 'Detailed description search'}
               </Text>
             </View>
             <TextInput
@@ -667,7 +667,7 @@ export default function SearchScreen() {
                 paddingHorizontal: 4,
                 outlineStyle: 'none' as any,
               }}
-              placeholder={t('search_ai_placeholder') || "e.g. Modern 3-bedroom villa with private pool in Cocody under 100M FCFA..."}
+              placeholder={t('search_ai_placeholder') || "Ex : Villa 4 pièces avec piscine à Cocody moins de 150M FCFA..."}
               placeholderTextColor={colors.textSecondary}
               value={aiQuery}
               onChangeText={setAiQuery}
@@ -679,7 +679,7 @@ export default function SearchScreen() {
         {/* CTA Button */}
         <TouchableOpacity
           testID="searchCTA"
-          style={[styles.searchCTA, { backgroundColor: '#1B3B2B' }]}
+          style={[styles.searchCTA, { backgroundColor: '#059669', borderRadius: 10 }]}
           onPress={isAIMode ? handleAISearch : () => applyFilters(searchQuery, filters)}
           activeOpacity={0.9}
         >
@@ -687,32 +687,33 @@ export default function SearchScreen() {
             <ActivityIndicator size="small" color={colors.white} />
           ) : (
             <>
-              <SearchIcon size={20} color={colors.white} />
+              <SearchIcon size={18} color={colors.white} />
               <Text style={[styles.searchCTAText, { color: colors.white }]}>
-                {isAIMode ? (parseSearchMutation.isPending ? "Analysing..." : "Magic Search") : t('search_for_properties')}
+                {isAIMode ? (parseSearchMutation.isPending ? (language === 'fr' ? "Recherche en cours..." : "Searching...") : (language === 'fr' ? "Lancer la recherche" : "Search")) : t('search_for_properties')}
               </Text>
             </>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* AI Toggle Button */}
+      {/* Advanced Description Toggle Button */}
       <TouchableOpacity
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           alignSelf: 'center',
-          marginTop: Spacing.md,
-          backgroundColor: isAIMode ? colors.primary + '20' : 'transparent',
-          paddingHorizontal: 16,
-          paddingVertical: 8,
-          borderRadius: 20,
+          marginTop: Spacing.sm,
+          backgroundColor: isAIMode ? 'rgba(5, 150, 105, 0.1)' : 'transparent',
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 8,
         }}
         onPress={() => setIsAIMode(!isAIMode)}
       >
-        <Sparkles size={16} color={colors.primary} style={{ marginRight: 6 }} />
-        <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>
-          {isAIMode ? "Switch to Classic Filters" : "Try AI Search"}
+        <Text style={{ color: '#059669', fontWeight: '600', fontSize: 13 }}>
+          {isAIMode
+            ? (language === 'fr' ? "← Revenir aux filtres standards" : "← Switch to standard filters")
+            : (language === 'fr' ? "Recherche par phrase / description détaillée" : "Search by description")}
         </Text>
       </TouchableOpacity>
 

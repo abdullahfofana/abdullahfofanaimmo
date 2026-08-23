@@ -161,17 +161,9 @@ export default function WebNavbar() {
             onPress={() => handleNav('/(tabs)/home')}
             activeOpacity={0.85}
           >
-            <LinearGradient
-              colors={['#064e3b', '#047857', '#059669']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoBadge}
-            >
+            <View style={styles.logoBadge}>
               <Building2 size={20} color="#FFFFFF" strokeWidth={2.4} />
-              <View style={styles.sparkleDot}>
-                <Sparkles size={8} color="#FBBF24" />
-              </View>
-            </LinearGradient>
+            </View>
 
             <View style={styles.brandTextGroup}>
               <View style={styles.brandTitleRow}>
@@ -396,23 +388,16 @@ export default function WebNavbar() {
               </View>
             )}
 
-            {/* + Add Property CTA (High Impact Emerald Button) */}
+            {/* + Add Property CTA */}
             <TouchableOpacity
               style={styles.addPropertyCta}
               onPress={handleAddProperty}
               activeOpacity={0.88}
             >
-              <LinearGradient
-                colors={['#059669', '#047857']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.ctaGradient}
-              >
-                <Plus size={16} color="#FFFFFF" strokeWidth={2.8} />
-                <Text style={styles.ctaButtonText}>
-                  {isMedium ? (t('nav_add_property') || '+ Add Property') : '+ Add'}
-                </Text>
-              </LinearGradient>
+              <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
+              <Text style={styles.ctaButtonText}>
+                {isMedium ? (t('nav_add_property') || '+ Add Property') : '+ Add'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -463,27 +448,12 @@ const styles = StyleSheet.create({
     cursor: 'pointer' as any,
   },
   logoBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  sparkleDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
-    padding: 2,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
   },
   brandTextGroup: {
     justifyContent: 'center',
@@ -746,21 +716,14 @@ const styles = StyleSheet.create({
 
   // Primary Add Property CTA
   addPropertyCta: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 4,
-    cursor: 'pointer' as any,
-  },
-  ctaGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 9,
+    borderRadius: 8,
+    backgroundColor: '#059669',
+    cursor: 'pointer' as any,
   },
   ctaButtonText: {
     fontSize: 13.5,

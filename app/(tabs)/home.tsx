@@ -437,8 +437,10 @@ export default function HomeScreen() {
             <View style={[styles.heroContent, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
               {/* Badge */}
               <View style={styles.heroBadge}>
-                <Sparkles size={11} color={colors.accentLight} strokeWidth={2.5} />
-                <Text style={styles.heroBadgeText}>{t('home_hero_badge')}</Text>
+                <Building2 size={12} color="#059669" strokeWidth={2.4} />
+                <Text style={styles.heroBadgeText}>
+                  {language === 'fr' ? "N°1 DE L'IMMOBILIER EN CÔTE D'IVOIRE" : '#1 REAL ESTATE PLATFORM IN IVORY COAST'}
+                </Text>
               </View>
 
               <Text style={[styles.heroTitle, styles.heroTitleDesktop]}>
@@ -631,12 +633,14 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
             <View>
-              <View style={styles.sectionBadge}>
-                <Sparkles size={11} color="#D97706" />
-                <Text style={styles.sectionBadgeText}>{language === 'fr' ? 'SÉLECTION EXCLUSIVE' : 'EXCLUSIVE PICKS'}</Text>
+              <View style={[styles.sectionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
+                <Building2 size={11} color="#059669" />
+                <Text style={[styles.sectionBadgeText, { color: '#059669' }]}>
+                  {language === 'fr' ? 'SÉLECTION PREMIUM' : 'PREMIUM SELECTION'}
+                </Text>
               </View>
               <Text style={styles.sectionTitle}>{t('home_featured_title') || 'Biens en vedette'}</Text>
-              <Text style={styles.sectionSubtitle}>{t('home_featured_subtitle') || 'Les meilleures opportunités sélectionnées pour vous'}</Text>
+              <Text style={styles.sectionSubtitle}>{t('home_featured_subtitle') || 'Sélection de biens vérifiés par nos experts'}</Text>
             </View>
             <TouchableOpacity
               style={styles.seeAllButton}
@@ -672,7 +676,6 @@ export default function HomeScreen() {
                     >
                       <View style={styles.featuredCardTopRow}>
                         <View style={styles.featuredBadge}>
-                          <Sparkles size={10} color="#fff" strokeWidth={2.5} />
                           <Text style={styles.featuredBadgeText}>
                             {item.status === 'sale' ? (language === 'fr' ? 'VENTE' : 'FOR SALE') : (language === 'fr' ? 'LOCATION' : 'FOR RENT')}
                           </Text>
@@ -713,16 +716,16 @@ export default function HomeScreen() {
           <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
             <View>
               <View style={[styles.sectionBadge, styles.sectionBadgeRecent]}>
-                <Zap size={11} color="#059669" />
+                <Building2 size={11} color="#059669" />
                 <Text style={[styles.sectionBadgeText, styles.sectionBadgeTextRecent]}>
-                  {language === 'fr' ? 'CATALOGUE IMMOBILIER' : 'PROPERTY CATALOG'}
+                  {language === 'fr' ? 'ANNONCES RÉCENTES' : 'RECENT LISTINGS'}
                 </Text>
               </View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? 'Explorer les biens en Côte d\'Ivoire' : 'Explore Properties'}
+                {language === 'fr' ? 'Toutes les Annonces' : 'All Available Properties'}
               </Text>
               <Text style={styles.sectionSubtitle}>
-                {filteredFeedProperties.length} {language === 'fr' ? 'annonces vérifiées à Abidjan & environs' : 'verified listings available'}
+                {filteredFeedProperties.length} {language === 'fr' ? 'biens disponibles à Abidjan & environs' : 'verified listings available'}
               </Text>
             </View>
 
@@ -961,7 +964,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? '📊 Prix Moyen par Quartier' : '📊 Average Property Price by Area'}
+                {language === 'fr' ? "Prix Moyen de l'Immobilier par Commune" : 'Average Property Price by Area'}
               </Text>
               <Text style={styles.sectionSubtitle}>
                 {language === 'fr' ? 'Estimations en temps réel calculées sur la base de nos annonces' : 'Live real estate market price statistics across Côte d\'Ivoire'}

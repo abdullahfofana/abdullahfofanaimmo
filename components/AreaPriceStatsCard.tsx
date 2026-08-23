@@ -44,7 +44,7 @@ export default function AreaPriceStatsCard({
           <View style={styles.areaTitleCol}>
             <View style={styles.badgeRow}>
               <View style={styles.marketBadge}>
-                <Sparkles size={11} color="#D97706" />
+                <Tag size={11} color="#D97706" />
                 <Text style={styles.marketBadgeText}>
                   {isFr ? 'PRIX DU MARCHÉ' : 'MARKET PRICE'}
                 </Text>
@@ -91,17 +91,12 @@ export default function AreaPriceStatsCard({
       <View style={styles.headerRow}>
         <View style={styles.areaTitleCol}>
           <View style={styles.badgeRow}>
-            <LinearGradient
-              colors={['#059669', '#10B981']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.activeMarketBadge}
-            >
-              <TrendingUp size={11} color="#FFFFFF" strokeWidth={2.4} />
+            <View style={styles.activeMarketBadge}>
+              <TrendingUp size={12} color="#059669" strokeWidth={2.2} />
               <Text style={styles.activeMarketBadgeText}>
-                {isFr ? 'PRIX MOYEN DU MARCHÉ' : 'AVERAGE MARKET PRICE'}
+                {isFr ? 'PRIX DU MARCHÉ' : 'MARKET PRICE'}
               </Text>
-            </LinearGradient>
+            </View>
             <Text style={styles.cityTag}>{stats.cityName}</Text>
           </View>
           <Text style={styles.areaName}>{stats.areaName}</Text>
@@ -269,6 +264,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -276,7 +274,7 @@ const styles = StyleSheet.create({
   activeMarketBadgeText: {
     fontSize: 9.5,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#059669',
     letterSpacing: 0.5,
   },
   cityTag: {
