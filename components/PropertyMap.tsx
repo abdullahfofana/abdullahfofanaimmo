@@ -30,6 +30,9 @@ import {
   SlidersHorizontal,
   ChevronRight,
   Eye,
+  GraduationCap,
+  Hospital,
+  ShoppingBag,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -38,10 +41,17 @@ import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { COTE_D_IVOIRE_SERVICES, NearbyService, ServiceCategory } from '@/constants/nearbyServices';
 
 interface PropertyMapProps {
   properties: Property[];
   initialSelectedId?: string;
+  selectedId?: string | null;
+  onPropertySelect?: (propertyId: string | null) => void;
+  showFilterBar?: boolean;
+  showNearbyPOIs?: boolean;
+  centerCoordinates?: { latitude: number; longitude: number; zoom?: number };
+  hideBottomCard?: boolean;
 }
 
 // Popular locations / districts in Ivory Coast with center coordinates
@@ -57,6 +67,8 @@ const POPULAR_PLACES = [
   { id: 'bingerville', name: 'Bingerville', nameFr: 'Bingerville', lat: 5.3560, lng: -3.8890, zoom: 14 },
   { id: 'bassam', name: 'Grand-Bassam', nameFr: 'Grand-Bassam', lat: 5.2050, lng: -3.7380, zoom: 13 },
   { id: 'assinie', name: 'Assinie', nameFr: 'Assinie', lat: 5.1320, lng: -3.2840, zoom: 12 },
+  { id: 'yamoussoukro', name: 'Yamoussoukro', nameFr: 'Yamoussoukro', lat: 6.8276, lng: -5.2893, zoom: 13 },
+  { id: 'bouake', name: 'Bouaké', nameFr: 'Bouaké', lat: 7.6900, lng: -5.0300, zoom: 13 },
 ];
 
 const RADIUS_OPTIONS = [
@@ -86,17 +98,59 @@ function estimateDriveTimeMin(distanceKm: number): number {
   return Math.max(1, Math.round((distanceKm / 28) * 60)); // Average ~28km/h in Abidjan traffic
 }
 
-export default function PropertyMap({ properties, initialSelectedId }: PropertyMapProps) {
+export default function PropertyMap({
+  properties,
+  initialSelectedId,
+  selectedId,
+  onPropertySelect,
+  showFilterBar = true,
+  showNearbyPOIs = false,
+  centerCoordinates,
+  hideBottomCard = false,
+}: PropertyMapProps) {
   const colors = useColors();
   const { language, t } = useLanguage();
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('all');
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(initialSelectedId || null);
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
+    selectedId !== undefined ? selectedId : initialSelectedId || null
+  );
   const [selectedRadiusId, setSelectedRadiusId] = useState<string>('all');
+  const [poiCategoryFilter, setPoiCategoryFilter] = useState<string>('all');
+  const [showPOILayer, setShowPOILayer] = useState<boolean>(showNearbyPOIs);
+
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLocatingUser, setIsLocatingUser] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const cardAnim = useRef(new Animated.Value(0)).current;
+
+  // Sync external selectedId
+  useEffect(() => {
+    if (selectedId !== undefined) {
+      setInternalSelectedId(selectedId);
+      if (selectedId && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: 'FOCUS_PROPERTY', propertyId: selectedId },
+          '*'
+        );
+      }
+    }
+  }, [selectedId]);
+
+  // Sync centerCoordinates
+  useEffect(() => {
+    if (centerCoordinates && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: 'PAN_TO',
+          lat: centerCoordinates.latitude,
+          lng: centerCoordinates.longitude,
+          zoom: centerCoordinates.zoom || 14,
+        },
+        '*'
+      );
+    }
+  }, [centerCoordinates]);
 
   // Filter valid properties with coordinates
   const validProperties = useMemo(() => {
@@ -122,8 +176,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
           };
           setUserLocation(coords);
 
-          // Pan Leaflet map to buyer location
-          if (iframeRef.current && iframeRef.current.contentWindow) {
+          if (iframeRef.current?.contentWindow) {
             iframeRef.current.contentWindow.postMessage(
               {
                 type: 'SET_USER_LOCATION',
@@ -135,12 +188,11 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
           }
         },
         (err) => {
-          console.warn('[Map Geolocation] User position unavailable:', err.message);
+          console.warn('[Map Geolocation] Fallback:', err.message);
           setIsLocatingUser(false);
-          // Default to Plateau / Cocody center for Abidjan demo
           const fallback = { latitude: 5.3485, longitude: -4.0125 };
           setUserLocation(fallback);
-          if (iframeRef.current && iframeRef.current.contentWindow) {
+          if (iframeRef.current?.contentWindow) {
             iframeRef.current.contentWindow.postMessage(
               {
                 type: 'SET_USER_LOCATION',
@@ -156,7 +208,6 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
     }
   }, []);
 
-  // Auto request location on load
   useEffect(() => {
     requestUserLocation();
   }, [requestUserLocation]);
@@ -179,12 +230,12 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
   }, [validProperties, selectedRadiusId, userLocation]);
 
   const selectedProperty = useMemo(() => {
-    return filteredProperties.find((p) => p.id === selectedPropertyId) || null;
-  }, [filteredProperties, selectedPropertyId]);
+    return filteredProperties.find((p) => p.id === internalSelectedId) || null;
+  }, [filteredProperties, internalSelectedId]);
 
   // Animate preview card when a property is selected
   useEffect(() => {
-    if (selectedProperty) {
+    if (selectedProperty && !hideBottomCard) {
       Animated.spring(cardAnim, {
         toValue: 1,
         useNativeDriver: true,
@@ -198,7 +249,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
         useNativeDriver: true,
       }).start();
     }
-  }, [selectedProperty, cardAnim]);
+  }, [selectedProperty, hideBottomCard, cardAnim]);
 
   const formatPriceFull = (price: number, currency: string) => {
     if (currency === 'FCFA') {
@@ -220,7 +271,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
 
   const handlePlaceSelect = (place: typeof POPULAR_PLACES[0]) => {
     setSelectedPlaceId(place.id);
-    if (Platform.OS === 'web' && iframeRef.current && iframeRef.current.contentWindow) {
+    if (Platform.OS === 'web' && iframeRef.current?.contentWindow) {
       iframeRef.current.contentWindow.postMessage(
         { type: 'PAN_TO', lat: place.lat, lng: place.lng, zoom: place.zoom },
         '*'
@@ -232,7 +283,10 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
           p.location.district.toLowerCase().includes(place.id.toLowerCase()) ||
           p.location.city.toLowerCase().includes(place.id.toLowerCase())
       );
-      if (match) setSelectedPropertyId(match.id);
+      if (match) {
+        setInternalSelectedId(match.id);
+        onPropertySelect?.(match.id);
+      }
     }
   };
 
@@ -242,7 +296,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
       url += `&origin=${userLocation.latitude},${userLocation.longitude}`;
     }
     if (Platform.OS === 'web') {
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     } else {
       Linking.openURL(url);
     }
@@ -259,18 +313,14 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
     Linking.openURL(`https://wa.me/${cleanPhone}?text=${text}`);
   };
 
-  const handleCallContact = (phone: string) => {
-    const cleanPhone = phone.replace(/[^0-9+]/g, '');
-    Linking.openURL(`tel:${cleanPhone}`);
-  };
-
   // Message listener from Leaflet iframe
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'SELECT_PROPERTY') {
-        setSelectedPropertyId(event.data.propertyId);
+        setInternalSelectedId(event.data.propertyId);
+        onPropertySelect?.(event.data.propertyId);
       } else if (event.data && event.data.type === 'OPEN_PROPERTY') {
         router.push(`/property/${event.data.propertyId}`);
       } else if (event.data && event.data.type === 'OPEN_GOOGLE_MAPS') {
@@ -280,7 +330,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [userLocation]);
+  }, [userLocation, onPropertySelect]);
 
   // Generate Leaflet HTML for web embedding matching user's exact reference style
   const mapHtml = useMemo(() => {
@@ -316,6 +366,12 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
       };
     });
 
+    const poisData = showPOILayer ? COTE_D_IVOIRE_SERVICES : [];
+
+    const defaultLat = centerCoordinates?.latitude || (propertiesData[0] ? propertiesData[0].lat : 5.359952);
+    const defaultLng = centerCoordinates?.longitude || (propertiesData[0] ? propertiesData[0].lng : -4.008256);
+    const defaultZoom = centerCoordinates?.zoom || (propertiesData.length === 1 ? 15 : 12);
+
     const userLat = userLocation?.latitude || 5.3485;
     const userLng = userLocation?.longitude || -4.0125;
     const hasUserLoc = !!userLocation;
@@ -331,7 +387,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
     * { box-sizing: border-box; }
     body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #e5e7eb; }
     
-    /* Emerald Price Bubble Marker (Matches user reference image exactly) */
+    /* Emerald Price Bubble Marker */
     .price-marker-wrap {
       display: flex;
       flex-direction: column;
@@ -386,6 +442,26 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
     .price-marker-wrap.active .price-tail {
       border-top-color: #064e3b;
     }
+
+    /* POI Service Markers */
+    .poi-pin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .poi-pin.education { background: #2563EB; color: #fff; }
+    .poi-pin.health { background: #DC2626; color: #fff; }
+    .poi-pin.pharmacy { background: #059669; color: #fff; }
+    .poi-pin.shopping { background: #D97706; color: #fff; }
+    .poi-pin.finance { background: #0D9488; color: #fff; }
+    .poi-pin.transport { background: #7C3AED; color: #fff; }
 
     /* Buyer Live GPS Radar Marker */
     .buyer-radar-marker {
@@ -503,17 +579,16 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
   <div id="map"></div>
   <script>
     const properties = ${JSON.stringify(propertiesData)};
+    const pois = ${JSON.stringify(poisData)};
     let userCoords = ${hasUserLoc ? `{ lat: ${userLat}, lng: ${userLng} }` : 'null'};
     let activeLine = null;
 
-    const map = L.map('map', { zoomControl: false }).setView([5.359952, -4.008256], 12);
+    const map = L.map('map', { zoomControl: true }).setView([${defaultLat}, ${defaultLng}], ${defaultZoom});
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       attribution: '&copy; CartoDB &copy; OpenStreetMap'
     }).addTo(map);
-
-    L.control.zoom({ position: 'topright' }).addTo(map);
 
     const markers = {};
     let userMarker = null;
@@ -528,13 +603,35 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
       });
       userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 2000 })
         .addTo(map)
-        .bindTooltip('📍 Votre Position (Acheteur)', { permanent: false, direction: 'top' });
+        .bindTooltip('📍 Votre Position', { permanent: false, direction: 'top' });
     }
 
     if (userCoords) {
       renderUserMarker(userCoords.lat, userCoords.lng);
     }
 
+    // Render POI markers if enabled
+    pois.forEach(poi => {
+      let iconEmoji = '📍';
+      if (poi.category === 'education') iconEmoji = '🎓';
+      else if (poi.category === 'health' || poi.category === 'pharmacy') iconEmoji = '🏥';
+      else if (poi.category === 'shopping') iconEmoji = '🛒';
+      else if (poi.category === 'finance') iconEmoji = '🏦';
+      else if (poi.category === 'transport') iconEmoji = '🚌';
+
+      const poiIcon = L.divIcon({
+        className: 'custom-poi-icon',
+        html: '<div class="poi-pin ' + poi.category + '">' + iconEmoji + '</div>',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      });
+
+      L.marker([poi.latitude, poi.longitude], { icon: poiIcon, zIndexOffset: 50 })
+        .addTo(map)
+        .bindTooltip('<b>' + poi.name + '</b><br/><span style="font-size:10px;color:#64748b;">' + poi.address + '</span>', { direction: 'top' });
+    });
+
+    // Render Property Price Bubble Markers
     properties.forEach(p => {
       const isRent = p.status === 'rent';
       const isFeatured = p.isFeatured;
@@ -575,12 +672,10 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
         .bindPopup(popupContent, { offset: [0, -20] });
 
       marker.on('click', () => {
-        // Remove previous active classes
         document.querySelectorAll('.price-marker-wrap').forEach(el => el.classList.remove('active'));
         const el = document.getElementById('pin-' + p.id);
         if (el) el.classList.add('active');
 
-        // Draw connecting line from buyer to property
         if (activeLine) map.removeLayer(activeLine);
         if (userCoords) {
           activeLine = L.polyline([
@@ -612,86 +707,106 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
         if (m) {
           map.flyTo(m.getLatLng(), 15, { duration: 0.8 });
           m.openPopup();
+          document.querySelectorAll('.price-marker-wrap').forEach(el => el.classList.remove('active'));
+          const el = document.getElementById('pin-' + event.data.propertyId);
+          if (el) el.classList.add('active');
         }
       }
     });
   </script>
 </body>
 </html>`;
-  }, [filteredProperties, userLocation]);
+  }, [filteredProperties, userLocation, showPOILayer, centerCoordinates]);
 
   return (
     <View style={styles.container}>
       {/* ── TOP SEARCH & DISTANCE RADIUS BAR ───────────────────────── */}
-      <View style={styles.topFilterBar}>
-        {/* District pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.placeChipsScroll}
-        >
-          {/* Live GPS Radar Pill */}
-          <TouchableOpacity
-            style={[
-              styles.placeChip,
-              styles.gpsPlaceChip,
-              userLocation && styles.gpsPlaceChipActive,
-            ]}
-            onPress={requestUserLocation}
-            activeOpacity={0.8}
+      {showFilterBar && (
+        <View style={styles.topFilterBar}>
+          {/* District pills */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.placeChipsScroll}
           >
-            {isLocatingUser ? (
-              <ActivityIndicator size="small" color="#059669" />
-            ) : (
-              <Crosshair size={14} color={userLocation ? '#059669' : '#64748B'} strokeWidth={2.4} />
-            )}
-            <Text style={[styles.placeChipText, userLocation && { color: '#059669', fontWeight: '800' }]}>
-              {userLocation ? '📍 Ma Position' : 'Localiser (GPS)'}
-            </Text>
-          </TouchableOpacity>
+            {/* Live GPS Radar Pill */}
+            <TouchableOpacity
+              style={[
+                styles.placeChip,
+                styles.gpsPlaceChip,
+                userLocation && styles.gpsPlaceChipActive,
+              ]}
+              onPress={requestUserLocation}
+              activeOpacity={0.8}
+            >
+              {isLocatingUser ? (
+                <ActivityIndicator size="small" color="#059669" />
+              ) : (
+                <Crosshair size={14} color={userLocation ? '#059669' : '#64748B'} strokeWidth={2.4} />
+              )}
+              <Text style={[styles.placeChipText, userLocation && { color: '#059669', fontWeight: '800' }]}>
+                {userLocation ? '📍 Ma Position' : 'Localiser (GPS)'}
+              </Text>
+            </TouchableOpacity>
 
-          {POPULAR_PLACES.map((place) => {
-            const isActive = selectedPlaceId === place.id;
-            const placeLabel = language === 'fr' ? place.nameFr : place.name;
-            return (
-              <TouchableOpacity
-                key={place.id}
-                style={[styles.placeChip, isActive && styles.placeChipActive]}
-                onPress={() => handlePlaceSelect(place)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.placeChipText, isActive && styles.placeChipTextActive]}>
-                  {placeLabel}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            {/* POI Layer Toggle */}
+            <TouchableOpacity
+              style={[
+                styles.placeChip,
+                showPOILayer && { backgroundColor: '#2563EB', borderColor: '#2563EB' },
+              ]}
+              onPress={() => setShowPOILayer(!showPOILayer)}
+              activeOpacity={0.8}
+            >
+              <Compass size={13} color={showPOILayer ? '#FFFFFF' : '#64748B'} />
+              <Text style={[styles.placeChipText, showPOILayer && { color: '#FFFFFF', fontWeight: '800' }]}>
+                {language === 'fr' ? 'Services & Écoles' : 'Nearby POIs'}
+              </Text>
+            </TouchableOpacity>
 
-        {/* Distance Proximity Filter */}
-        <View style={styles.radiusRow}>
-          <Text style={styles.radiusLabel}>
-            {language === 'fr' ? 'Rayon de distance :' : 'Distance radius:'}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.radiusScroll}>
-            {RADIUS_OPTIONS.map((radius) => {
-              const isSelected = selectedRadiusId === radius.id;
+            {POPULAR_PLACES.map((place) => {
+              const isActive = selectedPlaceId === place.id;
+              const placeLabel = language === 'fr' ? place.nameFr : place.name;
               return (
                 <TouchableOpacity
-                  key={radius.id}
-                  style={[styles.radiusPill, isSelected && styles.radiusPillActive]}
-                  onPress={() => setSelectedRadiusId(radius.id)}
-                  activeOpacity={0.8}
+                  key={place.id}
+                  style={[styles.placeChip, isActive && styles.placeChipActive]}
+                  onPress={() => handlePlaceSelect(place)}
+                  activeOpacity={0.75}
                 >
-                  <Text style={[styles.radiusPillText, isSelected && styles.radiusPillTextActive]}>
-                    {language === 'fr' ? radius.labelFr : radius.labelEn}
+                  <Text style={[styles.placeChipText, isActive && styles.placeChipTextActive]}>
+                    {placeLabel}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+
+          {/* Distance Proximity Filter */}
+          <View style={styles.radiusRow}>
+            <Text style={styles.radiusLabel}>
+              {language === 'fr' ? 'Rayon de distance :' : 'Distance radius:'}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.radiusScroll}>
+              {RADIUS_OPTIONS.map((radius) => {
+                const isSelected = selectedRadiusId === radius.id;
+                return (
+                  <TouchableOpacity
+                    key={radius.id}
+                    style={[styles.radiusPill, isSelected && styles.radiusPillActive]}
+                    onPress={() => setSelectedRadiusId(radius.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.radiusPillText, isSelected && styles.radiusPillTextActive]}>
+                      {language === 'fr' ? radius.labelFr : radius.labelEn}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* ── MAP CONTAINER ──────────────────────────────────────────── */}
       <View style={styles.mapWrapper}>
@@ -711,7 +826,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
       </View>
 
       {/* ── BOTTOM FLOATING PROPERTY PREVIEW CARD ───────────────────── */}
-      {selectedProperty && (
+      {!hideBottomCard && selectedProperty && (
         <Animated.View
           style={[
             styles.bottomCardWrapper,
@@ -731,7 +846,10 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
             {/* Close Button */}
             <TouchableOpacity
               style={styles.closeCardBtn}
-              onPress={() => setSelectedPropertyId(null)}
+              onPress={() => {
+                setInternalSelectedId(null);
+                onPropertySelect?.(null);
+              }}
               activeOpacity={0.8}
             >
               <X size={16} color="#64748B" strokeWidth={2.4} />
@@ -796,7 +914,7 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
               </View>
             </View>
 
-            {/* Action Buttons: Google Maps Navigation + WhatsApp + Call */}
+            {/* Action Buttons */}
             <View style={styles.cardActionGrid}>
               <TouchableOpacity
                 style={styles.gmapsNavBtn}
@@ -842,9 +960,6 @@ export default function PropertyMap({ properties, initialSelectedId }: PropertyM
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// STYLES
-// ══════════════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -870,6 +985,9 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   placeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 13,
     paddingVertical: 7,
     borderRadius: 12,

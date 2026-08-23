@@ -15,7 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Search as SearchIcon, X, Home, ChevronDown, MapPin, Map as MapIcon, List as ListIcon, Bell, Sparkles, Wand2 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -30,8 +30,11 @@ import { Property, PropertyType, PropertyStatus } from '@/types/property';
 import { getColumns, getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { ivoryCoastLocations } from '@/constants/ivoryCoastLocations';
-
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
+import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
+import { calculateAreaPriceStats } from '@/utils/priceStats';
+import { calculateHaversineKm } from '@/utils/distanceRouting';
+import { ALL_AREAS, findAreaByName } from '@/constants/geoHierarchy';
 
 interface Filters {
   type: PropertyType | 'all';
@@ -73,6 +76,8 @@ export default function SearchScreen() {
   const parseSearchMutation = trpc.ai.parseSearch.useMutation();
   const [isAIMode, setIsAIMode] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'distance'>('newest');
+  const [highlightedPropertyId, setHighlightedPropertyId] = useState<string | null>(null);
   const { getApprovedSubmissions } = usePropertySubmissions();
   const viewFadeAnim = useRef(new Animated.Value(1)).current;
   const floatingButtonScale = useRef(new Animated.Value(1)).current;
@@ -239,6 +244,37 @@ export default function SearchScreen() {
 
     setFilteredProperties(filtered);
   }, [filters, searchQuery, allProperties]);
+
+  // Dynamic Average Price Stats for the active searched area
+  const activeAreaStats = useMemo(() => {
+    const raw = (searchQuery || locationSearch || '').trim();
+    if (!raw) return null;
+    const matched = findAreaByName(raw);
+    const areaName = matched ? matched.name : raw;
+    const cityName = matched ? matched.cityName : 'Abidjan';
+    return calculateAreaPriceStats(allProperties, areaName, cityName);
+  }, [searchQuery, locationSearch, allProperties]);
+
+  // Sorted properties by Price, Newest, or Distance
+  const sortedProperties = useMemo(() => {
+    let list = [...filteredProperties];
+    if (sortBy === 'price_asc') {
+      list.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price_desc') {
+      list.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'distance') {
+      const userLat = 5.3485;
+      const userLng = -4.0125;
+      list.sort((a, b) => {
+        const distA = calculateHaversineKm(userLat, userLng, a.location.coordinates.latitude, a.location.coordinates.longitude);
+        const distB = calculateHaversineKm(userLat, userLng, b.location.coordinates.latitude, b.location.coordinates.longitude);
+        return distA - distB;
+      });
+    } else {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return list;
+  }, [filteredProperties, sortBy]);
 
   const filteredLocations = useMemo(() => {
     if (!locationSearch) return ivoryCoastLocations;
@@ -670,70 +706,179 @@ export default function SearchScreen() {
             {isAIMode ? "Switch to Classic Filters" : "Try AI Search"}
           </Text>
         </TouchableOpacity>
+
+        {/* Quick Area Chips */}
+        <View style={{ marginTop: 12, width: '100%' }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+            {[
+              { id: 'all', label: '🇨🇮 Tout Abidjan', query: '' },
+              { id: 'cocody', label: 'Cocody', query: 'Cocody' },
+              { id: 'riviera', label: 'Riviera 3', query: 'Riviera' },
+              { id: 'deux_plateaux', label: '2 Plateaux', query: '2 Plateaux' },
+              { id: 'plateau', label: 'Plateau', query: 'Plateau' },
+              { id: 'marcory', label: 'Marcory / Zone 4', query: 'Marcory' },
+              { id: 'yopougon', label: 'Yopougon', query: 'Yopougon' },
+              { id: 'bingerville', label: 'Bingerville', query: 'Bingerville' },
+              { id: 'grand_bassam', label: 'Grand-Bassam', query: 'Grand-Bassam' },
+              { id: 'bouake', label: 'Bouaké', query: 'Bouaké' },
+              { id: 'yamoussoukro', label: 'Yamoussoukro', query: 'Yamoussoukro' },
+            ].map((item) => {
+              const isSelected = (searchQuery.toLowerCase() === item.query.toLowerCase()) || (!searchQuery && item.id === 'all');
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 10,
+                    backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
+                    borderWidth: 1,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  }}
+                  onPress={() => {
+                    setSearchQuery(item.query);
+                    handleSearch(item.query);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: isSelected ? colors.white : colors.text }}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </View>
 
-      <Animated.View style={{ flex: 1, opacity: viewFadeAnim }}>
-        {viewMode === 'list' ? (
-          <FlatList
-            data={filteredProperties}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            numColumns={columns}
-            key={columns}
-            contentContainerStyle={[
-              styles.list,
-              { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }
-            ]}
-            columnWrapperStyle={columns > 1 ? styles.columnWrapper : undefined}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('search_no_properties')}</Text>
+      {/* Main Results: Desktop Split-Screen or Mobile Toggle */}
+      {isDesktop ? (
+        <View style={{ flex: 1, flexDirection: 'row', maxWidth: maxContentWidth, width: '100%', alignSelf: 'center', paddingHorizontal: contentPadding, gap: 24, marginTop: 12 }}>
+          {/* Left Column: Stats & Properties list */}
+          <View style={{ flex: 1.15, minWidth: 420 }}>
+            {activeAreaStats && (
+              <AreaPriceStatsCard
+                stats={activeAreaStats}
+                compact={true}
+                onExplorePress={() => router.push(`/area/${(activeAreaStats.cityName || 'abidjan').toLowerCase()}/${activeAreaStats.areaName.toLowerCase()}` as any)}
+              />
+            )}
 
-                <View style={[styles.notifyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Bell size={24} color={colors.primary} style={{ marginBottom: Spacing.sm }} />
-                  <Text style={[styles.notifyTitle, { color: colors.text }]}>No matches yet?</Text>
-                  <Text style={[styles.notifyDesc, { color: colors.textSecondary }]}>
-                    Save this search and we&apos;ll notify you when a property becomes available.
-                  </Text>
+            {/* Sorting bar & count */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.text }}>
+                {sortedProperties.length} {t('search_properties_found') || 'biens trouvés'}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 4, backgroundColor: colors.backgroundSecondary, padding: 3, borderRadius: 8 }}>
+                {(['newest', 'price_asc', 'price_desc', 'distance'] as const).map((mode) => (
                   <TouchableOpacity
-                    style={[styles.notifyButton, { backgroundColor: colors.primary }]}
-                    onPress={handleSaveSearch}
-                    disabled={saveIntentMutation.isPending}
+                    key={mode}
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 6,
+                      backgroundColor: sortBy === mode ? colors.surface : 'transparent',
+                    }}
+                    onPress={() => setSortBy(mode)}
                   >
-                    <Text style={[styles.notifyButtonText, { color: colors.white }]}>
-                      {saveIntentMutation.isPending ? "Saving..." : "Notify Me"}
+                    <Text style={{ fontSize: 11, fontWeight: sortBy === mode ? '700' : '500', color: sortBy === mode ? colors.text : colors.textSecondary }}>
+                      {mode === 'newest' ? 'Récents' : mode === 'price_asc' ? 'Prix ↑' : mode === 'price_desc' ? 'Prix ↓' : 'Distance'}
                     </Text>
                   </TouchableOpacity>
-                </View>
+                ))}
               </View>
-            }
-          />
-        ) : (
-          <View style={{ flex: 1, paddingHorizontal: isDesktop ? contentPadding : 0, maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }}>
-            <PropertyMap properties={filteredProperties} />
-          </View>
-        )}
-      </Animated.View>
+            </View>
 
-      <Animated.View style={{ transform: [{ scale: floatingButtonScale }], position: 'absolute', bottom: insets.bottom + Spacing.xl + (isTablet || isDesktop ? 0 : 50), alignSelf: 'center', left: 0, right: 0, alignItems: 'center', zIndex: 100 }}>
-        <TouchableOpacity
-          style={[styles.floatingButton, { backgroundColor: colors.text }]}
-          onPress={() => setViewMode((m) => (m === 'list' ? 'map' : 'list'))}
-          onPressIn={() => Animated.spring(floatingButtonScale, { toValue: 0.94, useNativeDriver: true, speed: 30, bounciness: 4 }).start()}
-          onPressOut={() => Animated.spring(floatingButtonScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()}
-          activeOpacity={1}
-        >
+            <FlatList
+              data={sortedProperties}
+              renderItem={({ item }) => (
+                <View
+                  style={{ marginBottom: 16 }}
+                >
+                  <PropertyCard property={item} />
+                </View>
+              )}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('search_no_properties')}</Text>
+                </View>
+              }
+            />
+          </View>
+
+          {/* Right Column: Sticky Interactive Map */}
+          <View style={{ flex: 1, minHeight: 650, height: 'calc(100vh - 220px)' as any, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+            <PropertyMap
+              properties={sortedProperties}
+              selectedId={highlightedPropertyId}
+              onPropertySelect={(id) => setHighlightedPropertyId(id)}
+            />
+          </View>
+        </View>
+      ) : (
+        /* Mobile: List or Map View */
+        <Animated.View style={{ flex: 1, opacity: viewFadeAnim }}>
           {viewMode === 'list' ? (
-            <MapIcon size={20} color={colors.white} />
+            <FlatList
+              data={sortedProperties}
+              ListHeaderComponent={
+                activeAreaStats ? (
+                  <View style={{ marginBottom: 12, paddingHorizontal: contentPadding }}>
+                    <AreaPriceStatsCard
+                      stats={activeAreaStats}
+                      compact={true}
+                      onExplorePress={() => router.push(`/area/${(activeAreaStats.cityName || 'abidjan').toLowerCase()}/${activeAreaStats.areaName.toLowerCase()}` as any)}
+                    />
+                  </View>
+                ) : null
+              }
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              numColumns={columns}
+              key={columns}
+              contentContainerStyle={[
+                styles.list,
+                { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }
+              ]}
+              columnWrapperStyle={columns > 1 ? styles.columnWrapper : undefined}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('search_no_properties')}</Text>
+                </View>
+              }
+            />
           ) : (
-            <ListIcon size={20} color={colors.white} />
+            <View style={{ flex: 1 }}>
+              <PropertyMap properties={sortedProperties} />
+            </View>
           )}
-          <Text style={[styles.floatingButtonText, { color: colors.white }]}>
-            {viewMode === 'list' ? t('search_map_view') : t('search_list_view')}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+        </Animated.View>
+      )}
+
+      {/* Floating Toggle Button on Mobile */}
+      {!isDesktop && (
+        <Animated.View style={{ transform: [{ scale: floatingButtonScale }], position: 'absolute', bottom: insets.bottom + Spacing.xl + (isTablet || isDesktop ? 0 : 50), alignSelf: 'center', left: 0, right: 0, alignItems: 'center', zIndex: 100 }}>
+          <TouchableOpacity
+            style={[styles.floatingButton, { backgroundColor: colors.text }]}
+            onPress={() => setViewMode((m) => (m === 'list' ? 'map' : 'list'))}
+            onPressIn={() => Animated.spring(floatingButtonScale, { toValue: 0.94, useNativeDriver: true, speed: 30, bounciness: 4 }).start()}
+            onPressOut={() => Animated.spring(floatingButtonScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()}
+            activeOpacity={1}
+          >
+            {viewMode === 'list' ? (
+              <MapIcon size={20} color={colors.white} />
+            ) : (
+              <ListIcon size={20} color={colors.white} />
+            )}
+            <Text style={[styles.floatingButtonText, { color: colors.white }]}>
+              {viewMode === 'list' ? t('search_map_view') : t('search_list_view')}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
 
       <Modal visible={showLocationPicker} animationType="fade" transparent onRequestClose={() => setShowLocationPicker(false)}>
         <TouchableOpacity

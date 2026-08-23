@@ -58,7 +58,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             email: authUser.email || '',
             name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
             phone: authUser.user_metadata?.phone || '',
-            role: 'user',
+            role: 'renter',
           };
           const { error: insertError } = await supabase.from('users').upsert(newUser, { onConflict: 'id' });
           if (!insertError) setUser(newUser);

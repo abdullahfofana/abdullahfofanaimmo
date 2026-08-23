@@ -74,6 +74,7 @@ import { PropertyType, PropertyStatus, PaymentMethod } from '@/types/property';
 import { ivoryCoastLocations } from '@/constants/ivoryCoastLocations';
 import { trpc } from '@/lib/trpc';
 import { useColors } from '@/hooks/useColors';
+import LocationPickerModal from '@/components/LocationPickerModal';
 
 interface FormData {
   title: string;
@@ -87,6 +88,7 @@ interface FormData {
   address: string;
   city: string;
   district: string;
+  coordinates?: { latitude: number; longitude: number };
   features: string[];
   agentName: string;
   agentPhone: string;
@@ -187,6 +189,7 @@ export default function AddPropertyStandaloneScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successPropertyId, setSuccessPropertyId] = useState<string>('');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showMapPinPicker, setShowMapPinPicker] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [bypassAuth, setBypassAuth] = useState(false);
@@ -1477,6 +1480,39 @@ export default function AddPropertyStandaloneScreen() {
                 </View>
               </View>
 
+              {/* Interactive Map Pin Drop Button */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'rgba(5, 150, 105, 0.08)',
+                  borderWidth: 1.5,
+                  borderColor: '#059669',
+                  borderRadius: 14,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  marginVertical: 10,
+                }}
+                onPress={() => setShowMapPinPicker(true)}
+                activeOpacity={0.85}
+              >
+                <MapPin size={17} color="#059669" strokeWidth={2.4} />
+                <Text style={{ color: '#059669', fontSize: 13, fontWeight: '800' }}>
+                  {language === 'fr' ? '📍 Pointer l\'emplacement exact sur la carte' : '📍 Drop Pin on Interactive Map'}
+                </Text>
+              </TouchableOpacity>
+
+              {formData.coordinates && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginBottom: 10 }}>
+                  <CheckCircle2 size={13} color="#059669" />
+                  <Text style={{ fontSize: 11.5, color: '#059669', fontWeight: '700' }}>
+                    {language === 'fr' ? 'Coordonnées GPS enregistrées :' : 'GPS Coordinates saved:'} {formData.coordinates.latitude.toFixed(4)}, {formData.coordinates.longitude.toFixed(4)}
+                  </Text>
+                </View>
+              )}
+
               {/* Exact Address / Street */}
               <View style={styles.formGroup}>
                 <Text style={styles.fieldLabel}>{t('add_property_address_label') || 'Adresse / Rue / Repère'} *</Text>
@@ -1959,6 +1995,27 @@ export default function AddPropertyStandaloneScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Interactive Map Pin-Drop Location Picker Modal */}
+      <LocationPickerModal
+        visible={showMapPinPicker}
+        onClose={() => setShowMapPinPicker(false)}
+        onConfirm={(loc) => {
+          setFormData((prev) => ({
+            ...prev,
+            city: loc.city,
+            district: loc.district,
+            address: loc.address,
+            coordinates: loc.coordinates,
+          }));
+        }}
+        initialLocation={{
+          city: formData.city,
+          district: formData.district,
+          address: formData.address,
+          coordinates: formData.coordinates,
+        }}
+      />
     </View>
   );
 }

@@ -66,7 +66,7 @@ export interface PropertySubmission {
   };
   photos: string[];
   video?: string;
-  document: string;
+  document?: string;
   features: string[];
   agent: {
     name: string;

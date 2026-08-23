@@ -40,6 +40,10 @@ import { openInGoogleMaps, openInWaze } from '@/utils/map';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { Property } from '@/types/property';
 import WebNavbar from '@/components/WebNavbar';
+import NearbyServicesSection from '@/components/NearbyServicesSection';
+import BuyerDistanceWidget from '@/components/BuyerDistanceWidget';
+import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
+import { calculateAreaPriceStats } from '@/utils/priceStats';
 import { Platform } from 'react-native';
 
 export default function PropertyDetailScreen() {
@@ -237,20 +241,41 @@ export default function PropertyDetailScreen() {
 
                 <Text style={styles.title}>{property.title}</Text>
 
-                <TouchableOpacity
-                  style={styles.locationPill}
-                  onPress={handleLocationPress}
-                  activeOpacity={0.75}
-                >
-                  <MapPin size={16} color={Colors.primary} />
-                  <Text style={styles.locationText} numberOfLines={1}>
-                    {property.location.address}, {property.location.district},{' '}
-                    {property.location.city}
-                  </Text>
-                  <View style={styles.locationChevronWrapper}>
-                    <ChevronRight size={14} color={Colors.primary} />
-                  </View>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.locationPill, { flex: 1 }]}
+                    onPress={handleLocationPress}
+                    activeOpacity={0.75}
+                  >
+                    <MapPin size={16} color={Colors.primary} />
+                    <Text style={styles.locationText} numberOfLines={1}>
+                      {property.location.address}, {property.location.district},{' '}
+                      {property.location.city}
+                    </Text>
+                    <View style={styles.locationChevronWrapper}>
+                      <ChevronRight size={14} color={Colors.primary} />
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: Colors.primary,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                    onPress={() => setIsMapVisible(true)}
+                    activeOpacity={0.85}
+                  >
+                    <MapPin size={14} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>
+                      {t('view_on_map') || 'Voir sur la carte'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <View style={styles.specs}>
                   {property.bedrooms && (
@@ -288,19 +313,58 @@ export default function PropertyDetailScreen() {
                   </View>
                 </View>
 
-                <View style={{ marginTop: 20 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 12 }}>Price History</Text>
-                  <View style={{ backgroundColor: Colors.background, borderRadius: 12, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 80 }}>
-                    {[0.7, 0.85, 0.75, 0.9, 0.82, 1.0].map((h, i) => (
-                      <View key={i} style={{ width: 28, height: 48 * h, backgroundColor: i === 5 ? Colors.primary : Colors.primary + '40', borderRadius: 4 }} />
-                    ))}
+                {/* ── Distance Between Buyer & Seller ────────────────── */}
+                <BuyerDistanceWidget
+                  propertyLat={property.location.coordinates.latitude}
+                  propertyLng={property.location.coordinates.longitude}
+                  propertyTitle={property.title}
+                  propertyDistrict={property.location.district}
+                  propertyCity={property.location.city}
+                />
+
+                {/* ── Embedded Property Location Map ─────────────────── */}
+                <View style={{ marginTop: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: Colors.text }}>
+                      📍 {t('property_location') || 'Localisation & Quartier'}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setIsMapVisible(true)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>
+                        {t('view_on_map') || 'Plein écran'} ↗
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                    {['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map(m => (
-                      <Text key={m} style={{ fontSize: 10, color: Colors.textSecondary }}>{m}</Text>
-                    ))}
+                  <View style={{ height: 260, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                    <PropertyMap
+                      properties={[property]}
+                      showFilterBar={false}
+                      showNearbyPOIs={true}
+                      hideBottomCard={true}
+                      centerCoordinates={{
+                        latitude: property.location.coordinates.latitude,
+                        longitude: property.location.coordinates.longitude,
+                        zoom: 15,
+                      }}
+                    />
                   </View>
-                  <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '600', marginTop: 8 }}>📈 Price increased 8.2% in last 6 months</Text>
+                </View>
+
+                {/* ── Nearby Services & POIs Checklist ────────────────── */}
+                <NearbyServicesSection
+                  latitude={property.location.coordinates.latitude}
+                  longitude={property.location.coordinates.longitude}
+                  maxDistanceKm={7}
+                />
+
+                {/* ── Area Average Market Price Stats ────────────────── */}
+                <View style={{ marginTop: 10 }}>
+                  <AreaPriceStatsCard
+                    stats={calculateAreaPriceStats(allProperties, property.location.district, property.location.city)}
+                    onExplorePress={() => router.push(`/area/${property.location.city.toLowerCase()}/${property.location.district.toLowerCase()}` as any)}
+                  />
                 </View>
               </View>
 

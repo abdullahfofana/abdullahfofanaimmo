@@ -51,6 +51,8 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { useFavorites } from '@/providers/FavoritesProvider';
 import { Property } from '@/types/property';
+import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
+import { calculateAreaPriceStats } from '@/utils/priceStats';
 
 function getCarouselWidth(screenWidth: number): number {
   if (screenWidth >= 1440) return 500;
@@ -618,14 +620,15 @@ export default function HomeScreen() {
               </View>
             ) : columns > 1 || isDesktop || isTablet ? (
               /* Desktop / Tablet: Responsive 2, 3 or 4 Column Grid */
-              <View style={[styles.propertyGrid, isTablet && styles.propertyGridTablet, isDesktop && styles.propertyGridDesktop]}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
                 {filteredFeedProperties.map((property) => (
                   <View
                     key={property.id}
-                    style={[
-                      styles.propertyGridItem,
-                      { width: `${100 / columns}%` as any },
-                    ]}
+                    style={{
+                      width: `${100 / columns}%` as any,
+                      paddingHorizontal: 8,
+                      marginBottom: 20,
+                    }}
                   >
                     <PropertyCard property={property} />
                   </View>
@@ -788,6 +791,59 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
+        </View>
+
+        {/* ─── AVERAGE PROPERTY PRICE BY AREA (DYNAMIC MARKET ENGINE) ─── */}
+        <View style={[styles.section, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding, marginTop: 32 }]}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>
+                {language === 'fr' ? '📊 Prix Moyen par Quartier' : '📊 Average Property Price by Area'}
+              </Text>
+              <Text style={styles.sectionSubtitle}>
+                {language === 'fr' ? 'Estimations en temps réel calculées sur la base de nos annonces' : 'Live real estate market price statistics across Côte d\'Ivoire'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push('/search')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary }}>
+                {language === 'fr' ? 'Voir la carte' : 'View on map'}
+              </Text>
+              <ArrowRight size={14} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 16, paddingVertical: 8 }}
+          >
+            {[
+              { area: 'Cocody', city: 'Abidjan' },
+              { area: 'Deux Plateaux', city: 'Abidjan' },
+              { area: 'Riviera', city: 'Abidjan' },
+              { area: 'Plateau', city: 'Abidjan' },
+              { area: 'Marcory', city: 'Abidjan' },
+              { area: 'Yopougon', city: 'Abidjan' },
+              { area: 'Bingerville', city: 'Abidjan' },
+              { area: 'Grand-Bassam', city: 'Grand-Bassam' },
+              { area: 'Bouaké', city: 'Bouaké' },
+              { area: 'Yamoussoukro', city: 'Yamoussoukro' },
+            ].map(({ area, city }) => {
+              const stats = calculateAreaPriceStats(allProperties, area, city);
+              return (
+                <View key={area} style={{ width: isDesktop ? 320 : 280 }}>
+                  <AreaPriceStatsCard
+                    stats={stats}
+                    compact={true}
+                    onExplorePress={() => router.push(`/area/${city.toLowerCase().replace(/\s+/g, '-')}/${area.toLowerCase().replace(/\s+/g, '-')}` as any)}
+                  />
+                </View>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* ─── WEB-ONLY FEATURES & FOOTER ──────────────────────────── */}

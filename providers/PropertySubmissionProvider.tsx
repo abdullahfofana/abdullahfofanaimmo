@@ -179,9 +179,9 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
         isUploadable(submission.video) ||
         isUploadable(submission.document);
 
-      let uploadedPhotos = submission.photos;
-      let uploadedVideo = submission.video;
-      let uploadedDocument = submission.document;
+      let uploadedPhotos: string[] = submission.photos;
+      let uploadedVideo: string | undefined = submission.video;
+      let uploadedDocument: string | undefined = submission.document;
 
       if (hasLocalFiles) {
         // Upload photos (file:// or blob:)

@@ -44,6 +44,12 @@ import { useLanguage } from '@/providers/LanguageProvider';
 interface PropertyMapProps {
   properties: Property[];
   initialSelectedId?: string;
+  selectedId?: string | null;
+  onPropertySelect?: (propertyId: string | null) => void;
+  showFilterBar?: boolean;
+  showNearbyPOIs?: boolean;
+  centerCoordinates?: { latitude: number; longitude: number; zoom?: number };
+  hideBottomCard?: boolean;
 }
 
 // Popular locations / districts in Ivory Coast with center coordinates
@@ -88,14 +94,25 @@ function estimateDriveTimeMin(distanceKm: number): number {
   return Math.max(1, Math.round((distanceKm / 28) * 60)); // ~28km/h average in Abidjan
 }
 
-export default function PropertyMapNative({ properties, initialSelectedId }: PropertyMapProps) {
+export default function PropertyMapNative({
+  properties,
+  initialSelectedId,
+  selectedId,
+  onPropertySelect,
+  showFilterBar = true,
+  showNearbyPOIs = false,
+  centerCoordinates,
+  hideBottomCard = false,
+}: PropertyMapProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
   const mapRef = useRef<MapView>(null);
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('all');
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(initialSelectedId || null);
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
+    selectedId !== undefined ? selectedId : initialSelectedId || null
+  );
   const [selectedRadiusId, setSelectedRadiusId] = useState<string>('all');
   const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('standard');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -174,19 +191,36 @@ export default function PropertyMapNative({ properties, initialSelectedId }: Pro
   }, [validProperties, selectedRadiusId, userLocation]);
 
   const selectedProperty = useMemo(() => {
-    return filteredProperties.find((p) => p.id === selectedPropertyId) || null;
-  }, [filteredProperties, selectedPropertyId]);
+    return filteredProperties.find((p) => p.id === internalSelectedId) || null;
+  }, [filteredProperties, internalSelectedId]);
+
+  useEffect(() => {
+    if (selectedId !== undefined) {
+      setInternalSelectedId(selectedId);
+      if (selectedId) {
+        const found = validProperties.find(p => p.id === selectedId);
+        if (found) {
+          mapRef.current?.animateToRegion({
+            latitude: found.location.coordinates.latitude,
+            longitude: found.location.coordinates.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }, 800);
+        }
+      }
+    }
+  }, [selectedId, validProperties]);
 
   // Default region: Abidjan
   const defaultRegion: Region = {
-    latitude: 5.359952,
-    longitude: -4.008256,
+    latitude: centerCoordinates?.latitude || 5.359952,
+    longitude: centerCoordinates?.longitude || -4.008256,
     latitudeDelta: 0.12,
     longitudeDelta: 0.08,
   };
 
   useEffect(() => {
-    if (selectedProperty) {
+    if (selectedProperty && !hideBottomCard) {
       Animated.spring(cardSlideAnim, {
         toValue: 1,
         useNativeDriver: true,
@@ -200,7 +234,7 @@ export default function PropertyMapNative({ properties, initialSelectedId }: Pro
         useNativeDriver: true,
       }).start();
     }
-  }, [selectedProperty, cardSlideAnim]);
+  }, [selectedProperty, hideBottomCard, cardSlideAnim]);
 
   const formatPriceBadge = (price: number, currency: string) => {
     if (currency === 'FCFA') {
@@ -220,18 +254,24 @@ export default function PropertyMapNative({ properties, initialSelectedId }: Pro
     return `${price.toLocaleString()} ${currency}`;
   };
 
-  const handlePlaceSelect = (place: typeof POPULAR_PLACES[0]) => {
+  const selectProperty = (id: string | null) => {
+    setInternalSelectedId(id);
+    if (onPropertySelect) onPropertySelect(id);
+  };
+
+  const handlePlaceSelect = (place: (typeof POPULAR_PLACES)[0]) => {
     setSelectedPlaceId(place.id);
     mapRef.current?.animateToRegion(
       {
         latitude: place.lat,
         longitude: place.lng,
         latitudeDelta: place.delta,
-        longitudeDelta: place.delta * 0.8,
+        longitudeDelta: place.delta,
       },
       700
     );
 
+    // If district is specific, focus first matching property
     if (place.id !== 'all') {
       const match = filteredProperties.find(
         (p) =>
@@ -240,13 +280,13 @@ export default function PropertyMapNative({ properties, initialSelectedId }: Pro
           p.title.toLowerCase().includes(place.id.toLowerCase())
       );
       if (match) {
-        setSelectedPropertyId(match.id);
+        selectProperty(match.id);
       }
     }
   };
 
   const handleMarkerPress = (property: Property) => {
-    setSelectedPropertyId(property.id);
+    selectProperty(property.id);
     mapRef.current?.animateToRegion(
       {
         latitude: property.location.coordinates.latitude - 0.006, // offset slightly for bottom sheet
@@ -321,7 +361,7 @@ export default function PropertyMapNative({ properties, initialSelectedId }: Pro
 
         {/* Property Price Bubble Markers (Emerald Green matching screenshot) */}
         {filteredProperties.map((property) => {
-          const isSelected = selectedPropertyId === property.id;
+          const isSelected = internalSelectedId === property.id;
           const isSale = property.status === 'sale';
           const isFeatured = property.isFeatured || property.price > 100000000;
 
@@ -467,7 +507,7 @@ export default function PropertyMapNative({ properties, initialSelectedId }: Pro
             {/* Close Button */}
             <TouchableOpacity
               style={styles.closeCardBtn}
-              onPress={() => setSelectedPropertyId(null)}
+              onPress={() => selectProperty(null)}
               activeOpacity={0.8}
             >
               <X size={15} color="#64748B" strokeWidth={2.4} />
