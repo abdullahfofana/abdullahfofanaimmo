@@ -123,8 +123,12 @@ const mStyles = StyleSheet.create({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { useResponsive } from '@/constants/breakpoints';
+import WebNavbar from '@/components/WebNavbar';
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useResponsive();
   const { t } = useLanguage();
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -136,8 +140,17 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+    <View style={[styles.container, { paddingTop: isDesktop ? 0 : insets.top }]}>
+      {isDesktop && <WebNavbar />}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: isDesktop ? 60 : 120,
+          maxWidth: 680,
+          width: '100%',
+          alignSelf: 'center',
+        }}
+      >
 
         {/* ── HEADER BLOCK ──────────────────────────────────────── */}
         <View style={styles.header}>

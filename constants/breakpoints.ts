@@ -1,4 +1,4 @@
-import { Dimensions } from 'react-native';
+import { Dimensions, useWindowDimensions } from 'react-native';
 
 export const Breakpoints = {
   mobile: 0,
@@ -8,7 +8,7 @@ export const Breakpoints = {
 } as const;
 
 export function useResponsive() {
-  const { width } = Dimensions.get('window');
+  const { width } = useWindowDimensions();
 
   return {
     isMobile: width < Breakpoints.tablet,

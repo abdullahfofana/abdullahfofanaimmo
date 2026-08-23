@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Search as SearchIcon, X, Home, ChevronDown, MapPin, Map as MapIcon, List as ListIcon, Bell, Sparkles, Wand2 } from 'lucide-react-native';
+import { Search as SearchIcon, X, Home, ChevronDown, MapPin, Map as MapIcon, List as ListIcon, Bell, Sparkles, Wand2, SlidersHorizontal } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { trpc } from '@/lib/trpc';
@@ -47,8 +47,8 @@ interface Filters {
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
   const colors = useColors();
+  const { t, language } = useLanguage();
   const params = useLocalSearchParams<{
     status?: string;
     type?: string;
@@ -926,7 +926,69 @@ export default function SearchScreen() {
             />
           ) : (
             <View style={{ flex: 1 }}>
-              {renderSearchHeaderContent()}
+              {/* Compact Floating Search Bar on Mobile Map View */}
+              <View style={{
+                position: 'absolute',
+                top: 12,
+                left: 16,
+                right: 16,
+                zIndex: 30,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 22,
+                    paddingHorizontal: 14,
+                    paddingVertical: 11,
+                    shadowColor: '#0F172A',
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 10,
+                    elevation: 5,
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                  }}
+                  onPress={() => setShowLocationPicker(true)}
+                  activeOpacity={0.9}
+                >
+                  <SearchIcon size={18} color="#059669" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: searchQuery ? '#0F172A' : '#64748B', flex: 1 }} numberOfLines={1}>
+                    {searchQuery || (language === 'fr' ? 'Rechercher un quartier...' : 'Search location...')}
+                  </Text>
+                  {searchQuery ? (
+                    <TouchableOpacity onPress={() => { setSearchQuery(''); handleSearch(''); }}>
+                      <X size={16} color="#64748B" />
+                    </TouchableOpacity>
+                  ) : null}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: '#0F172A',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#0F172A',
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 8,
+                    elevation: 4,
+                  }}
+                  onPress={() => setShowFilters(true)}
+                  activeOpacity={0.88}
+                >
+                  <SlidersHorizontal size={18} color="#FFFFFF" strokeWidth={2.2} />
+                </TouchableOpacity>
+              </View>
+
               <PropertyMap properties={sortedProperties} />
             </View>
           )}

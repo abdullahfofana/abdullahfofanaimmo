@@ -22,6 +22,8 @@ import {
   Bath,
   Maximize2,
   CheckCircle2,
+  Building2,
+  X,
 } from 'lucide-react-native';
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -29,6 +31,7 @@ import {
   Dimensions,
   Easing,
   Image,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -43,6 +46,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
+import PropertyMap from '@/components/PropertyMap';
 import Typography from '@/constants/typography';
 import PropertyCard from '@/components/PropertyCard';
 import { mockProperties } from '@/mocks/properties';
@@ -61,6 +65,90 @@ function getCarouselWidth(screenWidth: number): number {
   return screenWidth * 0.84;
 }
 
+const POPULAR_AREAS = [
+  {
+    id: 'cocody',
+    name: 'Cocody',
+    city: 'Abidjan',
+    slug: 'cocody',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
+    tag: 'Ambassades & Résidentiel',
+  },
+  {
+    id: 'riviera',
+    name: 'Riviera 3',
+    city: 'Abidjan',
+    slug: 'riviera',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+    tag: 'Lycée Français & Golf',
+  },
+  {
+    id: 'deux_plateaux',
+    name: '2 Plateaux',
+    city: 'Abidjan',
+    slug: 'deux-plateaux',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+    tag: 'Vallons & 7ème Tranche',
+  },
+  {
+    id: 'plateau',
+    name: 'Plateau',
+    city: 'Abidjan',
+    slug: 'plateau',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800',
+    tag: 'Centre des Affaires',
+  },
+  {
+    id: 'marcory',
+    name: 'Marcory / Zone 4',
+    city: 'Abidjan',
+    slug: 'marcory',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800',
+    tag: 'Zone 4C & Biétry',
+  },
+  {
+    id: 'yopougon',
+    name: 'Yopougon',
+    city: 'Abidjan',
+    slug: 'yopougon',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
+    tag: 'Maroc & Niangon',
+  },
+  {
+    id: 'bingerville',
+    name: 'Bingerville',
+    city: 'Abidjan',
+    slug: 'bingerville',
+    citySlug: 'abidjan',
+    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+    tag: 'Lagune & Calme',
+  },
+  {
+    id: 'grand_bassam',
+    name: 'Grand-Bassam',
+    city: 'Grand-Bassam',
+    slug: 'grand-bassam',
+    citySlug: 'grand-bassam',
+    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
+    tag: 'Bord de Mer & Historique',
+  },
+  {
+    id: 'yamoussoukro',
+    name: 'Yamoussoukro',
+    city: 'Yamoussoukro',
+    slug: 'yamoussoukro',
+    citySlug: 'yamoussoukro',
+    image: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800',
+    tag: 'Capitale & Basilique',
+  },
+];
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -73,6 +161,10 @@ export default function HomeScreen() {
   const colors = useColors();
   const { isFavorite, toggleFavorite } = useFavorites();
   
+  // Mobile Location Modal State
+  const [selectedLocation, setSelectedLocation] = useState<string>('Abidjan, Côte d\'Ivoire');
+  const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
+
   // Selected category filter on mobile
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   // Listing filter: 'all' | 'sale' | 'rent'
@@ -262,19 +354,19 @@ export default function HomeScreen() {
       {/* ═════════════════════════════════════════════════════════════════
           NATIVE MOBILE HOME HEADER & AIRBNB-STYLE SEARCH CAPSULE
       ═════════════════════════════════════════════════════════════════ */}
-      {!isWeb && (
+      {!isDesktop && (
         <View style={[styles.mobileNativeHeader, { paddingTop: insets.top + 8 }]}>
-          {/* Top Bar: Location & Avatar */}
+          {/* Top Bar: Location & Actions */}
           <View style={styles.mobileTopBar}>
             <TouchableOpacity
               style={styles.mobileLocationPill}
-              onPress={() => router.push({ pathname: '/(tabs)/search', params: { view: 'map' } })}
+              onPress={() => setShowLocationModal(true)}
               activeOpacity={0.8}
             >
               <MapPin size={15} color="#059669" />
               <View>
-                <Text style={styles.mobileLocationSub}>{language === 'fr' ? 'Explorer' : 'Explore'}</Text>
-                <Text style={styles.mobileLocationTitle}>Abidjan, Côte d'Ivoire</Text>
+                <Text style={styles.mobileLocationSub}>{language === 'fr' ? 'Explorer la zone' : 'Explore Area'}</Text>
+                <Text style={styles.mobileLocationTitle} numberOfLines={1}>{selectedLocation}</Text>
               </View>
               <ChevronDown size={14} color="#64748B" />
             </TouchableOpacity>
@@ -326,12 +418,12 @@ export default function HomeScreen() {
       ═════════════════════════════════════════════════════════════════ */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: !isWeb ? 110 : Spacing.xxxl }}
+        contentContainerStyle={{ paddingBottom: !isDesktop ? 120 : Spacing.xxxl }}
         testID="home-scroll"
       >
-        {/* ─── WEB-ONLY HERO BANNER ─────────────────────────────────── */}
-        {isWeb && (
-          <View style={[styles.hero, isDesktop && styles.heroDesktop]} testID="hero-section">
+        {/* ─── DESKTOP-ONLY HERO BANNER ─────────────────────────────────── */}
+        {isDesktop && (
+          <View style={[styles.hero, styles.heroDesktop]} testID="hero-section">
             <Image
               source={require('@/assets/images/ivory_coast_real_estate_bg.jpg')}
               style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
@@ -349,16 +441,16 @@ export default function HomeScreen() {
                 <Text style={styles.heroBadgeText}>{t('home_hero_badge')}</Text>
               </View>
 
-              <Text style={[styles.heroTitle, isDesktop && styles.heroTitleDesktop]}>
+              <Text style={[styles.heroTitle, styles.heroTitleDesktop]}>
                 {t('home_hero_title')}
               </Text>
-              <Text style={[styles.heroSubtitle, isDesktop && styles.heroSubtitleDesktop]}>
+              <Text style={[styles.heroSubtitle, styles.heroSubtitleDesktop]}>
                 {t('home_hero_subtitle')}
               </Text>
 
               {/* Desktop Multi-Field Search bar */}
-              <View style={[styles.searchContainer, isDesktop && styles.searchContainerDesktop]}>
-                <View style={[styles.searchBar, isDesktop && styles.searchBarDesktop]}>
+              <View style={[styles.searchContainer, styles.searchContainerDesktop]}>
+                <View style={[styles.searchBar, styles.searchBarDesktop]}>
                   <MapPin size={18} color={colors.primary} strokeWidth={2.5} />
                   <TextInput
                     style={styles.searchInput}
@@ -369,41 +461,37 @@ export default function HomeScreen() {
                     onSubmitEditing={handleHeroSearch}
                   />
                 </View>
-                {isDesktop && (
-                  <>
-                    <View style={styles.searchDivider} />
-                    <View style={styles.searchBar}>
-                      <HomeIcon size={18} color={colors.textSecondary} strokeWidth={2.5} />
-                      <TextInput
-                        style={styles.searchInput}
-                        placeholder={t('home_property_type')}
-                        placeholderTextColor={colors.textLight}
-                        value={propertyType}
-                        onChangeText={setPropertyType}
-                        onSubmitEditing={handleHeroSearch}
-                      />
-                    </View>
-                    <View style={styles.searchDivider} />
-                    <View style={styles.searchBar}>
-                      <DollarSign size={18} color={colors.textSecondary} strokeWidth={2.5} />
-                      <TextInput
-                        style={styles.searchInput}
-                        placeholder={t('home_price_range')}
-                        placeholderTextColor={colors.textLight}
-                        value={priceRange}
-                        onChangeText={setPriceRange}
-                        onSubmitEditing={handleHeroSearch}
-                      />
-                    </View>
-                  </>
-                )}
+                <View style={styles.searchDivider} />
+                <View style={styles.searchBar}>
+                  <HomeIcon size={18} color={colors.textSecondary} strokeWidth={2.5} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder={t('home_property_type')}
+                    placeholderTextColor={colors.textLight}
+                    value={propertyType}
+                    onChangeText={setPropertyType}
+                    onSubmitEditing={handleHeroSearch}
+                  />
+                </View>
+                <View style={styles.searchDivider} />
+                <View style={styles.searchBar}>
+                  <DollarSign size={18} color={colors.textSecondary} strokeWidth={2.5} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder={t('home_price_range')}
+                    placeholderTextColor={colors.textLight}
+                    value={priceRange}
+                    onChangeText={setPriceRange}
+                    onSubmitEditing={handleHeroSearch}
+                  />
+                </View>
                 <TouchableOpacity
                   style={styles.searchButton}
                   onPress={handleHeroSearch}
                   activeOpacity={0.85}
                 >
                   <Search size={18} color={colors.white} strokeWidth={2.5} />
-                  {isDesktop && <Text style={styles.searchButtonText}>{t('home_search_button')}</Text>}
+                  <Text style={styles.searchButtonText}>{t('home_search_button')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -458,6 +546,81 @@ export default function HomeScreen() {
                     {cat.label}
                   </Text>
                   {isSelected && <View style={styles.categoryActiveDot} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* ─── QUARTIERS POPULAIRES (POPULAR AREAS CAROUSEL) ─────────── */}
+        <View style={[styles.section, { marginTop: 16 }]}>
+          <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
+            <View>
+              <View style={[styles.sectionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.12)' }]}>
+                <MapPin size={11} color="#059669" />
+                <Text style={[styles.sectionBadgeText, { color: '#059669' }]}>
+                  {language === 'fr' ? 'ZONES TRÈS RECHERCHÉES' : 'POPULAR LOCATIONS'}
+                </Text>
+              </View>
+              <Text style={styles.sectionTitle}>
+                {language === 'fr' ? 'Quartiers Populaires' : 'Popular Areas'}
+              </Text>
+              <Text style={styles.sectionSubtitle}>
+                {language === 'fr' ? 'Découvrez les zones les plus demandées d\'Abidjan' : 'Explore the most sought-after neighborhoods'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.seeAllButton}
+              onPress={() => router.push('/search')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.seeAll}>{t('home_see_all') || 'Voir tout'}</Text>
+              <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 14, paddingHorizontal: contentPadding, paddingVertical: 4 }}
+          >
+            {POPULAR_AREAS.map((area) => {
+              const stats = calculateAreaPriceStats(allProperties, area.name, area.city);
+              return (
+                <TouchableOpacity
+                  key={area.id}
+                  style={styles.popularAreaCard}
+                  onPress={() => router.push(`/area/${area.citySlug}/${area.slug}` as any)}
+                  activeOpacity={0.92}
+                >
+                  <Image source={{ uri: area.image }} style={styles.popularAreaImage} resizeMode="cover" />
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.15)', 'rgba(15, 23, 42, 0.88)']}
+                    style={styles.popularAreaOverlay}
+                  >
+                    <View style={styles.popularAreaTopTag}>
+                      <Text style={styles.popularAreaTopTagText}>{area.tag}</Text>
+                    </View>
+
+                    <View style={styles.popularAreaInfo}>
+                      <Text style={styles.popularAreaName}>{area.name}</Text>
+                      <Text style={styles.popularAreaCity}>{area.city}</Text>
+
+                      <View style={styles.popularAreaBottomRow}>
+                        <View style={styles.popularAreaCountBadge}>
+                          <Building2 size={11} color="#059669" />
+                          <Text style={styles.popularAreaCountText}>
+                            {stats.totalCount} {language === 'fr' ? 'biens' : 'listings'}
+                          </Text>
+                        </View>
+                        {stats.avgSalePrice ? (
+                          <Text style={styles.popularAreaAvgPrice}>
+                            ~{(stats.avgSalePrice / 1000000).toFixed(0)}M FCFA
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  </LinearGradient>
                 </TouchableOpacity>
               );
             })}
@@ -846,8 +1009,61 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ─── WEB-ONLY FEATURES & FOOTER ──────────────────────────── */}
-        {isWeb && (
+        {/* ─── EXPLORE ON MAP (MOBILE INTERACTIVE DISCOVERY BANNER) ─── */}
+        {!isDesktop && (
+          <View style={[styles.section, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding, marginTop: 24 }]}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <View style={[styles.sectionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.12)' }]}>
+                  <MapPin size={11} color="#059669" />
+                  <Text style={[styles.sectionBadgeText, { color: '#059669' }]}>
+                    {language === 'fr' ? 'CARTE INTERACTIVE' : 'INTERACTIVE MAP'}
+                  </Text>
+                </View>
+                <Text style={styles.sectionTitle}>
+                  {language === 'fr' ? 'Explorer les biens sur la carte' : 'Explore Properties on Map'}
+                </Text>
+                <Text style={styles.sectionSubtitle}>
+                  {language === 'fr' ? 'Repérez les logements par quartier avec les prix et services à proximité' : 'Find listings by neighborhood with prices and nearby services'}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.mobileMapBannerCard}
+              onPress={() => router.push({ pathname: '/(tabs)/search', params: { view: 'map' } })}
+              activeOpacity={0.92}
+            >
+              <View style={styles.mobileMapBannerInner}>
+                <PropertyMap properties={allProperties.slice(0, 8)} />
+              </View>
+              <LinearGradient
+                colors={['transparent', 'rgba(15, 23, 42, 0.88)']}
+                style={styles.mobileMapBannerOverlay}
+              >
+                <View style={styles.mobileMapBannerContent}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mobileMapBannerTitle}>
+                      {allProperties.length}+ {language === 'fr' ? 'Biens géolocalisés' : 'Properties located'}
+                    </Text>
+                    <Text style={styles.mobileMapBannerSub}>
+                      {language === 'fr' ? 'Cocody · Riviera · 2 Plateaux · Plateau' : 'All districts in Abidjan & interior'}
+                    </Text>
+                  </View>
+                  <View style={styles.mobileMapBannerBtn}>
+                    <Text style={styles.mobileMapBannerBtnText}>
+                      {language === 'fr' ? 'Ouvrir' : 'Open'}
+                    </Text>
+                    <ArrowRight size={14} color="#FFFFFF" strokeWidth={2.5} />
+                  </View>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ─── DESKTOP-ONLY FEATURES & FOOTER ──────────────────────────── */}
+        {isDesktop && (
           <>
             <View style={[styles.featuresSection, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]} testID="features-grid">
               <View style={styles.featuresSectionHeader}>
@@ -923,21 +1139,82 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* ═════════════════════════════════════════════════════════════════
-          FLOATING MAP PILL BUTTON (Mobile App Viewport)
-      ═════════════════════════════════════════════════════════════════ */}
-      {!isWeb && (
+      {/* ─── LOCATION SELECTOR BOTTOM SHEET (MOBILE) ─────────────── */}
+      <Modal
+        visible={showLocationModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLocationModal(false)}
+      >
         <TouchableOpacity
-          style={styles.floatingMapPill}
-          onPress={() => router.push({ pathname: '/(tabs)/search', params: { view: 'map' } })}
-          activeOpacity={0.88}
+          style={styles.locationModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLocationModal(false)}
         >
-          <MapIcon size={16} color="#FFFFFF" strokeWidth={2.4} />
-          <Text style={styles.floatingMapPillText}>
-            {language === 'fr' ? 'Afficher la Carte' : 'Show Map'}
-          </Text>
+          <View
+            style={[styles.locationModalContent, { paddingBottom: insets.bottom + 20 }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.locationModalDragIndicator} />
+            <View style={styles.locationModalHeader}>
+              <View>
+                <Text style={styles.locationModalTitle}>
+                  {language === 'fr' ? 'Choisir une zone' : 'Select a location'}
+                </Text>
+                <Text style={styles.locationModalSubtitle}>
+                  {language === 'fr' ? 'Abidjan & Villes de l\'Intérieur' : 'Abidjan & Interior cities'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowLocationModal(false)} style={styles.locationModalCloseBtn}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+              {[
+                { name: '🇨🇮 Tout Abidjan', query: '', sub: 'Toutes les communes' },
+                { name: 'Cocody', query: 'Cocody', sub: 'Ambassades, Riviera, Deux Plateaux' },
+                { name: 'Deux Plateaux', query: 'Deux Plateaux', sub: 'Vallons, 7ème & 8ème Tranche' },
+                { name: 'Riviera 3', query: 'Riviera', sub: 'Golf, Palmeraie, Riviera 4' },
+                { name: 'Plateau', query: 'Plateau', sub: 'Centre des Affaires & Sièges' },
+                { name: 'Marcory / Zone 4', query: 'Marcory', sub: 'Zone 4C, Biétry, Résidentiel' },
+                { name: 'Yopougon', query: 'Yopougon', sub: 'Maroc, Niangon, Toit Rouge' },
+                { name: 'Bingerville', query: 'Bingerville', sub: 'Lagune, Résidences calmes' },
+                { name: 'Grand-Bassam', query: 'Grand-Bassam', sub: 'Bord de mer & Ville historique' },
+                { name: 'Bouaké', query: 'Bouaké', sub: 'Centre, Commerce, Kennedy' },
+                { name: 'Yamoussoukro', query: 'Yamoussoukro', sub: 'Capitale administrative' },
+              ].map((loc) => {
+                const isSelected = selectedLocation.includes(loc.query) && loc.query.length > 0;
+                return (
+                  <TouchableOpacity
+                    key={loc.name}
+                    style={[styles.locationOptionRow, isSelected && styles.locationOptionRowSelected]}
+                    onPress={() => {
+                      setSelectedLocation(loc.name === '🇨🇮 Tout Abidjan' ? 'Abidjan, Côte d\'Ivoire' : `${loc.name}, Côte d'Ivoire`);
+                      setShowLocationModal(false);
+                      if (loc.query) {
+                        router.push({ pathname: '/(tabs)/search', params: { q: loc.query } });
+                      }
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.locationOptionIconBox, isSelected && styles.locationOptionIconBoxSelected]}>
+                      <MapPin size={16} color={isSelected ? '#FFFFFF' : '#059669'} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.locationOptionName, isSelected && styles.locationOptionNameSelected]}>
+                        {loc.name}
+                      </Text>
+                      <Text style={styles.locationOptionSub}>{loc.sub}</Text>
+                    </View>
+                    <ChevronDown size={14} color="#94A3B8" style={{ transform: [{ rotate: '-90deg' }] }} />
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </TouchableOpacity>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -1796,5 +2073,242 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 13,
     color: 'rgba(255,255,255,0.55)',
     fontWeight: '400',
+  },
+
+  // ── POPULAR AREAS STYLES ────────────────────────────────────
+  popularAreaCard: {
+    width: 220,
+    height: 180,
+    borderRadius: 18,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#0F172A',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  popularAreaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  popularAreaOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  popularAreaTopTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  popularAreaTopTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  popularAreaInfo: {
+    gap: 2,
+  },
+  popularAreaName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
+  },
+  popularAreaCity: {
+    fontSize: 11.5,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  popularAreaBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  popularAreaCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  popularAreaCountText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  popularAreaAvgPrice: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#34D399',
+  },
+
+  // ── MOBILE MAP DISCOVERY BANNER ──────────────────────────────
+  mobileMapBannerCard: {
+    height: 220,
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    marginTop: 8,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  mobileMapBannerInner: {
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none' as any,
+  },
+  mobileMapBannerOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 100,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    justifyContent: 'flex-end',
+  },
+  mobileMapBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mobileMapBannerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  mobileMapBannerSub: {
+    fontSize: 11.5,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 2,
+  },
+  mobileMapBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  mobileMapBannerBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // ── LOCATION SELECTOR BOTTOM SHEET ──────────────────────────
+  locationModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  locationModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 16,
+  },
+  locationModalDragIndicator: {
+    width: 40,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#CBD5E1',
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  locationModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 8,
+  },
+  locationModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  locationModalSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  locationModalCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    marginVertical: 3,
+    backgroundColor: '#F8FAFC',
+    gap: 12,
+  },
+  locationOptionRowSelected: {
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    borderWidth: 1,
+    borderColor: '#059669',
+  },
+  locationOptionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(5, 150, 105, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationOptionIconBoxSelected: {
+    backgroundColor: '#059669',
+  },
+  locationOptionName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  locationOptionNameSelected: {
+    color: '#059669',
+  },
+  locationOptionSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
   },
 });

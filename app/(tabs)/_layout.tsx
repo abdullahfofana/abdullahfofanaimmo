@@ -26,21 +26,23 @@ function AddIcon({ focused }: { focused: boolean }) {
   );
 }
 
+import { useResponsive } from '@/constants/breakpoints';
+
 export default function TabLayout() {
-  const isWeb = Platform.OS === 'web';
+  const { isDesktop } = useResponsive();
   const { t } = useLanguage();
   const colors = useColors();
 
   return (
     <View style={{ flex: 1 }}>
-      {isWeb && <WebNavbar />}
+      {isDesktop && <WebNavbar />}
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: true,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textLight || colors.textSecondary,
-          tabBarStyle: isWeb
+          tabBarStyle: isDesktop
             ? ({ display: 'none' as const } as const)
             : {
                 position: 'absolute',
@@ -51,18 +53,16 @@ export default function TabLayout() {
                 paddingTop: 6,
                 paddingBottom: 12,
                 paddingHorizontal: 6,
-                // Sharp rectangular with generous rounding — Airbnb-like
                 borderRadius: 22,
                 backgroundColor: colors.surface,
                 borderTopWidth: 0,
                 borderWidth: 1,
                 borderColor: colors.border,
-                // Warm shadow
-                shadowColor: 'rgba(18,28,20,0.22)',
-                shadowOffset: { width: 0, height: 8 },
+                shadowColor: 'rgba(18,28,20,0.18)',
+                shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 1,
-                shadowRadius: 24,
-                elevation: 16,
+                shadowRadius: 20,
+                elevation: 12,
               },
           tabBarLabelStyle: {
             fontSize: 10,

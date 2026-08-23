@@ -432,13 +432,46 @@ export default function PropertyDetailScreen() {
         {!isDesktop && (
           <View
             style={[
-              styles.footer,
-              { paddingBottom: insets.bottom + Spacing.md },
+              styles.mobileStickyActionBar,
+              { paddingBottom: Math.max(insets.bottom, 10) + 6 },
             ]}
           >
-            <TouchableOpacity style={styles.contactButton}>
-              <Text style={styles.contactButtonText}>{t('property_contact_agent')}</Text>
-            </TouchableOpacity>
+            <View style={styles.mobileStickyPriceBox}>
+              <Text style={styles.mobileStickyPriceText}>
+                {formatPrice(property.price, property.currency)}
+              </Text>
+              <Text style={styles.mobileStickySubText}>
+                {property.status === 'rent' ? '/mois' : (property.area ? `${Math.round(property.price / property.area).toLocaleString()} F/m²` : 'Prix direct')}
+              </Text>
+            </View>
+
+            <View style={styles.mobileStickyActionBtns}>
+              {/* WhatsApp Button */}
+              <TouchableOpacity
+                style={styles.mobileStickyWhatsAppBtn}
+                onPress={() => {
+                  const phone = property.agent.phone.replace(/\D/g, '');
+                  const text = encodeURIComponent(`Bonjour, je vous contacte au sujet de : ${property.title} (${formatPrice(property.price, property.currency)}) sur ImmoCI.`);
+                  Linking.openURL(`https://wa.me/${phone}?text=${text}`);
+                }}
+                activeOpacity={0.88}
+              >
+                <MessageCircle size={18} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.mobileStickyBtnText}>WhatsApp</Text>
+              </TouchableOpacity>
+
+              {/* Call Button */}
+              <TouchableOpacity
+                style={styles.mobileStickyCallBtn}
+                onPress={() => Linking.openURL('tel:' + property.agent.phone.replace(/\D/g, ''))}
+                activeOpacity={0.88}
+              >
+                <Phone size={17} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.mobileStickyBtnText}>
+                  {t('call') || 'Appeler'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
@@ -800,5 +833,81 @@ const styles = StyleSheet.create({
   contactButtonText: {
     ...Typography.button,
     color: Colors.white,
+  },
+
+  // ── MOBILE STICKY ACTION BAR ────────────────────────────────
+  mobileStickyActionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 12,
+    zIndex: 100,
+  },
+  mobileStickyPriceBox: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  mobileStickyPriceText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  mobileStickySubText: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '700',
+    marginTop: 1,
+  },
+  mobileStickyActionBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mobileStickyWhatsAppBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#25D366',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 14,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  mobileStickyCallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  mobileStickyBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
