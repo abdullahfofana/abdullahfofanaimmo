@@ -50,6 +50,7 @@ import PropertyMap from '@/components/PropertyMap';
 import Typography from '@/constants/typography';
 import PropertyCard from '@/components/PropertyCard';
 import FadeInView from '@/components/FadeInView';
+import WebFooter from '@/components/WebFooter';
 import { mockProperties } from '@/mocks/properties';
 import { getColumns, getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -1113,53 +1114,8 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={styles.footer} testID="web-footer">
-              <View style={[styles.footerContent, { maxWidth: maxContentWidth, paddingHorizontal: contentPadding }]}>
-                <View style={styles.footerBrand}>
-                  <View style={styles.footerLogo}>
-                    <HomeIcon size={18} color="#fff" strokeWidth={2.5} />
-                  </View>
-                  <Text style={styles.footerBrandName}>ImmoCI</Text>
-                  <Text style={styles.footerText}>{t('home_footer_description')}</Text>
-                </View>
-                <View style={styles.footerSection}>
-                  <Text style={styles.footerTitle}>{t('home_footer_quick_links')}</Text>
-                  <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/(tabs)/search', params: { status: 'sale' } })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLink}>{t('nav_buy')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/(tabs)/search', params: { status: 'rent' } })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLink}>{t('nav_rent')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => router.push('/admin')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLink}>{t('home_footer_admin')}</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.footerSection}>
-                  <Text style={styles.footerTitle}>{t('home_footer_support')}</Text>
-                  <TouchableOpacity
-                    onPress={() => router.push('/help')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLink}>{t('home_footer_contact') || 'Contact Us'}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => router.push('/help')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLink}>{t('home_footer_help') || 'Help Center'}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+            {/* Global Pro Web Footer */}
+            <WebFooter />
           </>
         )}
       </ScrollView>

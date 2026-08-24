@@ -14,6 +14,7 @@ import { mockProperties } from '@/mocks/properties';
 import type { Property } from '@/types/property';
 
 import FadeInView from '@/components/FadeInView';
+import WebFooter from '@/components/WebFooter';
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
@@ -100,6 +101,7 @@ export default function FavoritesScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={true}
+        ListFooterComponent={<WebFooter />}
         ListEmptyComponent={
           <FadeInView delay={120}>
             <View style={styles.emptyContainer}>

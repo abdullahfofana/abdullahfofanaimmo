@@ -35,6 +35,7 @@ import NearbyServicesSection from '@/components/NearbyServicesSection';
 import PropertyCard from '@/components/PropertyCard';
 import FadeInView from '@/components/FadeInView';
 import WebNavbar from '@/components/WebNavbar';
+import WebFooter from '@/components/WebFooter';
 import { useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
 
@@ -338,6 +339,9 @@ export default function AreaLandingPage() {
               maxDistanceKm={6}
             />
           </View>
+
+          {/* Desktop Pro Web Footer */}
+          <WebFooter />
         </ScrollView>
       </View>
     </>

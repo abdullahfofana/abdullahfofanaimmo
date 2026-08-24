@@ -40,6 +40,7 @@ import { openInGoogleMaps, openInWaze } from '@/utils/map';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { Property } from '@/types/property';
 import WebNavbar from '@/components/WebNavbar';
+import WebFooter from '@/components/WebFooter';
 import NearbyServicesSection from '@/components/NearbyServicesSection';
 import BuyerDistanceWidget from '@/components/BuyerDistanceWidget';
 import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
@@ -437,6 +438,9 @@ export default function PropertyDetailScreen() {
               ))}
             </ScrollView>
           </View>
+
+          {/* Desktop Web Footer */}
+          <WebFooter />
         </ScrollView>
 
         {!isDesktop && (
