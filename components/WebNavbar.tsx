@@ -40,6 +40,7 @@ import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useFavorites } from '@/providers/FavoritesProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { useChat } from '@/providers/ChatProvider';
 import { useColors } from '@/hooks/useColors';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -62,6 +63,7 @@ export default function WebNavbar() {
   const params = useGlobalSearchParams<{ status?: string }>();
   const { favorites } = useFavorites();
   const { user, session } = useAuth();
+  const { totalUnreadCount } = useChat();
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hoveredNavKey, setHoveredNavKey] = useState<string | null>(null);
@@ -69,11 +71,11 @@ export default function WebNavbar() {
 
   const NOTIFICATIONS = [
     { id: '1', icon: '🏠', title: 'New property in Cocody', time: '2m ago', unread: true },
-    { id: '2', icon: '💬', title: 'Agent replied to your inquiry', time: '1h ago', unread: true },
+    { id: '2', icon: '💬', title: 'Agent replied to your inquiry', time: '1h ago', unread: totalUnreadCount > 0 },
     { id: '3', icon: '📈', title: 'Price drop: Villa Riviera -5%', time: '3h ago', unread: false },
     { id: '4', icon: '✅', title: 'Your property listing was approved', time: '1d ago', unread: false },
   ];
-  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  const unreadCount = Math.max(totalUnreadCount, NOTIFICATIONS.filter(n => n.unread).length);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;

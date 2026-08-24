@@ -12,6 +12,7 @@ import {
   X,
   ChevronRight,
   MessageCircle,
+  MessageSquare,
 } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import PropertyMap from '@/components/PropertyMap';
@@ -38,6 +39,7 @@ import { getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { openInGoogleMaps, openInWaze } from '@/utils/map';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
+import { useChat } from '@/providers/ChatProvider';
 import { Property } from '@/types/property';
 import WebNavbar from '@/components/WebNavbar';
 import WebFooter from '@/components/WebFooter';
@@ -53,6 +55,7 @@ export default function PropertyDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const { isFavorite: isFavoriteCheck, toggleFavorite } = useFavorites();
+  const { startOrGetConversation } = useChat();
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const { isDesktop } = useResponsive();
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
@@ -402,22 +405,33 @@ export default function PropertyDetailScreen() {
                       </View>
                     </View>
                     <View style={styles.agentActions}>
+                      <TouchableOpacity
+                        style={[styles.agentButton, { backgroundColor: '#059669' }]}
+                        onPress={() => startOrGetConversation(property)}
+                        activeOpacity={0.85}
+                      >
+                        <MessageSquare size={19} color={Colors.white} />
+                      </TouchableOpacity>
                       <TouchableOpacity style={styles.agentButton} onPress={() => { if (Platform.OS === 'web') { window.location.href = 'tel:' + property.agent.phone; } else { Linking.openURL('tel:' + property.agent.phone); } }}>
-                        <Phone size={20} color={Colors.white} />
+                        <Phone size={19} color={Colors.white} />
                       </TouchableOpacity>
                       <TouchableOpacity style={[styles.agentButton, { backgroundColor: '#25D366' }]} onPress={() => Linking.openURL('https://wa.me/' + property.agent.phone.replace(/\D/g,''))}>
-                        <MessageCircle size={20} color={Colors.white} />
+                        <MessageCircle size={19} color={Colors.white} />
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.agentButton} onPress={() => { if (Platform.OS === 'web') { window.location.href = 'mailto:'; } else { Linking.openURL('mailto:'); } }}>
-                        <Mail size={20} color={Colors.white} />
+                        <Mail size={19} color={Colors.white} />
                       </TouchableOpacity>
                     </View>
                   </View>
                 </View>
 
                 {isDesktop && (
-                  <TouchableOpacity style={styles.contactButtonDesktop}>
-                    <Text style={styles.contactButtonText}>{t('property_contact_agent')}</Text>
+                  <TouchableOpacity
+                    style={styles.contactButtonDesktop}
+                    onPress={() => startOrGetConversation(property)}
+                    activeOpacity={0.88}
+                  >
+                    <Text style={styles.contactButtonText}>{t('property_contact_agent') || 'Discuter avec l’Agent'}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -460,6 +474,16 @@ export default function PropertyDetailScreen() {
             </View>
 
             <View style={styles.mobileStickyActionBtns}>
+              {/* In-App Live Chat Button */}
+              <TouchableOpacity
+                style={styles.mobileStickyChatBtn}
+                onPress={() => startOrGetConversation(property)}
+                activeOpacity={0.88}
+              >
+                <MessageSquare size={16} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.mobileStickyBtnText}>Chat</Text>
+              </TouchableOpacity>
+
               {/* WhatsApp Button */}
               <TouchableOpacity
                 style={styles.mobileStickyWhatsAppBtn}
@@ -470,7 +494,7 @@ export default function PropertyDetailScreen() {
                 }}
                 activeOpacity={0.88}
               >
-                <MessageCircle size={18} color="#FFFFFF" strokeWidth={2.4} />
+                <MessageCircle size={16} color="#FFFFFF" strokeWidth={2.4} />
                 <Text style={styles.mobileStickyBtnText}>WhatsApp</Text>
               </TouchableOpacity>
 
@@ -480,7 +504,7 @@ export default function PropertyDetailScreen() {
                 onPress={() => Linking.openURL('tel:' + property.agent.phone.replace(/\D/g, ''))}
                 activeOpacity={0.88}
               >
-                <Phone size={17} color="#FFFFFF" strokeWidth={2.4} />
+                <Phone size={16} color="#FFFFFF" strokeWidth={2.4} />
                 <Text style={styles.mobileStickyBtnText}>
                   {t('call') || 'Appeler'}
                 </Text>
@@ -908,6 +932,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  mobileStickyChatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#059669',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   mobileStickyWhatsAppBtn: {
     flexDirection: 'row',

@@ -58,12 +58,14 @@ import RecentTransactionsList, {
 } from '@/components/dashboard/RecentTransactionsList';
 import FadeInView from '@/components/FadeInView';
 import { trpc } from '@/lib/trpc';
+import { useChat } from '@/providers/ChatProvider';
+import type { ChatConversation, ChatMessage } from '@/types/chat';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-type DashTab = 'overview' | 'listings' | 'analytics' | 'ai' | 'pending' | 'favorites' | 'settings';
+type DashTab = 'overview' | 'listings' | 'messages' | 'analytics' | 'ai' | 'pending' | 'favorites' | 'settings';
 
 interface PropertyRow {
   id: string;
@@ -326,17 +328,24 @@ function AnimatedValue({ value, color }: { value: string; color: string }) {
 // Sidebar — glassmorphism in dark mode
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Sidebar({ activeTab, onTabChange, theme, t, isDark, onToggleTheme }: {
+function Sidebar({ activeTab, onTabChange, theme, t, isDark, onToggleTheme, unreadMessagesCount }: {
   activeTab: DashTab;
   onTabChange: (tab: DashTab) => void;
   theme: DashboardTheme;
   t: (key: any) => string;
   isDark?: boolean;
   onToggleTheme?: () => void;
+  unreadMessagesCount?: number;
 }) {
   const items: { key: DashTab; icon: React.ReactNode; label: string; badge?: string }[] = [
     { key: 'overview', icon: <LayoutDashboard size={16} />, label: t('dash_nav_overview') },
     { key: 'listings', icon: <Building2 size={16} />, label: t('dash_nav_listings'), badge: '24' },
+    {
+      key: 'messages',
+      icon: <MessageSquare size={16} />,
+      label: 'Messagerie & Chat',
+      badge: unreadMessagesCount && unreadMessagesCount > 0 ? String(unreadMessagesCount) : undefined,
+    },
     { key: 'analytics', icon: <BarChart3 size={16} />, label: t('dash_nav_analytics') },
     { key: 'ai', icon: <Brain size={16} />, label: t('dash_nav_ai_assistant') },
     { key: 'pending', icon: <Clock size={16} />, label: t('dash_nav_pending'), badge: '3' },
@@ -768,6 +777,19 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState<DashTab>('overview');
   const [period, setPeriod] = useState<'today' | '7d' | '30d' | '90d'>('30d');
 
+  // ── Live Chat & Inquiries ──────────────────────────────────────────────
+  const {
+    conversations,
+    messages,
+    sendMessage,
+    markAsRead,
+    totalUnreadCount,
+  } = useChat();
+
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const [dashReplyText, setDashReplyText] = useState<string>('');
+  const [searchConvQuery, setSearchConvQuery] = useState<string>('');
+
   // ── Real data from tRPC backend ──────────────────────────────────────────
   const { data: propertiesData } = trpc.properties.list.useQuery({ limit: 100, offset: 0 });
   const { data: activitiesData } = trpc.activities.getRecent.useQuery();
@@ -883,6 +905,7 @@ export default function DashboardScreen() {
     const TABS: { key: DashTab; Icon: any }[] = [
       { key: 'overview', Icon: LayoutDashboard },
       { key: 'listings', Icon: Building2 },
+      { key: 'messages', Icon: MessageSquare },
       { key: 'ai', Icon: Brain },
       { key: 'analytics', Icon: BarChart3 },
       { key: 'settings', Icon: Settings },
@@ -1344,6 +1367,354 @@ export default function DashboardScreen() {
     </View>
   );
 
+  // ── Messages & Live Chat Tab
+  const messagesView = () => {
+    const activeConv = conversations.find(c => c.id === selectedConvId) || conversations[0];
+    const activeMsgs = activeConv ? messages[activeConv.id] || [] : [];
+
+    const filteredConvs = conversations.filter(c => {
+      if (!searchConvQuery.trim()) return true;
+      const q = searchConvQuery.toLowerCase();
+      return (
+        c.buyer?.name?.toLowerCase().includes(q) ||
+        c.property?.title?.toLowerCase().includes(q) ||
+        c.lastMessage?.toLowerCase().includes(q)
+      );
+    });
+
+    const handleSendReply = async () => {
+      if (!dashReplyText.trim() || !activeConv) return;
+      const text = dashReplyText.trim();
+      setDashReplyText('');
+      await sendMessage(activeConv.id, text);
+    };
+
+    return (
+      <View style={ds.content}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <View>
+            <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.6, color: theme.text } as any}>
+              {language === 'fr' ? 'Messagerie & Demandes Acheteurs' : 'Messages & Buyer Inquiries'}
+            </Text>
+            <Text style={{ fontSize: 13, color: theme.textMuted, marginTop: 4 } as any}>
+              {language === 'fr'
+                ? `${conversations.length} conversations actives · ${totalUnreadCount} non lues`
+                : `${conversations.length} active conversations · ${totalUnreadCount} unread`}
+            </Text>
+          </View>
+        </View>
+
+        {/* 2-Column Split Chat Workspace */}
+        <View style={{
+          flexDirection: isDesktop ? 'row' : 'column',
+          gap: 16,
+          minHeight: 580,
+          maxHeight: isDesktop ? 680 : undefined,
+          width: '100%',
+        }}>
+          {/* Left Column: Conversations List */}
+          <View style={[
+            ds.panel,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              flex: isDesktop ? 1 : undefined,
+              minWidth: isDesktop ? 300 : '100%',
+              padding: 12,
+              gap: 10,
+            }
+          ]}>
+            {/* Search Input */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: isDark ? '#0A0C0F' : '#F1F5F9',
+              borderRadius: 10,
+              paddingHorizontal: 10,
+              paddingVertical: 7,
+              gap: 8,
+              borderWidth: 1,
+              borderColor: theme.borderLight,
+            }}>
+              <Search size={14} color={theme.textMuted} />
+              <TextInput
+                style={{ flex: 1, fontSize: 12.5, color: theme.text }}
+                placeholder={language === 'fr' ? 'Rechercher un acheteur...' : 'Search buyer or property...'}
+                placeholderTextColor={theme.textMuted}
+                value={searchConvQuery}
+                onChangeText={setSearchConvQuery}
+              />
+            </View>
+
+            {/* Conversation Cards List */}
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+              <View style={{ gap: 6 }}>
+                {filteredConvs.map(conv => {
+                  const isSelected = activeConv?.id === conv.id;
+                  const hasUnread = conv.unreadCountAgent > 0;
+                  return (
+                    <TouchableOpacity
+                      key={conv.id}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        padding: 10,
+                        borderRadius: 12,
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(45,106,79,0.22)' : 'rgba(5, 150, 105, 0.08)')
+                          : 'transparent',
+                        borderWidth: 1,
+                        borderColor: isSelected ? theme.purpleLight : 'transparent',
+                        gap: 10,
+                        cursor: 'pointer' as any,
+                      }}
+                      onPress={() => {
+                        setSelectedConvId(conv.id);
+                        markAsRead(conv.id);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      {/* Buyer Avatar */}
+                      <View style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 19,
+                        backgroundColor: isSelected ? theme.purple : theme.borderLight,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: isSelected ? '#FFFFFF' : theme.text }}>
+                          {conv.buyer?.name?.charAt(0) || 'A'}
+                        </Text>
+                      </View>
+
+                      {/* Info & Last Msg */}
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }} numberOfLines={1}>
+                            {conv.buyer?.name}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: theme.textMuted }}>
+                            {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </Text>
+                        </View>
+
+                        {conv.property && (
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: theme.purpleLight, marginTop: 1 }} numberOfLines={1}>
+                            📍 {conv.property.title}
+                          </Text>
+                        )}
+
+                        <Text
+                          style={{
+                            fontSize: 11.5,
+                            color: hasUnread ? theme.text : theme.textMuted,
+                            fontWeight: hasUnread ? '700' : '400',
+                            marginTop: 2,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {conv.lastMessage}
+                        </Text>
+                      </View>
+
+                      {/* Unread Pill */}
+                      {hasUnread && (
+                        <View style={{
+                          backgroundColor: '#EF4444',
+                          borderRadius: 10,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          minWidth: 18,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
+                            {conv.unreadCountAgent}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Right Column: Live Chat Thread */}
+          {activeConv ? (
+            <View style={[
+              ds.panel,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+                flex: isDesktop ? 2 : undefined,
+                height: 580,
+                padding: 0,
+                overflow: 'hidden',
+              }
+            ]}>
+              {/* Active Conversation Header */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.borderLight,
+                backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#FAFAFA',
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: theme.purple,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>
+                      {activeConv.buyer?.name?.charAt(0) || 'A'}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>
+                      {activeConv.buyer?.name}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: theme.textMuted }}>
+                      {activeConv.buyer?.phone || 'Acheteur Vérifié ImmoCI'}
+                    </Text>
+                  </View>
+                </View>
+
+                {activeConv.property && (
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    backgroundColor: isDark ? 'rgba(45,106,79,0.18)' : 'rgba(5, 150, 105, 0.08)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 8,
+                  }}>
+                    <Building2 size={13} color={theme.purpleLight} />
+                    <Text style={{ fontSize: 11.5, fontWeight: '700', color: theme.purpleLight }}>
+                      {(activeConv.property.price / 1000000).toFixed(1)}M FCFA
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Messages Thread Scroll */}
+              <ScrollView
+                style={{ flex: 1, padding: 14 }}
+                contentContainerStyle={{ gap: 10 }}
+                showsVerticalScrollIndicator={true}
+              >
+                {activeMsgs.map(msg => {
+                  const isAgentSender = msg.senderRole === 'agent' || msg.senderRole === 'admin';
+                  return (
+                    <View
+                      key={msg.id}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: isAgentSender ? 'flex-end' : 'flex-start',
+                      }}
+                    >
+                      <View style={{
+                        maxWidth: '78%',
+                        paddingHorizontal: 14,
+                        paddingVertical: 9,
+                        borderRadius: 14,
+                        backgroundColor: isAgentSender ? theme.purple : (isDark ? '#1E2430' : '#F1F5F9'),
+                        borderBottomRightRadius: isAgentSender ? 2 : 14,
+                        borderBottomLeftRadius: !isAgentSender ? 2 : 14,
+                      }}>
+                        <Text style={{
+                          fontSize: 13,
+                          lineHeight: 18,
+                          color: isAgentSender ? '#FFFFFF' : theme.text,
+                        }}>
+                          {msg.message}
+                        </Text>
+                        <Text style={{
+                          fontSize: 10,
+                          color: isAgentSender ? 'rgba(255,255,255,0.7)' : theme.textMuted,
+                          alignSelf: 'flex-end',
+                          marginTop: 3,
+                        }}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Quick Reply Bar */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderTopWidth: 1,
+                borderTopColor: theme.borderLight,
+                gap: 8,
+                backgroundColor: isDark ? '#0A0C0F' : '#FFFFFF',
+              }}>
+                <TextInput
+                  style={{
+                    flex: 1,
+                    backgroundColor: isDark ? '#1E2430' : '#F8FAFC',
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    fontSize: 13,
+                    color: theme.text,
+                    borderWidth: 1,
+                    borderColor: theme.borderLight,
+                  }}
+                  placeholder={language === 'fr' ? 'Répondre à l’acheteur...' : 'Reply to buyer...'}
+                  placeholderTextColor={theme.textMuted}
+                  value={dashReplyText}
+                  onChangeText={setDashReplyText}
+                  onSubmitEditing={handleSendReply}
+                />
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: theme.purple,
+                    borderRadius: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 9,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer' as any,
+                  }}
+                  onPress={handleSendReply}
+                  disabled={!dashReplyText.trim()}
+                  activeOpacity={0.85}
+                >
+                  <Send size={14} color="#FFFFFF" strokeWidth={2.2} />
+                  <Text style={{ fontSize: 12.5, fontWeight: '700', color: '#FFFFFF' }}>
+                    {language === 'fr' ? 'Envoyer' : 'Send'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={[ds.panel, { flex: 2, alignItems: 'center', justifyContent: 'center' }]}>
+              <Text style={{ color: theme.textMuted }}>
+                {language === 'fr' ? 'Sélectionnez une conversation' : 'Select a conversation'}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   // ── Placeholder
   const placeholder = (title: string, Icon: any) => (
     <View style={ds.content}>
@@ -1364,6 +1735,7 @@ export default function DashboardScreen() {
     switch (activeTab) {
       case 'overview':  return overview();
       case 'settings':  return settings();
+      case 'messages':  return messagesView();
       case 'analytics': return analyticsView();
       case 'listings':  return placeholder(t('dash_nav_listings'), Building2);
       case 'ai':        return placeholder(t('dash_nav_ai_assistant'), Brain);
@@ -1383,6 +1755,7 @@ export default function DashboardScreen() {
           t={t}
           isDark={isDark}
           onToggleTheme={toggleTheme}
+          unreadMessagesCount={totalUnreadCount}
         />
       )}
       <View style={[ds.main, { backgroundColor: theme.bg }]}>

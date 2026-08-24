@@ -5,6 +5,7 @@ import { ChevronLeft, MessageCircle, Phone, Mail, BookOpen, ChevronDown, Chevron
 import Colors from '@/constants/colors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
+import { useChat } from '@/providers/ChatProvider';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -70,9 +71,10 @@ function FAQAccordion({ item }: { item: FAQItem }) {
 
 export default function HelpScreen() {
   const [showFAQs, setShowFAQs] = useState(false);
+  const { startSupportConversation } = useChat();
 
   const handleSupportChat = () => {
-    alert('Chat support connecting...');
+    startSupportConversation();
   };
 
   const handleCall = () => {

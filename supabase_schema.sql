@@ -206,3 +206,59 @@ CREATE POLICY activities_anon_insert
   TO anon, authenticated
   WITH CHECK (true);
 
+-- ─── CONVERSATIONS ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS conversations (
+  id TEXT PRIMARY KEY,
+  property_id TEXT NOT NULL,
+  property_data JSONB,
+  buyer_id TEXT NOT NULL,
+  buyer_data JSONB NOT NULL,
+  agent_id TEXT NOT NULL,
+  agent_data JSONB NOT NULL,
+  last_message TEXT DEFAULT '',
+  last_message_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  unread_count_buyer INTEGER DEFAULT 0,
+  unread_count_agent INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ─── MESSAGES ──────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL,
+  sender_name TEXT NOT NULL,
+  sender_avatar TEXT,
+  sender_role TEXT NOT NULL CHECK (sender_role IN ('buyer', 'agent', 'admin', 'support')),
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for lightning-fast queries
+CREATE INDEX IF NOT EXISTS idx_conversations_buyer ON conversations(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_agent ON conversations(agent_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_property ON conversations(property_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+
+-- RLS for conversations and messages
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY conversations_public_access
+  ON conversations
+  FOR ALL
+  TO anon, authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY messages_public_access
+  ON messages
+  FOR ALL
+  TO anon, authenticated
+  USING (true)
+  WITH CHECK (true);
+
