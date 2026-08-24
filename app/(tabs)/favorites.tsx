@@ -13,6 +13,7 @@ import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { mockProperties } from '@/mocks/properties';
 import type { Property } from '@/types/property';
 
+import FadeInView from '@/components/FadeInView';
 import WebNavbar from '@/components/WebNavbar';
 
 export default function FavoritesScreen() {
@@ -71,62 +72,57 @@ export default function FavoritesScreen() {
       {Platform.OS === 'web' && <WebNavbar />}
 
       {/* Header */}
-      <View
-        // @ts-ignore
-        className="heavenly-stagger-1"
-        style={styles.header}
-      >
-        <View>
-          <Text style={styles.title}>{t('favorites_title')}</Text>
-          <Text style={styles.subtitle}>
-            {favorites.length > 0
-              ? `${favorites.length} ${t('favorites_properties')}`
-              : t('favorites_empty_title')}
-          </Text>
-        </View>
-        {favorites.length > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{favorites.length}</Text>
+      <FadeInView delay={60}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>{t('favorites_title')}</Text>
+            <Text style={styles.subtitle}>
+              {favorites.length > 0
+                ? `${favorites.length} ${t('favorites_properties')}`
+                : t('favorites_empty_title')}
+            </Text>
           </View>
-        )}
-      </View>
+          {favorites.length > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{favorites.length}</Text>
+            </View>
+          )}
+        </View>
+      </FadeInView>
 
       <FlatList
         data={favorites}
         renderItem={({ item, index }) => (
-          <View
-            // @ts-ignore
-            className={`heavenly-stagger-${Math.min(index + 2, 5)}`}
+          <FadeInView
+            delay={Math.min(index * 70 + 100, 500)}
             style={{ maxWidth: 800, width: '100%', alignSelf: 'center', marginBottom: 16 }}
           >
             <PropertyCard property={item} />
-          </View>
+          </FadeInView>
         )}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
-          <View
-            // @ts-ignore
-            className="heavenly-stagger-2"
-            style={styles.emptyContainer}
-          >
-            <View style={styles.emptyIconBox}>
-              <Heart size={40} color={colors.textLight} strokeWidth={1.5} />
+          <FadeInView delay={120}>
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconBox}>
+                <Heart size={40} color={colors.textLight} strokeWidth={1.5} />
+              </View>
+              <Text style={styles.emptyTitle}>{t('favorites_empty_title')}</Text>
+              <Text style={styles.emptyText}>{t('favorites_empty_text')}</Text>
+              <TouchableOpacity
+                // @ts-ignore
+                className="heavenly-button"
+                style={styles.exploreButton}
+                onPress={() => router.push('/(tabs)/search')}
+                activeOpacity={0.85}
+              >
+                <Search size={18} color="#FFFFFF" strokeWidth={2.2} />
+                <Text style={styles.exploreButtonText}>{t('favorites_explore_button')}</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.emptyTitle}>{t('favorites_empty_title')}</Text>
-            <Text style={styles.emptyText}>{t('favorites_empty_text')}</Text>
-            <TouchableOpacity
-              // @ts-ignore
-              className="heavenly-button"
-              style={[styles.exploreButton, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/(tabs)/search')}
-              activeOpacity={0.88}
-            >
-              <Search size={16} color="#fff" strokeWidth={2.5} />
-              <Text style={styles.exploreButtonText}>Browse Properties</Text>
-            </TouchableOpacity>
-          </View>
+          </FadeInView>
         }
       />
     </View>

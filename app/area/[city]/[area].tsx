@@ -33,6 +33,7 @@ import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
 import PropertyMap from '@/components/PropertyMap';
 import NearbyServicesSection from '@/components/NearbyServicesSection';
 import PropertyCard from '@/components/PropertyCard';
+import FadeInView from '@/components/FadeInView';
 import WebNavbar from '@/components/WebNavbar';
 import { useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';

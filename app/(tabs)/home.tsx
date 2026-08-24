@@ -49,6 +49,7 @@ import Spacing from '@/constants/spacing';
 import PropertyMap from '@/components/PropertyMap';
 import Typography from '@/constants/typography';
 import PropertyCard from '@/components/PropertyCard';
+import FadeInView from '@/components/FadeInView';
 import { mockProperties } from '@/mocks/properties';
 import { getColumns, getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -436,102 +437,93 @@ export default function HomeScreen() {
 
             <View style={[styles.heroContent, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
               {/* Badge */}
-              <View
-                // @ts-ignore
-                className="heavenly-stagger-1"
-                style={styles.heroBadge}
-              >
-                <Building2 size={12} color="#059669" strokeWidth={2.4} />
-                <Text style={styles.heroBadgeText}>
-                  {language === 'fr' ? "N°1 DE L'IMMOBILIER EN CÔTE D'IVOIRE" : '#1 REAL ESTATE PLATFORM IN IVORY COAST'}
-                </Text>
-              </View>
+              <FadeInView delay={50}>
+                <View style={styles.heroBadge}>
+                  <Building2 size={12} color="#059669" strokeWidth={2.4} />
+                  <Text style={styles.heroBadgeText}>
+                    {language === 'fr' ? "N°1 DE L'IMMOBILIER EN CÔTE D'IVOIRE" : '#1 REAL ESTATE PLATFORM IN IVORY COAST'}
+                  </Text>
+                </View>
+              </FadeInView>
 
-              <Text
-                // @ts-ignore
-                className="heavenly-stagger-2"
-                style={[styles.heroTitle, styles.heroTitleDesktop]}
-              >
-                {t('home_hero_title')}
-              </Text>
-              <Text
-                // @ts-ignore
-                className="heavenly-stagger-3"
-                style={[styles.heroSubtitle, styles.heroSubtitleDesktop]}
-              >
-                {t('home_hero_subtitle')}
-              </Text>
+              <FadeInView delay={120}>
+                <Text style={[styles.heroTitle, styles.heroTitleDesktop]}>
+                  {t('home_hero_title')}
+                </Text>
+              </FadeInView>
+
+              <FadeInView delay={180}>
+                <Text style={[styles.heroSubtitle, styles.heroSubtitleDesktop]}>
+                  {t('home_hero_subtitle')}
+                </Text>
+              </FadeInView>
 
               {/* Desktop Multi-Field Search bar */}
-              <View
-                // @ts-ignore
-                className="heavenly-stagger-4"
-                style={[styles.searchContainer, styles.searchContainerDesktop]}
-              >
-                <View style={[styles.searchBar, styles.searchBarDesktop]}>
-                  <MapPin size={18} color={colors.primary} strokeWidth={2.5} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={t('home_search_placeholder')}
-                    placeholderTextColor={colors.textLight}
-                    value={searchLocation}
-                    onChangeText={setSearchLocation}
-                    onSubmitEditing={handleHeroSearch}
-                  />
+              <FadeInView delay={250}>
+                <View style={[styles.searchContainer, styles.searchContainerDesktop]}>
+                  <View style={[styles.searchBar, styles.searchBarDesktop]}>
+                    <MapPin size={18} color={colors.primary} strokeWidth={2.5} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder={t('home_search_placeholder')}
+                      placeholderTextColor={colors.textLight}
+                      value={searchLocation}
+                      onChangeText={setSearchLocation}
+                      onSubmitEditing={handleHeroSearch}
+                    />
+                  </View>
+                  <View style={styles.searchDivider} />
+                  <View style={styles.searchBar}>
+                    <HomeIcon size={18} color={colors.textSecondary} strokeWidth={2.5} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder={t('home_property_type')}
+                      placeholderTextColor={colors.textLight}
+                      value={propertyType}
+                      onChangeText={setPropertyType}
+                      onSubmitEditing={handleHeroSearch}
+                    />
+                  </View>
+                  <View style={styles.searchDivider} />
+                  <View style={styles.searchBar}>
+                    <DollarSign size={18} color={colors.textSecondary} strokeWidth={2.5} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder={t('home_price_range')}
+                      placeholderTextColor={colors.textLight}
+                      value={priceRange}
+                      onChangeText={setPriceRange}
+                      onSubmitEditing={handleHeroSearch}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    // @ts-ignore
+                    className="heavenly-button"
+                    style={styles.searchButton}
+                    onPress={handleHeroSearch}
+                    activeOpacity={0.85}
+                  >
+                    <Search size={18} color={colors.white} strokeWidth={2.5} />
+                    <Text style={styles.searchButtonText}>{t('home_search_button')}</Text>
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.searchDivider} />
-                <View style={styles.searchBar}>
-                  <HomeIcon size={18} color={colors.textSecondary} strokeWidth={2.5} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={t('home_property_type')}
-                    placeholderTextColor={colors.textLight}
-                    value={propertyType}
-                    onChangeText={setPropertyType}
-                    onSubmitEditing={handleHeroSearch}
-                  />
-                </View>
-                <View style={styles.searchDivider} />
-                <View style={styles.searchBar}>
-                  <DollarSign size={18} color={colors.textSecondary} strokeWidth={2.5} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={t('home_price_range')}
-                    placeholderTextColor={colors.textLight}
-                    value={priceRange}
-                    onChangeText={setPriceRange}
-                    onSubmitEditing={handleHeroSearch}
-                  />
-                </View>
-                <TouchableOpacity
-                  // @ts-ignore
-                  className="heavenly-button"
-                  style={styles.searchButton}
-                  onPress={handleHeroSearch}
-                  activeOpacity={0.85}
-                >
-                  <Search size={18} color={colors.white} strokeWidth={2.5} />
-                  <Text style={styles.searchButtonText}>{t('home_search_button')}</Text>
-                </TouchableOpacity>
-              </View>
+              </FadeInView>
 
               {/* Stats row */}
-              <View
-                // @ts-ignore
-                className="heavenly-stagger-5"
-                style={styles.heroStats}
-              >
-                {[
-                  { value: '2,400+', label: t('home_stat_properties') || 'Properties' },
-                  { value: '120+', label: t('home_stat_agents') || 'Agents' },
-                  { value: '98%', label: t('home_stat_satisfaction') || 'Satisfaction' },
-                ].map((stat, i) => (
-                  <View key={i} style={styles.heroStat}>
-                    <Text style={styles.heroStatValue}>{stat.value}</Text>
-                    <Text style={styles.heroStatLabel}>{stat.label}</Text>
-                  </View>
-                ))}
-              </View>
+              <FadeInView delay={320}>
+                <View style={styles.heroStats}>
+                  {[
+                    { value: '2,400+', label: t('home_stat_properties') || 'Properties' },
+                    { value: '120+', label: t('home_stat_agents') || 'Agents' },
+                    { value: '98%', label: t('home_stat_satisfaction') || 'Satisfaction' },
+                  ].map((stat, i) => (
+                    <View key={i} style={styles.heroStat}>
+                      <Text style={styles.heroStatValue}>{stat.value}</Text>
+                      <Text style={styles.heroStatLabel}>{stat.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              </FadeInView>
             </View>
           </View>
         )}

@@ -25,6 +25,7 @@ import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import PropertyCard from '@/components/PropertyCard';
+import FadeInView from '@/components/FadeInView';
 import PropertyMap from '@/components/PropertyMap';
 import { mockProperties } from '@/mocks/properties';
 import { Property, PropertyType, PropertyStatus } from '@/types/property';

@@ -3,6 +3,7 @@ import { Heart, MapPin, Bed, Bath, Maximize2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   Platform,
   StyleSheet,
@@ -30,6 +31,8 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [isHovered, setIsHovered] = useState(false);
+  const hoverAnim = React.useRef(new Animated.Value(0)).current;
+  const imageScale = React.useRef(new Animated.Value(1)).current;
   const favScale = React.useRef(new Animated.Value(1)).current;
 
   const formatPrice = (price: number, currency: string) => {
@@ -40,13 +43,49 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
     return `${price.toLocaleString()}`;
   };
 
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    Animated.parallel([
+      Animated.timing(hoverAnim, {
+        toValue: 1,
+        duration: 250,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(imageScale, {
+        toValue: 1.055,
+        duration: 350,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    Animated.parallel([
+      Animated.timing(hoverAnim, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(imageScale, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  };
+
   const handleFavorite = (e: any) => {
     if (e && e.stopPropagation) {
       e.stopPropagation();
     }
     Animated.sequence([
-      Animated.timing(favScale, { toValue: 1.28, duration: 120, useNativeDriver: true }),
-      Animated.spring(favScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }),
+      Animated.timing(favScale, { toValue: 1.3, duration: 120, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.spring(favScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
     toggleFavorite(property.id);
   };
@@ -62,135 +101,157 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
   const isForSale = property.status === 'sale';
   const statusLabel = isForSale ? (language === 'fr' ? 'À VENDRE' : 'FOR SALE') : (language === 'fr' ? 'À LOUER' : 'FOR RENT');
 
-  return (
-    <TouchableOpacity
-      // @ts-ignore
-      className="immoci-property-card"
-      style={[
-        styles.container,
-        isHovered && styles.containerHovered,
-      ]}
-      onPress={handlePress}
-      activeOpacity={0.92}
-      // @ts-ignore
-      onMouseEnter={() => setIsHovered(true)}
-      // @ts-ignore
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* ── IMAGE WRAPPER ────────────────────────────────────────── */}
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: property.images[0] }}
-          // @ts-ignore
-          className="immoci-card-image"
-          style={styles.image}
-          resizeMode="cover"
-        />
+  const cardTranslateY = hoverAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -6],
+  });
 
-        {/* ── TOP STATUS & BADGES ───────────────────────────────── */}
-        <View style={styles.topBadgesRow}>
-          <View style={[styles.statusPill, isForSale ? styles.statusPillSale : styles.statusPillRent]}>
-            <Text style={styles.statusText}>
-              {statusLabel}
+  return (
+    <Animated.View
+      style={[
+        styles.cardWrapper,
+        {
+          transform: [{ translateY: cardTranslateY }],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        // @ts-ignore
+        className="immoci-property-card"
+        style={[
+          styles.container,
+          isHovered && styles.containerHovered,
+        ]}
+        onPress={handlePress}
+        activeOpacity={0.92}
+        // @ts-ignore
+        onMouseEnter={handleMouseEnter}
+        // @ts-ignore
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* ── IMAGE WRAPPER ────────────────────────────────────────── */}
+        <View style={styles.imageContainer}>
+          <Animated.Image
+            source={{ uri: property.images[0] }}
+            // @ts-ignore
+            className="immoci-card-image"
+            style={[
+              styles.image,
+              {
+                transform: [{ scale: imageScale }],
+              },
+            ]}
+            resizeMode="cover"
+          />
+
+          {/* ── TOP STATUS & BADGES ───────────────────────────────── */}
+          <View style={styles.topBadgesRow}>
+            <View style={[styles.statusPill, isForSale ? styles.statusPillSale : styles.statusPillRent]}>
+              <Text style={styles.statusText}>
+                {statusLabel}
+              </Text>
+            </View>
+
+            {property.isFeatured && (
+              <View style={styles.featuredPill}>
+                <Text style={styles.featuredText}>
+                  {language === 'fr' ? 'VEDETTE' : 'FEATURED'}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* ── FAVORITE BUTTON ───────────────────────────────────── */}
+          <Animated.View style={{ transform: [{ scale: favScale }] }}>
+            <TouchableOpacity
+              // @ts-ignore
+              className="immoci-favorite-btn"
+              style={[styles.favoriteBtn, favorite && styles.favoriteBtnActive]}
+              onPress={handleFavorite}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.8}
+            >
+              <Heart
+                size={16}
+                color={favorite ? '#EF4444' : '#1E293B'}
+                fill={favorite ? '#EF4444' : 'transparent'}
+                strokeWidth={2.2}
+              />
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* ── BOTTOM PHOTO COUNT ────────────────────────────────── */}
+          <View style={styles.photoCountBadge}>
+            <Text style={styles.photoCountText}>
+              📷 {property.images?.length || 1}
+            </Text>
+          </View>
+        </View>
+
+        {/* ── CONTENT BODY ─────────────────────────────────────────── */}
+        <View style={styles.content}>
+          {/* Price Row */}
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>
+              {formatPrice(property.price, property.currency)}
+              <Text style={styles.priceCurrency}> FCFA</Text>
+            </Text>
+            {property.status === 'rent' && (
+              <Text style={styles.priceUnit}> / mois</Text>
+            )}
+          </View>
+
+          {/* Title */}
+          <Text
+            // @ts-ignore
+            className="immoci-card-title"
+            style={[styles.title, isHovered && styles.titleHovered]}
+            numberOfLines={1}
+          >
+            {property.title}
+          </Text>
+
+          {/* Location Row */}
+          <View style={styles.locationRow}>
+            <MapPin size={13} color="#64748B" strokeWidth={2} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {property.location.district}, {property.location.city}
             </Text>
           </View>
 
-          {property.isFeatured && (
-            <View style={styles.featuredPill}>
-              <Text style={styles.featuredText}>
-                {language === 'fr' ? 'VEDETTE' : 'FEATURED'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* ── FAVORITE BUTTON ───────────────────────────────────── */}
-        <Animated.View style={{ transform: [{ scale: favScale }] }}>
-          <TouchableOpacity
-            // @ts-ignore
-            className="immoci-favorite-btn"
-            style={[styles.favoriteBtn, favorite && styles.favoriteBtnActive]}
-            onPress={handleFavorite}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            activeOpacity={0.8}
-          >
-            <Heart
-              size={16}
-              color={favorite ? '#EF4444' : '#1E293B'}
-              fill={favorite ? '#EF4444' : 'transparent'}
-              strokeWidth={2.2}
-            />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* ── BOTTOM PHOTO COUNT ────────────────────────────────── */}
-        <View style={styles.photoCountBadge}>
-          <Text style={styles.photoCountText}>
-            📷 {property.images?.length || 1}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── CONTENT BODY ─────────────────────────────────────────── */}
-      <View style={styles.content}>
-        {/* Price Row */}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>
-            {formatPrice(property.price, property.currency)}
-            <Text style={styles.priceCurrency}> FCFA</Text>
-          </Text>
-          {property.status === 'rent' && (
-            <Text style={styles.priceUnit}> / mois</Text>
-          )}
-        </View>
-
-        {/* Title */}
-        <Text
-          // @ts-ignore
-          className="immoci-card-title"
-          style={styles.title}
-          numberOfLines={1}
-        >
-          {property.title}
-        </Text>
-
-        {/* Location Row */}
-        <View style={styles.locationRow}>
-          <MapPin size={13} color="#64748B" strokeWidth={2} />
-          <Text style={styles.locationText} numberOfLines={1}>
-            {property.location.district}, {property.location.city}
-          </Text>
-        </View>
-
-        {/* Specs Row */}
-        <View style={styles.specsRow}>
-          {!!property.bedrooms && (
+          {/* Specs Row */}
+          <View style={styles.specsRow}>
+            {!!property.bedrooms && (
+              <View style={styles.specItem}>
+                <Bed size={13} color="#475569" strokeWidth={1.8} />
+                <Text style={styles.specText}>
+                  {property.bedrooms} {language === 'fr' ? 'ch.' : 'bd.'}
+                </Text>
+              </View>
+            )}
+            {!!property.bathrooms && (
+              <View style={styles.specItem}>
+                <Bath size={13} color="#475569" strokeWidth={1.8} />
+                <Text style={styles.specText}>
+                  {property.bathrooms} {language === 'fr' ? 'sdb.' : 'ba.'}
+                </Text>
+              </View>
+            )}
             <View style={styles.specItem}>
-              <Bed size={13} color="#475569" strokeWidth={1.8} />
-              <Text style={styles.specText}>
-                {property.bedrooms} {language === 'fr' ? 'ch.' : 'bd.'}
-              </Text>
+              <Maximize2 size={13} color="#475569" strokeWidth={1.8} />
+              <Text style={styles.specText}>{property.area} m²</Text>
             </View>
-          )}
-          {!!property.bathrooms && (
-            <View style={styles.specItem}>
-              <Bath size={13} color="#475569" strokeWidth={1.8} />
-              <Text style={styles.specText}>
-                {property.bathrooms} {language === 'fr' ? 'sdb.' : 'ba.'}
-              </Text>
-            </View>
-          )}
-          <View style={styles.specItem}>
-            <Maximize2 size={13} color="#475569" strokeWidth={1.8} />
-            <Text style={styles.specText}>{property.area} m²</Text>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const createStyles = (colors: any) => StyleSheet.create({
+  cardWrapper: {
+    width: '100%',
+  },
   container: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -211,21 +272,22 @@ const createStyles = (colors: any) => StyleSheet.create({
         // @ts-ignore
         boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.06)',
         // @ts-ignore
-        transition: 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
         cursor: 'pointer',
       },
     }),
   },
   containerHovered: {
-    borderColor: 'rgba(5, 150, 105, 0.35)',
+    borderColor: 'rgba(5, 150, 105, 0.45)',
     ...Platform.select({
       web: {
         // @ts-ignore
-        transform: 'translateY(-5px)',
-        // @ts-ignore
-        boxShadow: '0 20px 38px -10px rgba(15, 23, 42, 0.12), 0 8px 16px -4px rgba(5, 150, 105, 0.06)',
+        boxShadow: '0 20px 38px -10px rgba(15, 23, 42, 0.12), 0 8px 16px -4px rgba(5, 150, 105, 0.08)',
       },
     }),
+  },
+  titleHovered: {
+    color: '#059669',
   },
 
   imageContainer: {

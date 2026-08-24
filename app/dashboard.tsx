@@ -56,6 +56,7 @@ import PerformanceDistributionChart, {
 import RecentTransactionsList, {
   INITIAL_TRANSACTIONS,
 } from '@/components/dashboard/RecentTransactionsList';
+import FadeInView from '@/components/FadeInView';
 import { trpc } from '@/lib/trpc';
 
 // ─────────────────────────────────────────────────────────────────────────────
