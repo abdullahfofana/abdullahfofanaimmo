@@ -1087,8 +1087,8 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ─── DESKTOP-ONLY FEATURES & FOOTER ──────────────────────────── */}
-        {isDesktop && (
+        {/* ─── WEB / DESKTOP FEATURES & FOOTER ──────────────────────────── */}
+        {(isDesktop || Platform.OS === 'web') && (
           <>
             <View style={[styles.featuresSection, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]} testID="features-grid">
               <View style={styles.featuresSectionHeader}>
