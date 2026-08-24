@@ -9,15 +9,62 @@ import Spacing from '@/constants/spacing';
 import PropertyCard from '@/components/PropertyCard';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useFavorites } from '@/providers/FavoritesProvider';
+import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
+import { mockProperties } from '@/mocks/properties';
+import type { Property } from '@/types/property';
 
 import WebNavbar from '@/components/WebNavbar';
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
-  const { favorites } = useFavorites();
+  const { favoriteIds } = useFavorites();
+  const { getApprovedSubmissions } = usePropertySubmissions();
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const favorites: Property[] = useMemo(() => {
+    let approved: any[] = [];
+    try {
+      approved = getApprovedSubmissions();
+    } catch {
+      approved = [];
+    }
+
+    const submissionProperties: Property[] = approved.map((s) => ({
+      id: s.id,
+      title: s.title,
+      description: s.description,
+      price: s.price,
+      currency: 'FCFA',
+      type: s.type,
+      status: s.status,
+      bedrooms: s.bedrooms,
+      bathrooms: s.bathrooms,
+      area: s.area,
+      location: {
+        address: s.location.address,
+        city: s.location.city,
+        district: s.location.district,
+        coordinates: s.location.coordinates ?? { latitude: 5.3485, longitude: -4.0125 },
+      },
+      images: s.photos,
+      features: s.features,
+      agent: {
+        id: `agent-${s.id}`,
+        name: s.agent.name,
+        phone: s.agent.phone,
+      },
+      isFeatured: false,
+      createdAt: s.submittedAt,
+    }));
+
+    const dbIds = new Set(submissionProperties.map((p) => p.id));
+    const filteredMocks = mockProperties.filter((p) => !dbIds.has(p.id));
+    const all = [...submissionProperties, ...filteredMocks];
+
+    return all.filter((p) => favoriteIds.includes(p.id));
+  }, [favoriteIds, getApprovedSubmissions]);
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 0 : insets.top }]}>

@@ -2,7 +2,6 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mockProperties } from '@/mocks/properties';
-import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import type { Property } from '@/types/property';
 
 const FAVORITES_KEY = '@favorites_v1';
@@ -10,7 +9,6 @@ const FAVORITES_KEY = '@favorites_v1';
 export const [FavoritesProvider, useFavorites] = createContextHook(() => {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { getApprovedSubmissions } = usePropertySubmissions();
 
   useEffect(() => {
     loadFavorites();
@@ -54,51 +52,8 @@ export const [FavoritesProvider, useFavorites] = createContextHook(() => {
   }, [favoriteIds]);
 
   const favorites = useMemo((): Property[] => {
-    // Combine mock properties with real approved DB submissions
-    const approvedSubmissions = (() => {
-      try {
-        return getApprovedSubmissions();
-      } catch {
-        return [];
-      }
-    })();
-
-    // Map approved submissions to Property format (same mapping as property/[id].tsx)
-    const submissionProperties: Property[] = approvedSubmissions.map((s) => ({
-      id: s.id,
-      title: s.title,
-      description: s.description,
-      price: s.price,
-      currency: 'FCFA',
-      type: s.type,
-      status: s.status,
-      bedrooms: s.bedrooms,
-      bathrooms: s.bathrooms,
-      area: s.area,
-      location: {
-        address: s.location.address,
-        city: s.location.city,
-        district: s.location.district,
-        coordinates: s.location.coordinates ?? { latitude: 5.3485, longitude: -4.0125 },
-      },
-      images: s.photos,
-      features: s.features,
-      agent: {
-        id: `agent-${s.id}`,
-        name: s.agent.name,
-        phone: s.agent.phone,
-      },
-      isFeatured: false,
-      createdAt: s.submittedAt,
-    }));
-
-    // Merge: DB properties take precedence over mock ones with same ID
-    const dbIds = new Set(submissionProperties.map((p) => p.id));
-    const filteredMocks = mockProperties.filter((p) => !dbIds.has(p.id));
-    const allProperties: Property[] = [...submissionProperties, ...filteredMocks];
-
-    return allProperties.filter((p) => favoriteIds.includes(p.id));
-  }, [favoriteIds, getApprovedSubmissions]);
+    return mockProperties.filter((p) => favoriteIds.includes(p.id));
+  }, [favoriteIds]);
 
   return {
     favoriteIds,

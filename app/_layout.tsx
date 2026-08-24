@@ -255,9 +255,9 @@ export default function RootLayout() {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <AuthProvider>
           <ThemeProvider>
-            <FavoritesProvider>
-              <IntegrationProvider>
-                <PropertySubmissionProvider>
+            <IntegrationProvider>
+              <PropertySubmissionProvider>
+                <FavoritesProvider>
                   <LanguageProvider>
                     <GestureHandlerRootView style={{ flex: 1 }}>
                       <View style={{ flex: 1 }}>
@@ -265,9 +265,9 @@ export default function RootLayout() {
                       </View>
                     </GestureHandlerRootView>
                   </LanguageProvider>
-                </PropertySubmissionProvider>
-              </IntegrationProvider>
-            </FavoritesProvider>
+                </FavoritesProvider>
+              </PropertySubmissionProvider>
+            </IntegrationProvider>
           </ThemeProvider>
         </AuthProvider>
       </trpc.Provider>
