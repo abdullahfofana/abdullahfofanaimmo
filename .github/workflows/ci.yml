@@ -30,6 +30,6 @@ jobs:
 
       - name: 🌐 Export Web Bundle (Vercel Compatibility Check)
         env:
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL || 'https://hhgsabphhgidxdfdhgdd.supabase.co' }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoZ3NhYnBoaGdpZHhkZmRoZ2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MzYzNTksImV4cCI6MjEwMjIxMjM1OX0.oStesJQjnaZmKhJQC97Lca2dC6xJGBD2WUxG6E81BFs' }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'dummy_anon_key_for_ci_build' }}
         run: npx expo export -p web
