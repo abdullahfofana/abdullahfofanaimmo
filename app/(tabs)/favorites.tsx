@@ -14,7 +14,6 @@ import { mockProperties } from '@/mocks/properties';
 import type { Property } from '@/types/property';
 
 import FadeInView from '@/components/FadeInView';
-import WebNavbar from '@/components/WebNavbar';
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
@@ -69,8 +68,6 @@ export default function FavoritesScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 0 : insets.top }]}>
-      {Platform.OS === 'web' && <WebNavbar />}
-
       {/* Header */}
       <FadeInView delay={60}>
         <View style={styles.header}>
