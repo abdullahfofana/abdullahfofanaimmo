@@ -27,6 +27,7 @@ import Typography from '@/constants/typography';
 import PropertyCard from '@/components/PropertyCard';
 import FadeInView from '@/components/FadeInView';
 import PropertyMap from '@/components/PropertyMap';
+import WebFooter from '@/components/WebFooter';
 import { mockProperties } from '@/mocks/properties';
 import { Property, PropertyType, PropertyStatus } from '@/types/property';
 import { getColumns, getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
@@ -886,6 +887,9 @@ export default function SearchScreen() {
               />
             </View>
           </View>
+
+          {/* Desktop Pro Web Footer */}
+          <WebFooter />
         </ScrollView>
       ) : (
         /* ═══════════════════════════════════════════════════════════
