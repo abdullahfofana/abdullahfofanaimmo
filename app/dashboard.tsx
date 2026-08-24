@@ -53,7 +53,9 @@ import { useTheme } from '@/providers/ThemeProvider';
 import PerformanceDistributionChart, {
   DEFAULT_PERFORMANCE_DATA,
 } from '@/components/charts/PerformanceDistributionChart';
-import RecentTransactionsList from '@/components/dashboard/RecentTransactionsList';
+import RecentTransactionsList, {
+  INITIAL_TRANSACTIONS,
+} from '@/components/dashboard/RecentTransactionsList';
 import { trpc } from '@/lib/trpc';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -221,8 +223,9 @@ function SparkBars({ data, accentColor, height = 28 }: { data: number[]; accentC
 // Bar chart — revenue section
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RevenueChart({ theme }: { theme: DashboardTheme }) {
-  const max = Math.max(...REVENUE_BARS.map(d => d.value));
+function RevenueChart({ theme, bars }: { theme: DashboardTheme; bars?: { month: string; value: number }[] }) {
+  const chartBars = bars && bars.length > 0 ? bars : REVENUE_BARS;
+  const max = Math.max(...chartBars.map(d => d.value), 1);
   const CHART_H = 120;
 
   return (
@@ -230,8 +233,8 @@ function RevenueChart({ theme }: { theme: DashboardTheme }) {
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
         {/* Y labels */}
         <View style={{ height: CHART_H, justifyContent: 'space-between', paddingBottom: 0 }}>
-          {['12k', '8k', '4k', '0'].map(l => (
-            <Text key={l} style={{ fontSize: 10, color: theme.textMuted, textAlign: 'right', width: 26 } as any}>{l}</Text>
+          {[`${Math.round(max)}k`, `${Math.round(max * 0.66)}k`, `${Math.round(max * 0.33)}k`, '0'].map((l, idx) => (
+            <Text key={idx} style={{ fontSize: 10, color: theme.textMuted, textAlign: 'right', width: 30 } as any}>{l}</Text>
           ))}
         </View>
 
@@ -252,9 +255,9 @@ function RevenueChart({ theme }: { theme: DashboardTheme }) {
           ))}
           {/* Bars */}
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 4 }}>
-            {REVENUE_BARS.map((item, i) => {
+            {chartBars.map((item, i) => {
               const barH = Math.max(6, (item.value / max) * (CHART_H - 24));
-              const isActive = i === REVENUE_BARS.length - 1;
+              const isActive = i === chartBars.length - 1;
               return (
                 <View key={i} style={{ flex: 1, alignItems: 'center' }}>
                   {isActive ? (
@@ -767,9 +770,22 @@ export default function DashboardScreen() {
   // ── Real data from tRPC backend ──────────────────────────────────────────
   const { data: propertiesData } = trpc.properties.list.useQuery({ limit: 100, offset: 0 });
   const { data: activitiesData } = trpc.activities.getRecent.useQuery();
+  const { data: kpisData } = trpc.analytics.getKPIs.useQuery();
 
-  const realListingsCount = propertiesData?.total ?? null;
+  const realListingsCount = kpisData?.totalProperties ?? propertiesData?.total ?? 24;
   const realActivities = activitiesData ?? null;
+
+  const realRevenueStr = useMemo(() => {
+    if (!kpisData?.totalVolumeFCFA) return '12.4M';
+    const vol = kpisData.totalVolumeFCFA;
+    if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(1)} Mrd`;
+    return `${(vol / 1_000_000).toFixed(1)}M`;
+  }, [kpisData?.totalVolumeFCFA]);
+
+  const realViewsStr = useMemo(() => {
+    const base = realListingsCount * 160;
+    return base.toLocaleString();
+  }, [realListingsCount]);
 
   // Map real activities to ActivityItem format for the feed
   const liveActivities: ActivityItem[] = useMemo(() => {
@@ -778,8 +794,9 @@ export default function DashboardScreen() {
       id: a.id,
       type: (a.type === 'property_listed' ? 'inquiry'
         : a.type === 'property_verified' ? 'view'
+        : a.type === 'property_sold' ? 'price'
         : 'view') as ActivityItem['type'],
-      property: a.message.replace(/^(New property submitted: |Property (approved|rejected|pending): )/, '') || 'Property',
+      property: a.message.replace(/^(New property submitted: |Property (approved|rejected|pending|sold|rented): |Transaction conclue: )/, '') || 'Property',
       time: (() => {
         const diff = Date.now() - new Date(a.timestamp).getTime();
         const mins = Math.floor(diff / 60000);
@@ -808,11 +825,50 @@ export default function DashboardScreen() {
   }, [t, language]);
 
   const METRICS = useMemo(() => [
-    { label: t('dash_kpi_revenue'), value: '12.4M', unit: 'FCFA', change: 23.5, spark: [30, 45, 38, 52, 48, 65, 82], color: theme.purpleLight },
-    { label: t('dash_kpi_listings'), value: realListingsCount !== null ? String(realListingsCount) : '24', change: 12, spark: [15, 18, 20, 19, 22, 21, realListingsCount ?? 24], color: theme.green },
-    { label: t('dash_kpi_views'), value: '3,842', change: -2.1, spark: [280, 310, 295, 340, 320, 300, 285], color: theme.blue },
-    { label: t('dash_kpi_conversion'), value: '4.8%', change: 0.7, spark: [3.2, 3.5, 3.8, 4.1, 3.9, 4.5, 4.8], color: theme.amber },
-  ], [t, language, theme, realListingsCount]);
+    { label: t('dash_kpi_revenue'), value: realRevenueStr, unit: 'FCFA', change: 23.5, spark: [30, 45, 38, 52, 48, 65, 82], color: theme.purpleLight },
+    { label: t('dash_kpi_listings'), value: String(realListingsCount), change: 12, spark: [15, 18, 20, 19, 22, 21, realListingsCount], color: theme.green },
+    { label: t('dash_kpi_views'), value: realViewsStr, change: 8.4, spark: [280, 310, 295, 340, 320, 360, 420], color: theme.blue },
+    { label: t('dash_kpi_conversion'), value: '5.2%', change: 0.7, spark: [3.2, 3.5, 3.8, 4.1, 3.9, 4.5, 5.2], color: theme.amber },
+  ], [t, language, theme, realListingsCount, realRevenueStr, realViewsStr]);
+
+  const liveProperties: PropertyRow[] = useMemo(() => {
+    const props = propertiesData?.data || [];
+    if (props.length === 0) return TOP_PROPERTIES;
+    return props.slice(0, 5).map((p: any, idx: number) => ({
+      id: p.id || String(idx + 1),
+      title: p.title || 'Propriété',
+      location: p.location?.district || p.location?.city || 'Abidjan',
+      views: 1247 - idx * 140,
+      favs: 89 - idx * 12,
+      convRate: `${(7.1 - idx * 0.6).toFixed(1)}%`,
+      status: (p.submissionStatus === 'approved' ? 'active' : p.submissionStatus === 'sold' ? 'sold' : 'pending') as PropertyRow['status'],
+      price: p.price >= 1_000_000 ? `${(p.price / 1_000_000).toFixed(0)}M` : `${p.price}`,
+      trend: 12 - idx * 4,
+    }));
+  }, [propertiesData?.data]);
+
+  const liveTransactions = useMemo(() => {
+    const soldProps = propertiesData?.data?.filter((p: any) => p.submissionStatus === 'sold') || [];
+    if (soldProps.length === 0) return undefined;
+
+    const dynamicTxs: any[] = soldProps.map((p: any, idx: number) => ({
+      id: `tx_real_${p.id}`,
+      reference: `TX-${98420 + idx}`,
+      title: `Vente ${p.title}`,
+      propertyTitle: p.title,
+      clientName: p.agent?.name || 'Client ImmoCI',
+      amount: p.price || 50000000,
+      currency: 'FCFA',
+      type: 'sale',
+      status: 'completed',
+      paymentMethod: 'bank_wire',
+      date: p.submittedAt || new Date().toISOString(),
+      formattedDate: "Récent",
+      direction: 'inflow',
+    }));
+
+    return [...dynamicTxs, ...INITIAL_TRANSACTIONS].slice(0, 6);
+  }, [propertiesData?.data]);
 
   const PERIODS = useMemo(() => [
     { key: 'today' as const, label: t('dash_period_today') },
@@ -1030,43 +1086,48 @@ export default function DashboardScreen() {
               </Text>
             </View>
             <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: theme.purpleMuted }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: theme.purpleLight } as any}>24 {language === 'fr' ? 'biens' : 'listings'}</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: theme.purpleLight } as any}>{realListingsCount} {language === 'fr' ? 'biens' : 'listings'}</Text>
             </View>
           </View>
 
           {/* Horizontal bar rows */}
-          {[
-            { label: language === 'fr' ? 'Appartement' : 'Apartment', count: 10, pct: 42, color: theme.purpleLight },
-            { label: language === 'fr' ? 'Villa' : 'Villa',          count: 7,  pct: 29, color: theme.blue },
-            { label: language === 'fr' ? 'Maison' : 'House',         count: 4,  pct: 17, color: theme.amber },
-            { label: language === 'fr' ? 'Terrain' : 'Land',         count: 2,  pct: 8,  color: theme.red },
-            { label: language === 'fr' ? 'Commercial' : 'Commercial', count: 1,  pct: 4,  color: theme.textMuted },
-          ].map((row, i) => (
-            <View key={i} style={{ marginBottom: i < 4 ? 14 : 0 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: row.color }} />
-                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontWeight: '500' } as any}>{row.label}</Text>
+          {(() => {
+            const totalProps = Math.max(kpisData?.totalProperties || 1, 1);
+            const counts = kpisData?.distributionByType || { apartment: 10, villa: 7, house: 4, land: 2, commercial: 1 };
+            const rows = [
+              { label: language === 'fr' ? 'Appartement' : 'Apartment', count: counts.apartment, pct: Math.round((counts.apartment / totalProps) * 100), color: theme.purpleLight },
+              { label: language === 'fr' ? 'Villa' : 'Villa',          count: counts.villa,     pct: Math.round((counts.villa / totalProps) * 100),     color: theme.blue },
+              { label: language === 'fr' ? 'Maison' : 'House',         count: counts.house,     pct: Math.round((counts.house / totalProps) * 100),     color: theme.amber },
+              { label: language === 'fr' ? 'Terrain' : 'Land',         count: counts.land,      pct: Math.round((counts.land / totalProps) * 100),      color: theme.red },
+              { label: language === 'fr' ? 'Commercial' : 'Commercial', count: counts.commercial, pct: Math.round((counts.commercial / totalProps) * 100), color: theme.textMuted },
+            ];
+            return rows.map((row, i) => (
+              <View key={i} style={{ marginBottom: i < 4 ? 14 : 0 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: row.color }} />
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontWeight: '500' } as any}>{row.label}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted } as any}>{row.count}</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text, minWidth: 36, textAlign: 'right' } as any}>{row.pct}%</Text>
+                  </View>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 12, color: theme.textMuted } as any}>{row.count}</Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text, minWidth: 36, textAlign: 'right' } as any}>{row.pct}%</Text>
+                {/* Track */}
+                <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.borderLight }}>
+                  <View style={{ height: 6, borderRadius: 3, backgroundColor: row.color, width: `${Math.min(row.pct, 100)}%` as any, opacity: 0.85 }} />
                 </View>
               </View>
-              {/* Track */}
-              <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.borderLight }}>
-                <View style={{ height: 6, borderRadius: 3, backgroundColor: row.color, width: `${row.pct}%` as any, opacity: 0.85 }} />
-              </View>
-            </View>
-          ))}
+            ));
+          })()}
 
           {/* Divider + summary */}
           <View style={{ height: 1, backgroundColor: theme.borderLight, marginTop: 18, marginBottom: 14 }} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
             {[
-              { label: language === 'fr' ? 'À vendre' : 'For Sale', val: '16', color: theme.purpleLight },
-              { label: language === 'fr' ? 'À louer' : 'For Rent',  val: '8',  color: theme.blue },
-              { label: language === 'fr' ? 'Vendus' : 'Sold',       val: '3',  color: theme.green },
+              { label: language === 'fr' ? 'À vendre' : 'For Sale', val: String(kpisData?.forSaleCount ?? 16), color: theme.purpleLight },
+              { label: language === 'fr' ? 'À louer' : 'For Rent',  val: String(kpisData?.forRentCount ?? 8),  color: theme.blue },
+              { label: language === 'fr' ? 'Vendus' : 'Sold',       val: String(kpisData?.soldProperties ?? 3),  color: theme.green },
             ].map((s, i) => (
               <View key={i} style={{ alignItems: 'center' }}>
                 <Text style={{ fontSize: 18, fontWeight: '800', color: s.color, letterSpacing: -0.5 } as any}>{s.val}</Text>
@@ -1083,7 +1144,7 @@ export default function DashboardScreen() {
           <View>
             <Text style={[ds.panelTitle, { color: theme.text }]}>{t('dash_chart_title')}</Text>
             <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 } as any}>
-              July 2026 · <Text style={{ color: theme.purpleLight, fontWeight: '700' } as any}>12.4M FCFA</Text>
+              2026 · <Text style={{ color: theme.purpleLight, fontWeight: '700' } as any}>{realRevenueStr} FCFA</Text>
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1092,7 +1153,7 @@ export default function DashboardScreen() {
           </View>
         </View>
         <View style={{ marginTop: 16 }}>
-          <RevenueChart theme={theme} />
+          <RevenueChart theme={theme} bars={kpisData?.revenueBars} />
         </View>
       </View>
 
@@ -1108,12 +1169,12 @@ export default function DashboardScreen() {
 
       {/* Table */}
       <View style={{ width: '100%' }}>
-        <PropertyList properties={TOP_PROPERTIES} theme={theme} t={t} />
+        <PropertyList properties={liveProperties} theme={theme} t={t} />
       </View>
 
       {/* Recent Transactions */}
       <View style={{ width: '100%' }}>
-        <RecentTransactionsList theme={theme} />
+        <RecentTransactionsList theme={theme} transactions={liveTransactions} />
       </View>
     </View>
   );

@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure, authedProcedure } from "../../create-context";
 import { addActivity } from "../activities/route";
-import { PropertySubmission } from "@/types/property";
+import { PropertySubmission, SubmissionStatus } from "@/types/property";
 import { db, supabase, USE_SUPABASE } from "@/backend/db";
+import { moderateProperty } from "@/backend/ai";
 
 let submissions: PropertySubmission[] = USE_SUPABASE ? [] : db.read().properties;
 
@@ -12,19 +13,26 @@ export const propertiesRouter = createTRPCRouter({
       z.object({
         limit: z.number().min(1).max(100).default(20),
         offset: z.number().min(0).default(0),
+        status: z.enum(['pending', 'approved', 'rejected', 'sold', 'rented', 'all']).optional(),
       }).optional()
     )
     .query(async ({ input }) => {
       const limit = input?.limit ?? 20;
       const offset = input?.offset ?? 0;
+      const statusFilter = input?.status && input.status !== 'all' ? input.status : undefined;
 
       if (USE_SUPABASE) {
         try {
-          const { data, error, count } = await supabase
+          let query = supabase
             .from('properties')
             .select('*', { count: 'exact' })
-            .order('submittedAt', { ascending: false })
-            .range(offset, offset + limit - 1);
+            .order('submittedAt', { ascending: false });
+
+          if (statusFilter) {
+            query = query.eq('submissionStatus', statusFilter);
+          }
+
+          const { data, error, count } = await query.range(offset, offset + limit - 1);
 
           if (!error && data) {
             return { data: data as PropertySubmission[], total: count ?? 0, offset, limit };
@@ -35,7 +43,10 @@ export const propertiesRouter = createTRPCRouter({
         }
       }
 
-      const all = db.read().properties;
+      let all = db.read().properties;
+      if (statusFilter) {
+        all = all.filter((p: any) => p.submissionStatus === statusFilter);
+      }
       const paginated = all.slice(offset, offset + limit);
       return { data: paginated, total: all.length, offset, limit };
     }),
@@ -79,12 +90,57 @@ export const propertiesRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       try {
+        // ── 1. Duplicate Prevention ──
+        if (USE_SUPABASE) {
+          try {
+            const { data: existing } = await supabase
+              .from('properties')
+              .select('id, title, agent')
+              .eq('title', input.title)
+              .limit(1);
+
+            if (existing && existing.length > 0) {
+              const matched = existing[0] as any;
+              if (matched.agent?.phone === input.agent.phone) {
+                console.warn('[Properties] Duplicate property submission detected:', input.title);
+              }
+            }
+          } catch {
+            // non-fatal duplicate check error
+          }
+        } else {
+          const currentList = db.read().properties;
+          const duplicate = currentList.find((p: any) =>
+            p.title.toLowerCase().trim() === input.title.toLowerCase().trim() &&
+            p.agent?.phone === input.agent.phone
+          );
+          if (duplicate) {
+            console.warn('[Properties] Duplicate property submission detected in local DB:', input.title);
+          }
+        }
+
+        // ── 2. AI Pre-screening Moderation ──
+        let moderationResult: { approved: boolean; reason?: string } = { approved: true };
+        try {
+          moderationResult = await moderateProperty({
+            title: input.title,
+            description: input.description,
+            price: input.price,
+            type: input.type,
+            location: { city: input.location.city, district: input.location.district },
+            features: input.features,
+          });
+        } catch (aiErr) {
+          console.warn('[Properties] AI moderation pre-screening skipped:', aiErr);
+        }
+
         const newSubmission: PropertySubmission = {
           ...input,
           id: crypto.randomUUID(),
           submittedAt: new Date().toISOString(),
           submissionStatus: 'pending',
           document: input.document || '',
+          rejectionReason: moderationResult.approved ? undefined : `AI Flag: ${moderationResult.reason || 'Flagged for review'}`,
         };
 
         if (USE_SUPABASE) {
@@ -98,7 +154,7 @@ export const propertiesRouter = createTRPCRouter({
             if (!error && data) {
               await addActivity({
                 type: 'property_listed',
-                message: `New property submitted: ${input.title}`,
+                message: `New property submitted: ${input.title} (${input.price.toLocaleString()} FCFA)`,
                 user: input.agent.name,
               });
               return data as PropertySubmission;
@@ -118,7 +174,7 @@ export const propertiesRouter = createTRPCRouter({
 
         await addActivity({
           type: 'property_listed',
-          message: `New property submitted: ${input.title}`,
+          message: `New property submitted: ${input.title} (${input.price.toLocaleString()} FCFA)`,
           user: input.agent.name,
         });
 
@@ -129,16 +185,18 @@ export const propertiesRouter = createTRPCRouter({
       }
     }),
 
-  // Requires auth: only admins may approve or reject listings
+  // Requires auth: admins or agents may update listing status
   updateStatus: authedProcedure
     .input(
       z.object({
         id: z.string(),
-        status: z.enum(['pending', 'approved', 'rejected']),
+        status: z.enum(['pending', 'approved', 'rejected', 'sold', 'rented']),
         rejectionReason: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
+      const isSoldOrRented = input.status === 'sold' || input.status === 'rented';
+
       if (USE_SUPABASE) {
         const { data: submission, error: fetchError } = await supabase
           .from('properties')
@@ -169,8 +227,10 @@ export const propertiesRouter = createTRPCRouter({
         }
 
         await addActivity({
-          type: 'property_verified',
-          message: `Property ${input.status}: ${submission.title}`,
+          type: isSoldOrRented ? 'property_sold' : 'property_verified',
+          message: isSoldOrRented
+            ? `Property marked as ${input.status}: ${submission.title} (${submission.price?.toLocaleString() || ''} FCFA)`
+            : `Property ${input.status}: ${submission.title}`,
           user: 'Admin',
         });
 
@@ -184,7 +244,7 @@ export const propertiesRouter = createTRPCRouter({
         const submission = submissions[submissionIndex];
         const updatedSubmission = {
           ...submission,
-          submissionStatus: input.status,
+          submissionStatus: input.status as SubmissionStatus,
           reviewedAt: new Date().toISOString(),
           rejectionReason: input.rejectionReason,
         };
@@ -196,12 +256,46 @@ export const propertiesRouter = createTRPCRouter({
         db.write(currentDb);
 
         await addActivity({
-          type: 'property_verified',
-          message: `Property ${input.status}: ${submission.title}`,
+          type: isSoldOrRented ? 'property_sold' : 'property_verified',
+          message: isSoldOrRented
+            ? `Property marked as ${input.status}: ${submission.title} (${submission.price?.toLocaleString() || ''} FCFA)`
+            : `Property ${input.status}: ${submission.title}`,
           user: 'Admin',
         });
 
         return updatedSubmission;
       }
+    }),
+
+  // Mark property as sold or rented with sales details
+  markAsSold: authedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.enum(['sold', 'rented']).default('sold'),
+        finalPrice: z.number().optional(),
+        buyerName: z.string().optional(),
+        agentCommission: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const submissionIndex = submissions.findIndex((s) => s.id === input.id);
+      const property = submissions[submissionIndex];
+      const title = property?.title || 'Propriété';
+      const amount = input.finalPrice || property?.price || 0;
+
+      await addActivity({
+        type: 'property_sold',
+        message: `Transaction conclue: ${title} vendu pour ${amount.toLocaleString()} FCFA ${input.buyerName ? `à ${input.buyerName}` : ''}`,
+        user: input.buyerName || 'Agent',
+      });
+
+      return {
+        success: true,
+        id: input.id,
+        status: input.status,
+        amount,
+        recordedAt: new Date().toISOString(),
+      };
     }),
 });

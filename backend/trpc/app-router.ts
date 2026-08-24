@@ -8,6 +8,7 @@ import { usersRouter } from "./routes/users/route";
 import { searchRouter } from "./routes/search/route";
 import { aiRouter } from "./routes/ai/route";
 import { agentsRouter } from "./routes/agents/route";
+import { analyticsRouter } from "./routes/analytics/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   search: searchRouter,
   ai: aiRouter,
   agents: agentsRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

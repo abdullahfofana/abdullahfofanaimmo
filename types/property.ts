@@ -1,7 +1,7 @@
 export type PropertyType = 'apartment' | 'house' | 'villa' | 'land' | 'commercial';
 export type PropertyStatus = 'sale' | 'rent';
 export type UserRole = 'admin' | 'agent' | 'landlord' | 'renter';
-export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected' | 'sold' | 'rented';
 export type PaymentMethod = 'orange_money' | 'mtn_money' | 'moov' | 'wave';
 
 export interface Property {

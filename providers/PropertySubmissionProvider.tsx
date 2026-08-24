@@ -322,6 +322,13 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
   const getRejectedSubmissions = useCallback(() =>
     submissions.filter(s => s.submissionStatus === 'rejected'), [submissions]);
 
+  const getSoldSubmissions = useCallback(() =>
+    submissions.filter(s => s.submissionStatus === 'sold'), [submissions]);
+
+  const markAsSold = useCallback(async (id: string, finalPrice?: number, buyerName?: string) => {
+    return updateSubmissionStatus(id, 'sold', buyerName ? `Sold to ${buyerName}` : undefined);
+  }, [updateSubmissionStatus]);
+
   const refreshSubmissions = useCallback(() => {
     loadAttempted.current = false;
     loadSubmissions();
@@ -332,10 +339,12 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
     isLoading,
     addSubmission,
     updateSubmissionStatus,
+    markAsSold,
     getPendingSubmissions,
     getApprovedSubmissions,
     getRejectedSubmissions,
+    getSoldSubmissions,
     refreshSubmissions,
-  }), [submissions, isLoading, addSubmission, updateSubmissionStatus,
-    getPendingSubmissions, getApprovedSubmissions, getRejectedSubmissions, refreshSubmissions]);
+  }), [submissions, isLoading, addSubmission, updateSubmissionStatus, markAsSold,
+    getPendingSubmissions, getApprovedSubmissions, getRejectedSubmissions, getSoldSubmissions, refreshSubmissions]);
 });
