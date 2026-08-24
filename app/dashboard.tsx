@@ -1370,13 +1370,31 @@ export default function DashboardScreen() {
   // ── Messages & Live Chat Tab
   const dashScrollRef = useRef<ScrollView>(null);
 
+  // Auto-select the conversation with the most unread messages when messages change
   useEffect(() => {
-    if (activeTab === 'messages') {
-      setTimeout(() => {
-        dashScrollRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+    if (activeTab !== 'messages') return;
+
+    // If no conversation is selected, auto-pick the one with unread messages (top of sorted list)
+    if (!selectedConvId && conversations.length > 0) {
+      const withUnread = conversations.find(c => c.unreadCountAgent > 0);
+      setSelectedConvId((withUnread || conversations[0]).id);
+      return;
     }
-  }, [activeTab, selectedConvId, messages]);
+
+    // If a conversation is selected but it got a new message, scroll to bottom
+    setTimeout(() => {
+      dashScrollRef.current?.scrollToEnd({ animated: true });
+    }, 80);
+  }, [activeTab, messages, conversations]);
+
+  // When a new conversation arrives (buyer sends first message), auto-select it
+  useEffect(() => {
+    if (activeTab !== 'messages') return;
+    const withUnread = conversations.find(c => c.unreadCountAgent > 0);
+    if (withUnread && withUnread.id !== selectedConvId) {
+      setSelectedConvId(withUnread.id);
+    }
+  }, [conversations.map(c => c.unreadCountAgent).join(',')]);
 
   const messagesView = () => {
     const activeConv = conversations.find(c => c.id === selectedConvId) || conversations[0];

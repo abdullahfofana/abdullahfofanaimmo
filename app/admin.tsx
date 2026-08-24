@@ -48,7 +48,7 @@ import {
   RefreshCw,
   LogOut,
 } from 'lucide-react-native';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -71,6 +71,7 @@ import type { PropertySubmission } from '@/types/property';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { useChat } from '@/providers/ChatProvider';
 
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminIntegrations from '@/components/admin/AdminIntegrations';
@@ -271,6 +272,7 @@ interface SupportTicket {
   status: 'Open' | 'In Progress' | 'Resolved';
   priority: 'High' | 'Medium' | 'Low';
   timestamp: string;
+  conversationId?: string;
   messages: { sender: 'user' | 'admin' | 'ai'; text: string; time: string }[];
 }
 
@@ -448,12 +450,96 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     submission: PropertySubmission;
   } | null>(null);
 
-  // Helpdesk State
-  const [tickets, setTickets] = useState<SupportTicket[]>(mockTickets);
-  const [selectedTicketId, setSelectedTicketId] = useState<string>('TK-1082');
+  // ── Real-Time Live Chat & Helpdesk State ────────────────────────────────
+  const {
+    conversations: chatConversations,
+    messages: chatMessagesMap,
+    sendMessage: sendChatMessage,
+    markAsRead: markChatAsRead,
+  } = useChat();
+
+  const [mockTicketsState, setMockTicketsState] = useState<SupportTicket[]>(mockTickets);
+  const [selectedTicketId, setSelectedTicketId] = useState<string>('conv-support-1');
   const [ticketFilter, setTicketFilter] = useState<'All' | 'Open' | 'In Progress' | 'Resolved'>('All');
   const [replyText, setReplyText] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const supportMessagesScrollRef = useRef<ScrollView>(null);
+
+  // Dynamic tickets merging real-time chat conversations with administrative tickets
+  const tickets: SupportTicket[] = useMemo(() => {
+    const liveChatTickets: SupportTicket[] = chatConversations.map((conv) => {
+      const isSupport = conv.propertyId === 'support';
+      const convMsgs = chatMessagesMap[conv.id] || [];
+
+      const formattedMsgs = convMsgs.map((m) => {
+        const isAdmin = m.senderRole === 'agent' || m.senderRole === 'admin';
+        return {
+          sender: isAdmin ? ('admin' as const) : ('user' as const),
+          text: m.message,
+          time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+      });
+
+      const status: 'Open' | 'In Progress' | 'Resolved' =
+        conv.status === 'archived'
+          ? 'Resolved'
+          : conv.unreadCountAgent > 0
+          ? 'Open'
+          : 'In Progress';
+
+      const dept: DepartmentType = isSupport
+        ? 'Legal & Compliance'
+        : 'Sales & Commercial';
+
+      const subject = isSupport
+        ? (language === 'fr' ? 'Demande d’assistance directe (Support 24/7)' : 'Direct User Support Inquiry')
+        : conv.property
+        ? (language === 'fr' ? `Demande : ${conv.property.title}` : `Inquiry: ${conv.property.title}`)
+        : (language === 'fr' ? 'Demande client' : 'Customer inquiry');
+
+      const diffMs = Date.now() - new Date(conv.lastMessageAt).getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const timeStr = diffMins < 1
+        ? (language === 'fr' ? 'À l’instant' : 'Just now')
+        : diffMins < 60
+        ? `${diffMins} min ago`
+        : `${Math.floor(diffMins / 60)}h ago`;
+
+      return {
+        id: conv.id,
+        user: conv.buyer?.name || (isSupport ? 'Acheteur Vérifié' : 'Client ImmoCI'),
+        email: conv.buyer?.phone || (isSupport ? 'support-user@immoci.ci' : 'client@immoci.ci'),
+        subject,
+        department: dept,
+        status,
+        priority: conv.unreadCountAgent > 0 ? ('High' as const) : ('Medium' as const),
+        timestamp: timeStr,
+        conversationId: conv.id,
+        messages: formattedMsgs,
+      };
+    });
+
+    return [...liveChatTickets, ...mockTicketsState];
+  }, [chatConversations, chatMessagesMap, mockTicketsState, language]);
+
+  // Auto-scroll messages in Support Desk when messages update
+  useEffect(() => {
+    if (activeSection === 'support') {
+      setTimeout(() => {
+        supportMessagesScrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [activeSection, selectedTicketId, chatMessagesMap]);
+
+  // Auto-select conversation with unread messages
+  useEffect(() => {
+    if (activeSection === 'support' && chatConversations.length > 0) {
+      const withUnread = chatConversations.find((c) => c.unreadCountAgent > 0);
+      if (withUnread && withUnread.id !== selectedTicketId) {
+        setSelectedTicketId(withUnread.id);
+      }
+    }
+  }, [chatConversations, activeSection]);
 
   const currentRoleDef = useMemo(() => {
     return ROLES.find((r) => r.id === activeRole) || ROLES[0];
@@ -527,38 +613,50 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     showToast(`${language === 'fr' ? 'Mode changé :' : 'Access switched:'} ${role}`);
   };
 
-  const handleSendTicketReply = () => {
+  const handleSendTicketReply = async () => {
     if (!replyText.trim() || !selectedTicketId) return;
-
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id === selectedTicketId) {
-          return {
-            ...t,
-            messages: [
-              ...t.messages,
-              {
-                sender: 'admin',
-                text: replyText,
-                time: 'Just now',
-              },
-            ],
-          };
-        }
-        return t;
-      })
-    );
+    const textToSend = replyText.trim();
     setReplyText('');
+
+    const activeT = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
+    if (activeT?.conversationId) {
+      // Live ChatProvider message — broadcasts across tabs in real-time
+      await sendChatMessage(activeT.conversationId, textToSend);
+    } else if (activeT) {
+      // Mock ticket fallback
+      setMockTicketsState((prev) =>
+        prev.map((t) => {
+          if (t.id === activeT.id) {
+            return {
+              ...t,
+              messages: [
+                ...t.messages,
+                {
+                  sender: 'admin',
+                  text: textToSend,
+                  time: 'Just now',
+                },
+              ],
+            };
+          }
+          return t;
+        })
+      );
+    }
+
+    setTimeout(() => {
+      supportMessagesScrollRef.current?.scrollToEnd({ animated: true });
+    }, 80);
     showToast(language === 'fr' ? 'Réponse envoyée au client' : 'Reply sent to customer');
   };
 
   const handleAIGenerateReply = () => {
-    const activeTicket = tickets.find((t) => t.id === selectedTicketId);
+    const activeTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
     if (!activeTicket) return;
 
     const draft =
       language === 'fr'
-        ? `Bonjour ${activeTicket.user}, notre service ${activeTicket.department} a bien pris en charge votre demande concernant "${activeTicket.subject}". Votre dossier est en cours de validation prioritaire.`
+        ? `Bonjour ${activeTicket.user}, notre service ${activeTicket.department} a bien pris en charge votre demande concernant "${activeTicket.subject}". Votre dossier est en cours de traitement prioritaire.`
         : `Hello ${activeTicket.user}, our ${activeTicket.department} team has reviewed your request regarding "${activeTicket.subject}". We have prioritized your case for immediate resolution.`;
 
     setReplyText(draft);
@@ -1297,7 +1395,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       borderBottomColor: stitchTheme.cardBorder,
                     },
                   ]}
-                  onPress={() => setSelectedTicketId(t.id)}
+                  onPress={() => {
+                    setSelectedTicketId(t.id);
+                    if (t.conversationId) {
+                      markChatAsRead(t.conversationId);
+                    }
+                  }}
                 >
                   <View style={styles.ticketCardHeader}>
                     <Text style={[styles.ticketUser, { color: stitchTheme.textPrimary }]}>{t.user}</Text>
@@ -1360,9 +1463,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   ]}
                   onPress={() => {
                     const nextStatus = activeTicket.status === 'Resolved' ? 'Open' : 'Resolved';
-                    setTickets((prev) =>
-                      prev.map((t) => (t.id === activeTicket.id ? { ...t, status: nextStatus } : t))
-                    );
+                    if (!activeTicket.conversationId) {
+                      setMockTicketsState((prev) =>
+                        prev.map((t) => (t.id === activeTicket.id ? { ...t, status: nextStatus } : t))
+                      );
+                    }
                     showToast(
                       nextStatus === 'Resolved'
                         ? language === 'fr'
@@ -1388,7 +1493,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </View>
 
               {/* Messages Area */}
-              <ScrollView style={styles.messagesScroll}>
+              <ScrollView
+                ref={supportMessagesScrollRef}
+                style={styles.messagesScroll}
+                onContentSizeChange={() => {
+                  supportMessagesScrollRef.current?.scrollToEnd({ animated: true });
+                }}
+              >
                 {activeTicket.messages.map((msg, i) => {
                   const isAdmin = msg.sender === 'admin';
                   return (

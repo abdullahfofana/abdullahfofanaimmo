@@ -533,18 +533,20 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   };
 
   const startSupportConversation = async (): Promise<ChatConversation> => {
+    // Always reuse existing support conversation (check any support propertyId)
     const existing = conversations.find((c) => c.propertyId === 'support');
     if (existing) {
       setActiveConversation(existing);
       setIsChatOpen(true);
-      markAsRead(existing.id);
+      // Do NOT call markAsRead here so unread badge stays for agent
       return existing;
     }
 
     const currentBuyerId = user?.id || 'buyer-live';
     const currentBuyerName = user?.name || 'Acheteur';
 
-    const supportConvId = `conv-support-${Date.now()}`;
+    // Use stable ID so dashboard and chat modal always sync on the same conversation
+    const supportConvId = 'conv-support-1';
     const newSupportConv: ChatConversation = {
       id: supportConvId,
       propertyId: 'support',
@@ -561,7 +563,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop',
         phone: '+225 07 00 00 00 00',
       },
-      lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
+      lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd\u2019hui dans votre recherche immobili\u00e8re ?',
       lastMessageAt: new Date().toISOString(),
       unreadCountBuyer: 0,
       unreadCountAgent: 0,
@@ -576,13 +578,13 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       senderId: 'support-team',
       senderName: 'Support Client ImmoCI',
       senderRole: 'support',
-      message: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
+      message: 'Bonjour ! Comment pouvons-nous vous aider aujourd\u2019hui dans votre recherche immobili\u00e8re ?',
       timestamp: new Date().toISOString(),
       isRead: true,
       status: 'delivered',
     };
 
-    const nextConvs = sortConversations([newSupportConv, ...conversations]);
+    const nextConvs = sortConversations([newSupportConv, ...conversations.filter(c => c.propertyId !== 'support')]);
     const nextMsgs = { ...messages, [supportConvId]: [initialSupportMsg] };
 
     setConversations(nextConvs);
