@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Heart, MapPin, Bed, Bath, Maximize2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
+  Animated,
   Image,
   Platform,
   StyleSheet,
@@ -29,7 +30,7 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [isHovered, setIsHovered] = useState(false);
-  const favScale = React.useRef(new (require('react-native').Animated.Value)(1)).current;
+  const favScale = React.useRef(new Animated.Value(1)).current;
 
   const formatPrice = (price: number, currency: string) => {
     if (currency === 'FCFA') {
@@ -43,7 +44,6 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
     }
-    const { Animated } = require('react-native');
     Animated.sequence([
       Animated.timing(favScale, { toValue: 1.28, duration: 120, useNativeDriver: true }),
       Animated.spring(favScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }),
@@ -105,21 +105,23 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
         </View>
 
         {/* ── FAVORITE BUTTON ───────────────────────────────────── */}
-        <TouchableOpacity
-          // @ts-ignore
-          className="immoci-favorite-btn"
-          style={[styles.favoriteBtn, favorite && styles.favoriteBtnActive]}
-          onPress={handleFavorite}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          activeOpacity={0.8}
-        >
-          <Heart
-            size={16}
-            color={favorite ? '#EF4444' : '#1E293B'}
-            fill={favorite ? '#EF4444' : 'transparent'}
-            strokeWidth={2.2}
-          />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: favScale }] }}>
+          <TouchableOpacity
+            // @ts-ignore
+            className="immoci-favorite-btn"
+            style={[styles.favoriteBtn, favorite && styles.favoriteBtnActive]}
+            onPress={handleFavorite}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.8}
+          >
+            <Heart
+              size={16}
+              color={favorite ? '#EF4444' : '#1E293B'}
+              fill={favorite ? '#EF4444' : 'transparent'}
+              strokeWidth={2.2}
+            />
+          </TouchableOpacity>
+        </Animated.View>
 
         {/* ── BOTTOM PHOTO COUNT ────────────────────────────────── */}
         <View style={styles.photoCountBadge}>

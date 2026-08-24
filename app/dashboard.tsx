@@ -54,6 +54,7 @@ import PerformanceDistributionChart, {
   DEFAULT_PERFORMANCE_DATA,
 } from '@/components/charts/PerformanceDistributionChart';
 import RecentTransactionsList from '@/components/dashboard/RecentTransactionsList';
+import { trpc } from '@/lib/trpc';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -763,6 +764,34 @@ export default function DashboardScreen() {
   const [activeTab, setActiveTab] = useState<DashTab>('overview');
   const [period, setPeriod] = useState<'today' | '7d' | '30d' | '90d'>('30d');
 
+  // ── Real data from tRPC backend ──────────────────────────────────────────
+  const { data: propertiesData } = trpc.properties.list.useQuery({ limit: 100, offset: 0 });
+  const { data: activitiesData } = trpc.activities.getRecent.useQuery();
+
+  const realListingsCount = propertiesData?.total ?? null;
+  const realActivities = activitiesData ?? null;
+
+  // Map real activities to ActivityItem format for the feed
+  const liveActivities: ActivityItem[] = useMemo(() => {
+    if (!realActivities || realActivities.length === 0) return ACTIVITIES;
+    return realActivities.slice(0, 5).map((a, i) => ({
+      id: a.id,
+      type: (a.type === 'property_listed' ? 'inquiry'
+        : a.type === 'property_verified' ? 'view'
+        : 'view') as ActivityItem['type'],
+      property: a.message.replace(/^(New property submitted: |Property (approved|rejected|pending): )/, '') || 'Property',
+      time: (() => {
+        const diff = Date.now() - new Date(a.timestamp).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 60) return `${mins} min ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs} hr ago`;
+        return `${Math.floor(hrs / 24)} days ago`;
+      })(),
+      avatar: (a.user || 'U').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase(),
+    }));
+  }, [realActivities]);
+
   const theme = isDark ? dashboardDark : dashboardLight;
 
   useEffect(() => {
@@ -780,10 +809,10 @@ export default function DashboardScreen() {
 
   const METRICS = useMemo(() => [
     { label: t('dash_kpi_revenue'), value: '12.4M', unit: 'FCFA', change: 23.5, spark: [30, 45, 38, 52, 48, 65, 82], color: theme.purpleLight },
-    { label: t('dash_kpi_listings'), value: '24', change: 12, spark: [15, 18, 20, 19, 22, 21, 24], color: theme.green },
+    { label: t('dash_kpi_listings'), value: realListingsCount !== null ? String(realListingsCount) : '24', change: 12, spark: [15, 18, 20, 19, 22, 21, realListingsCount ?? 24], color: theme.green },
     { label: t('dash_kpi_views'), value: '3,842', change: -2.1, spark: [280, 310, 295, 340, 320, 300, 285], color: theme.blue },
     { label: t('dash_kpi_conversion'), value: '4.8%', change: 0.7, spark: [3.2, 3.5, 3.8, 4.1, 3.9, 4.5, 4.8], color: theme.amber },
-  ], [t, language, theme]);
+  ], [t, language, theme, realListingsCount]);
 
   const PERIODS = useMemo(() => [
     { key: 'today' as const, label: t('dash_period_today') },
@@ -1073,7 +1102,7 @@ export default function DashboardScreen() {
           <AIPanel theme={theme} t={t} />
         </View>
         <View style={{ flex: isDesktop ? 1 : undefined }}>
-          <ActivityPanel activities={ACTIVITIES} theme={theme} t={t} />
+          <ActivityPanel activities={liveActivities} theme={theme} t={t} />
         </View>
       </View>
 

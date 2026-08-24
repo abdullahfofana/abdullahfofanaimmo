@@ -45,12 +45,13 @@ import BuyerDistanceWidget from '@/components/BuyerDistanceWidget';
 import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
 import { calculateAreaPriceStats } from '@/utils/priceStats';
 import { Platform } from 'react-native';
+import { useFavorites } from '@/providers/FavoritesProvider';
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
-  const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const { isFavorite: isFavoriteCheck, toggleFavorite } = useFavorites();
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const { isDesktop } = useResponsive();
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
@@ -200,12 +201,12 @@ export default function PropertyDetailScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.headerButton}
-                    onPress={() => setIsFavorite(!isFavorite)}
+                    onPress={() => property && toggleFavorite(property.id)}
                   >
                     <Heart
                       size={22}
-                      color={isFavorite ? Colors.error : Colors.text}
-                      fill={isFavorite ? Colors.error : 'transparent'}
+                      color={property && isFavoriteCheck(property.id) ? Colors.error : Colors.text}
+                      fill={property && isFavoriteCheck(property.id) ? Colors.error : 'transparent'}
                     />
                   </TouchableOpacity>
                 </View>
