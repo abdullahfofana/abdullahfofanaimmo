@@ -83,6 +83,7 @@ export default function SearchScreen() {
   const { getApprovedSubmissions } = usePropertySubmissions();
   const viewFadeAnim = useRef(new Animated.Value(1)).current;
   const floatingButtonScale = useRef(new Animated.Value(1)).current;
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<Filters>({
     type: (params.type as PropertyType) || 'all',
@@ -446,6 +447,8 @@ export default function SearchScreen() {
     const newFilters = { ...filters, status } as Filters;
     setFilters(newFilters);
     applyFilters(searchQuery, newFilters);
+    // Sync with router parameters so WebNavbar reflects the active tab immediately
+    router.setParams({ status: status === 'all' ? undefined : status });
   };
 
   const renderItem = ({ item }: { item: Property }) => (
@@ -472,12 +475,18 @@ export default function SearchScreen() {
             style={[
               styles.tabItem,
               activeStatus === 'all' && styles.tabItemActive,
+              activeStatus !== 'all' && hoveredTab === 'all' && styles.tabItemHovered,
             ]}
             activeOpacity={0.8}
+            // @ts-ignore
+            onMouseEnter={() => setHoveredTab('all')}
+            // @ts-ignore
+            onMouseLeave={() => setHoveredTab(null)}
           >
             <Text style={[
               styles.tabText,
               activeStatus === 'all' && styles.tabTextActive,
+              activeStatus !== 'all' && hoveredTab === 'all' && styles.tabTextHovered,
             ]}>
               {t('search_all') || 'Tous'}
             </Text>
@@ -488,14 +497,20 @@ export default function SearchScreen() {
             style={[
               styles.tabItem,
               activeStatus === 'sale' && styles.tabItemActive,
+              activeStatus !== 'sale' && hoveredTab === 'sale' && styles.tabItemHovered,
             ]}
             activeOpacity={0.8}
+            // @ts-ignore
+            onMouseEnter={() => setHoveredTab('sale')}
+            // @ts-ignore
+            onMouseLeave={() => setHoveredTab(null)}
           >
             <Text style={[
               styles.tabText,
               activeStatus === 'sale' && styles.tabTextActive,
+              activeStatus !== 'sale' && hoveredTab === 'sale' && styles.tabTextHovered,
             ]}>
-              {t('search_buy')}
+              {t('search_buy') || 'Acheter'}
             </Text>
           </TouchableOpacity>
 
@@ -504,14 +519,20 @@ export default function SearchScreen() {
             style={[
               styles.tabItem,
               activeStatus === 'rent' && styles.tabItemActive,
+              activeStatus !== 'rent' && hoveredTab === 'rent' && styles.tabItemHovered,
             ]}
             activeOpacity={0.8}
+            // @ts-ignore
+            onMouseEnter={() => setHoveredTab('rent')}
+            // @ts-ignore
+            onMouseLeave={() => setHoveredTab(null)}
           >
             <Text style={[
               styles.tabText,
               activeStatus === 'rent' && styles.tabTextActive,
+              activeStatus !== 'rent' && hoveredTab === 'rent' && styles.tabTextHovered,
             ]}>
-              {t('search_rent')}
+              {t('search_rent') || 'Louer'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1362,6 +1383,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  tabItemHovered: {
+    backgroundColor: 'rgba(5, 150, 105, 0.12)',
+  },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
@@ -1372,6 +1396,9 @@ const styles = StyleSheet.create({
         transition: 'color 0.2s ease',
       },
     }),
+  },
+  tabTextHovered: {
+    color: '#059669',
   },
   tabTextActive: {
     color: '#FFFFFF',

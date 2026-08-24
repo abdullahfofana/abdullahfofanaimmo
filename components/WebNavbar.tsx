@@ -20,7 +20,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { router, useSegments, useLocalSearchParams } from 'expo-router';
+import { router, useSegments, useGlobalSearchParams } from 'expo-router';
 import {
   Home,
   Search,
@@ -59,11 +59,14 @@ export default function WebNavbar() {
   const { activeTheme, setTheme } = useTheme();
   const colors = useColors();
   const segments = useSegments();
-  const params = useLocalSearchParams<{ status?: string }>();
+  const params = useGlobalSearchParams<{ status?: string }>();
   const { favorites } = useFavorites();
   const { user, session } = useAuth();
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [hoveredNavKey, setHoveredNavKey] = useState<string | null>(null);
+  const [hoveredAction, setHoveredAction] = useState<string | null>(null);
+
   const NOTIFICATIONS = [
     { id: '1', icon: '🏠', title: 'New property in Cocody', time: '2m ago', unread: true },
     { id: '2', icon: '💬', title: 'Agent replied to your inquiry', time: '1h ago', unread: true },
@@ -179,18 +182,21 @@ export default function WebNavbar() {
             <View style={styles.navLinksRow}>
               {navLinks.map((item) => {
                 let isActive = false;
+                const statusParam = (params?.status || '').toLowerCase();
+
                 if (item.key === 'home') {
                   isActive = activeSegment === 'home' || !activeSegment || activeSegment === '(tabs)';
                 } else if (item.key === 'buy') {
-                  isActive = activeSegment === 'search' && params?.status === 'sale';
+                  isActive = activeSegment === 'search' && (statusParam === 'sale' || statusParam === 'buy');
                 } else if (item.key === 'rent') {
-                  isActive = activeSegment === 'search' && params?.status === 'rent';
+                  isActive = activeSegment === 'search' && statusParam === 'rent';
                 } else if (item.key === 'search') {
-                  isActive = activeSegment === 'search' && params?.status !== 'sale' && params?.status !== 'rent';
+                  isActive = activeSegment === 'search' && statusParam !== 'sale' && statusParam !== 'buy' && statusParam !== 'rent';
                 } else {
                   isActive = activeSegment === item.segment;
                 }
 
+                const isHovered = hoveredNavKey === item.key;
                 const Icon = item.icon;
                 const label = item.labelKey ? t(item.labelKey) || item.fallbackLabel : item.fallbackLabel;
 
@@ -200,19 +206,25 @@ export default function WebNavbar() {
                     style={[
                       styles.navLinkItem,
                       isActive && styles.navLinkItemActive,
+                      !isActive && isHovered && styles.navLinkItemHovered,
                     ]}
                     onPress={() => handleNavLink(item)}
                     activeOpacity={0.7}
+                    // @ts-ignore
+                    onMouseEnter={() => setHoveredNavKey(item.key)}
+                    // @ts-ignore
+                    onMouseLeave={() => setHoveredNavKey(null)}
                   >
                     <Icon
                       size={17}
-                      color={isActive ? '#059669' : '#64748B'}
-                      strokeWidth={isActive ? 2.4 : 1.8}
+                      color={isActive || isHovered ? '#059669' : '#64748B'}
+                      strokeWidth={isActive || isHovered ? 2.4 : 1.8}
                     />
                     <Text
                       style={[
                         styles.navLinkLabel,
                         isActive && styles.navLinkLabelActive,
+                        !isActive && isHovered && styles.navLinkLabelHovered,
                       ]}
                     >
                       {label}
@@ -537,6 +549,14 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
+  navLinkItemHovered: {
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    ...Platform.select({
+      web: {
+        transform: [{ translateY: -1 }],
+      },
+    }),
+  },
   navLinkLabel: {
     fontSize: 13.5,
     fontWeight: '600',
@@ -547,6 +567,9 @@ const styles = StyleSheet.create({
         transition: 'color 0.2s ease',
       },
     }),
+  },
+  navLinkLabelHovered: {
+    color: '#059669',
   },
   navLinkLabelActive: {
     color: '#059669',

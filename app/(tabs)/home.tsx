@@ -170,6 +170,7 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   // Listing filter: 'all' | 'sale' | 'rent'
   const [listingFilter, setListingFilter] = useState<'all' | 'sale' | 'rent'>('all');
+  const [hoveredListingFilter, setHoveredListingFilter] = useState<string | null>(null);
 
   // 3D Carousel state for desktop recent listings
   const [recentIndex, setRecentIndex] = useState(0);
@@ -752,19 +753,26 @@ export default function HomeScreen() {
                     ? (language === 'fr' ? '🏷️ À Vendre' : '🏷️ Buy')
                     : (language === 'fr' ? '🔑 À Louer' : '🔑 Rent');
                 const isActive = listingFilter === f;
+                const isHovered = hoveredListingFilter === f;
                 return (
                   <TouchableOpacity
                     key={f}
                     onPress={() => setListingFilter(f)}
                     activeOpacity={0.8}
+                    // @ts-ignore
+                    onMouseEnter={() => setHoveredListingFilter(f)}
+                    // @ts-ignore
+                    onMouseLeave={() => setHoveredListingFilter(null)}
                     style={[
                       styles.statusFilterPill,
                       isActive && styles.statusFilterPillActive,
+                      !isActive && isHovered && styles.statusFilterPillHovered,
                     ]}
                   >
                     <Text style={[
                       styles.statusFilterPillText,
                       isActive && styles.statusFilterPillTextActive,
+                      !isActive && isHovered && styles.statusFilterPillTextHovered,
                     ]}>
                       {label}
                     </Text>
@@ -1504,6 +1512,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
   statusFilterPillActive: {
     backgroundColor: '#059669',
   },
+  statusFilterPillHovered: {
+    backgroundColor: 'rgba(5, 150, 105, 0.12)',
+  },
   statusFilterPillText: {
     fontSize: 11.5,
     fontWeight: '700',
@@ -1513,6 +1524,9 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
         transition: 'color 0.2s ease',
       },
     }),
+  },
+  statusFilterPillTextHovered: {
+    color: '#059669',
   },
   statusFilterPillTextActive: {
     color: '#FFFFFF',
