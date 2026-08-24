@@ -213,7 +213,16 @@ export default function PropertyDetailScreen() {
 
               <View style={{ position: 'absolute', bottom: 16, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
                 {property.images.map((_, i) => (
-                  <View key={i} style={{ width: i === currentImageIndex ? 20 : 6, height: 6, borderRadius: 3, backgroundColor: i === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)' }} />
+                  <View
+                    key={i}
+                    style={{
+                      width: i === currentImageIndex ? 22 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: i === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
+                      ...(Platform.OS === 'web' ? { transition: 'all 0.32s cubic-bezier(0.16, 1, 0.3, 1)' } : {}),
+                    }}
+                  />
                 ))}
               </View>
             </View>
@@ -599,6 +608,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 12,
     elevation: 4,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
+      },
+    }),
   },
   headerRight: {
     flexDirection: 'row',
@@ -799,6 +814,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease',
+      },
+    }),
   },
   footer: {
     paddingHorizontal: Spacing.lg,
@@ -829,6 +850,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
+      },
+    }),
   },
   contactButtonText: {
     ...Typography.button,
@@ -890,6 +917,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 3,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   mobileStickyCallBtn: {
     flexDirection: 'row',
@@ -904,6 +937,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 3,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   mobileStickyBtnText: {
     fontSize: 13,

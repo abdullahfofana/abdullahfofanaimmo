@@ -454,6 +454,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(5, 150, 105, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease',
+      },
+    }),
   },
 
   // Suggestions
@@ -483,6 +489,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'background-color 0.15s ease',
+      },
+    }),
   },
   suggestionTitle: {
     fontSize: 13,
@@ -543,6 +555,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
+      },
+    }),
   },
   confirmBtnText: {
     fontSize: 14,

@@ -20,90 +20,185 @@ SplashScreen.preventAutoHideAsync();
 const figmaAnimationsStyle = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
+  :root {
+    --ease-heavenly: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
   body, html, * {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* 1. Staggered Progressive Page & Section Entrances */
+  @keyframes heavenlyFadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes heavenlyScaleIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.96) translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .heavenly-stagger-1 {
+    animation: heavenlyFadeUp 0.6s var(--ease-heavenly) 0.05s both;
+  }
+  .heavenly-stagger-2 {
+    animation: heavenlyFadeUp 0.65s var(--ease-heavenly) 0.12s both;
+  }
+  .heavenly-stagger-3 {
+    animation: heavenlyFadeUp 0.7s var(--ease-heavenly) 0.18s both;
+  }
+  .heavenly-stagger-4 {
+    animation: heavenlyFadeUp 0.75s var(--ease-heavenly) 0.25s both;
+  }
+  .heavenly-stagger-5 {
+    animation: heavenlyFadeUp 0.8s var(--ease-heavenly) 0.32s both;
+  }
+
+  /* 2. Property Card Lift & Elevation Glow */
   .immoci-property-card {
-    transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.38s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.38s var(--ease-heavenly), 
+                box-shadow 0.38s var(--ease-heavenly), 
+                border-color 0.38s var(--ease-heavenly) !important;
     cursor: pointer !important;
+    will-change: transform, box-shadow;
   }
   .immoci-property-card:hover {
-    transform: translateY(-8px) scale(1.008) !important;
-    box-shadow: 0 24px 44px -8px rgba(6, 78, 59, 0.18), 0 12px 20px -6px rgba(0, 0, 0, 0.08) !important;
-    border-color: rgba(16, 185, 129, 0.5) !important;
+    transform: translateY(-6px) !important;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.12), 0 8px 16px -4px rgba(5, 150, 105, 0.08) !important;
+    border-color: rgba(5, 150, 105, 0.4) !important;
   }
+  .immoci-property-card:active {
+    transform: translateY(-2px) scale(0.99) !important;
+    transition-duration: 0.12s !important;
+  }
+
+  /* 3. Image Cinematic Smooth Zoom */
   .immoci-card-image {
-    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.6s var(--ease-heavenly) !important;
+    transform-origin: center center;
+    will-change: transform;
   }
   .immoci-property-card:hover .immoci-card-image {
-    transform: scale(1.08) !important;
+    transform: scale(1.055) !important;
   }
+
+  /* 4. Title & Badge Soft Accents */
   .immoci-card-title {
     transition: color 0.25s ease !important;
   }
   .immoci-property-card:hover .immoci-card-title {
     color: #059669 !important;
   }
-  .immoci-hover-pill {
-    opacity: 0 !important;
-    transform: translateY(8px) scale(0.92) !important;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    pointer-events: none;
-  }
-  .immoci-property-card:hover .immoci-hover-pill {
-    opacity: 1 !important;
-    transform: translateY(0) scale(1) !important;
-  }
+
+  /* 5. Micro-Interactive Favorite Heart Button */
   .immoci-favorite-btn {
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease, border-color 0.25s ease !important;
+    transition: transform 0.25s var(--ease-spring), 
+                background-color 0.2s ease, 
+                border-color 0.2s ease,
+                box-shadow 0.2s ease !important;
   }
   .immoci-favorite-btn:hover {
-    transform: scale(1.22) !important;
-    background-color: rgba(239, 68, 68, 0.25) !important;
-    border-color: rgba(239, 68, 68, 0.6) !important;
+    transform: scale(1.15) !important;
+    background-color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
   }
+  .immoci-favorite-btn:active {
+    transform: scale(0.9) !important;
+  }
+
+  /* 6. Smooth Button & Link Micro-Interactions */
+  .heavenly-button {
+    transition: transform 0.22s var(--ease-heavenly),
+                box-shadow 0.22s var(--ease-heavenly),
+                background-color 0.2s ease,
+                opacity 0.2s ease !important;
+    will-change: transform;
+  }
+  .heavenly-button:hover {
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 8px 20px -4px rgba(5, 150, 105, 0.25) !important;
+  }
+  .heavenly-button:active {
+    transform: translateY(0.5px) scale(0.98) !important;
+    transition-duration: 0.1s !important;
+  }
+
+  /* 7. Navigation Indicator and Links */
+  .heavenly-nav-item {
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s var(--ease-heavenly) !important;
+  }
+  .heavenly-nav-item:hover {
+    transform: translateY(-1px) !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+  }
+  .heavenly-nav-item:active {
+    transform: translateY(0) !important;
+  }
+
+  /* 8. Glowing Pulsating Status Indicator Dots */
   @keyframes pulseGlowGreen {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.6); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(5, 150, 105, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
   }
   @keyframes pulseGlowBlue {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
-    70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(37, 99, 235, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.6); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
   }
   .immoci-dot-sale {
-    animation: pulseGlowGreen 2s infinite cubic-bezier(0.4, 0, 0.6, 1) !important;
+    animation: pulseGlowGreen 2.4s infinite cubic-bezier(0.4, 0, 0.6, 1) !important;
   }
   .immoci-dot-rent {
-    animation: pulseGlowBlue 2s infinite cubic-bezier(0.4, 0, 0.6, 1) !important;
+    animation: pulseGlowBlue 2.4s infinite cubic-bezier(0.4, 0, 0.6, 1) !important;
   }
-  @keyframes shimmerGlow {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  .immoci-featured-shimmer {
-    background: linear-gradient(90deg, #F59E0B 0%, #FDE68A 50%, #D97706 100%) !important;
-    background-size: 200% auto !important;
-    animation: shimmerGlow 3s infinite linear !important;
-  }
+
+  /* 9. See All Button Slide & Glow */
   .immoci-see-all-btn {
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: all 0.25s var(--ease-heavenly) !important;
   }
   .immoci-see-all-btn:hover {
     transform: translateX(4px) !important;
     border-color: #059669 !important;
     box-shadow: 0 4px 14px rgba(5, 150, 105, 0.15) !important;
   }
-  @keyframes cardFadeInUp {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
+  .immoci-see-all-btn:hover svg {
+    transform: translateX(3px) !important;
+    transition: transform 0.2s ease !important;
   }
-  .immoci-card-animate {
-    animation: cardFadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  /* 10. Dropdown & Popover Entrance */
+  .heavenly-dropdown {
+    animation: heavenlyScaleIn 0.24s var(--ease-heavenly) both;
+    transform-origin: top right;
+  }
+
+  /* 11. Accessibility: Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+      transform: none !important;
+    }
   }
 `;
 

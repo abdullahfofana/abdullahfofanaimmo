@@ -29,6 +29,7 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [isHovered, setIsHovered] = useState(false);
+  const favScale = React.useRef(new (require('react-native').Animated.Value)(1)).current;
 
   const formatPrice = (price: number, currency: string) => {
     if (currency === 'FCFA') {
@@ -42,6 +43,11 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
     if (e && e.stopPropagation) {
       e.stopPropagation();
     }
+    const { Animated } = require('react-native');
+    Animated.sequence([
+      Animated.timing(favScale, { toValue: 1.28, duration: 120, useNativeDriver: true }),
+      Animated.spring(favScale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }),
+    ]).start();
     toggleFavorite(property.id);
   };
 
@@ -58,6 +64,8 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
 
   return (
     <TouchableOpacity
+      // @ts-ignore
+      className="immoci-property-card"
       style={[
         styles.container,
         isHovered && styles.containerHovered,
@@ -73,6 +81,8 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
       <View style={styles.imageContainer}>
         <Image
           source={{ uri: property.images[0] }}
+          // @ts-ignore
+          className="immoci-card-image"
           style={styles.image}
           resizeMode="cover"
         />
@@ -96,6 +106,8 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
 
         {/* ── FAVORITE BUTTON ───────────────────────────────────── */}
         <TouchableOpacity
+          // @ts-ignore
+          className="immoci-favorite-btn"
           style={[styles.favoriteBtn, favorite && styles.favoriteBtnActive]}
           onPress={handleFavorite}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -131,7 +143,12 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
         </View>
 
         {/* Title */}
-        <Text style={styles.title} numberOfLines={1}>
+        <Text
+          // @ts-ignore
+          className="immoci-card-title"
+          style={styles.title}
+          numberOfLines={1}
+        >
           {property.title}
         </Text>
 
@@ -190,21 +207,21 @@ const createStyles = (colors: any) => StyleSheet.create({
       android: { elevation: 2 },
       web: {
         // @ts-ignore
-        boxShadow: '0 1px 4px rgba(15, 23, 42, 0.05)',
+        boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.06)',
         // @ts-ignore
-        transition: 'border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
+        transition: 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
         cursor: 'pointer',
       },
     }),
   },
   containerHovered: {
-    borderColor: '#CBD5E1',
+    borderColor: 'rgba(5, 150, 105, 0.35)',
     ...Platform.select({
       web: {
         // @ts-ignore
-        transform: 'translateY(-3px)',
+        transform: 'translateY(-5px)',
         // @ts-ignore
-        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.09)',
+        boxShadow: '0 20px 38px -10px rgba(15, 23, 42, 0.12), 0 8px 16px -4px rgba(5, 150, 105, 0.06)',
       },
     }),
   },

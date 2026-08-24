@@ -24,7 +24,11 @@ export default function FavoritesScreen() {
       {Platform.OS === 'web' && <WebNavbar />}
 
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        // @ts-ignore
+        className="heavenly-stagger-1"
+        style={styles.header}
+      >
         <View>
           <Text style={styles.title}>{t('favorites_title')}</Text>
           <Text style={styles.subtitle}>
@@ -42,8 +46,12 @@ export default function FavoritesScreen() {
 
       <FlatList
         data={favorites}
-        renderItem={({ item }) => (
-          <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center', marginBottom: 16 }}>
+        renderItem={({ item, index }) => (
+          <View
+            // @ts-ignore
+            className={`heavenly-stagger-${Math.min(index + 2, 5)}`}
+            style={{ maxWidth: 800, width: '100%', alignSelf: 'center', marginBottom: 16 }}
+          >
             <PropertyCard property={item} />
           </View>
         )}
@@ -51,13 +59,19 @@ export default function FavoritesScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View
+            // @ts-ignore
+            className="heavenly-stagger-2"
+            style={styles.emptyContainer}
+          >
             <View style={styles.emptyIconBox}>
               <Heart size={40} color={colors.textLight} strokeWidth={1.5} />
             </View>
             <Text style={styles.emptyTitle}>{t('favorites_empty_title')}</Text>
             <Text style={styles.emptyText}>{t('favorites_empty_text')}</Text>
             <TouchableOpacity
+              // @ts-ignore
+              className="heavenly-button"
               style={[styles.exploreButton, { backgroundColor: colors.primary }]}
               onPress={() => router.push('/(tabs)/search')}
               activeOpacity={0.88}
@@ -157,6 +171,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     marginTop: 8,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
+      },
+    }),
   },
   exploreButtonText: {
     color: '#fff',

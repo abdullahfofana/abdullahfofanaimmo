@@ -994,6 +994,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   placeChipActive: {
     backgroundColor: '#059669',
@@ -1003,6 +1009,11 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '700',
     color: '#475569',
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   placeChipTextActive: {
     color: '#FFFFFF',
@@ -1013,6 +1024,12 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#FFFFFF',
     borderColor: '#CBD5E1',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   gpsPlaceChipActive: {
     backgroundColor: 'rgba(5, 150, 105, 0.1)',
@@ -1044,6 +1061,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   radiusPillActive: {
     backgroundColor: 'rgba(5, 150, 105, 0.12)',
@@ -1053,6 +1076,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   radiusPillTextActive: {
     color: '#059669',

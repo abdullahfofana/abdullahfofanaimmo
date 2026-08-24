@@ -259,22 +259,26 @@ export default function WebNavbar() {
 
               {/* Dropdown */}
               {showNotifications && (
-                <View style={{
-                  position: 'absolute' as any,
-                  top: 48,
-                  right: 0,
-                  width: 320,
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: 'rgba(226,232,240,0.9)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 24,
-                  zIndex: 9999,
-                  overflow: 'hidden',
-                } as any}>
+                <View
+                  // @ts-ignore
+                  className="heavenly-dropdown"
+                  style={{
+                    position: 'absolute' as any,
+                    top: 48,
+                    right: 0,
+                    width: 320,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: 'rgba(226,232,240,0.9)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 24,
+                    zIndex: 9999,
+                    overflow: 'hidden',
+                  } as any}
+                >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(226,232,240,0.6)' }}>
                     <Text style={{ fontSize: 15, fontWeight: '700', color: '#0F172A' }}>Notifications</Text>
                     <TouchableOpacity onPress={() => setShowNotifications(false)}>
@@ -519,6 +523,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     position: 'relative',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   navLinkItemActive: {
     backgroundColor: '#FFFFFF',
@@ -533,6 +542,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#475569',
     letterSpacing: -0.2,
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   navLinkLabelActive: {
     color: '#059669',
@@ -574,6 +588,11 @@ const styles = StyleSheet.create({
     height: 2.5,
     backgroundColor: '#059669',
     borderRadius: 2,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
 
   // ── Right Action Buttons ───────────────────────────────────
@@ -593,6 +612,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(203, 213, 225, 0.8)',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   langPillOptions: {
     flexDirection: 'row',
@@ -603,6 +627,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.4,
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   langTextActive: {
     color: '#059669',
@@ -633,6 +662,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(203, 213, 225, 0.9)',
     backgroundColor: '#FFFFFF',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   loginBtnText: {
     fontSize: 13.5,
@@ -645,6 +679,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#0F172A',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   signupBtnText: {
     fontSize: 13.5,
@@ -664,6 +703,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245, 158, 11, 0.3)',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s ease',
+      },
+    }),
   },
   adminBadgeBtnText: {
     fontSize: 11.5,
@@ -684,6 +728,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.9)',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   userAvatar: {
     width: 32,
@@ -724,6 +773,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#059669',
     cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   ctaButtonText: {
     fontSize: 13.5,

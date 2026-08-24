@@ -436,22 +436,38 @@ export default function HomeScreen() {
 
             <View style={[styles.heroContent, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
               {/* Badge */}
-              <View style={styles.heroBadge}>
+              <View
+                // @ts-ignore
+                className="heavenly-stagger-1"
+                style={styles.heroBadge}
+              >
                 <Building2 size={12} color="#059669" strokeWidth={2.4} />
                 <Text style={styles.heroBadgeText}>
                   {language === 'fr' ? "N°1 DE L'IMMOBILIER EN CÔTE D'IVOIRE" : '#1 REAL ESTATE PLATFORM IN IVORY COAST'}
                 </Text>
               </View>
 
-              <Text style={[styles.heroTitle, styles.heroTitleDesktop]}>
+              <Text
+                // @ts-ignore
+                className="heavenly-stagger-2"
+                style={[styles.heroTitle, styles.heroTitleDesktop]}
+              >
                 {t('home_hero_title')}
               </Text>
-              <Text style={[styles.heroSubtitle, styles.heroSubtitleDesktop]}>
+              <Text
+                // @ts-ignore
+                className="heavenly-stagger-3"
+                style={[styles.heroSubtitle, styles.heroSubtitleDesktop]}
+              >
                 {t('home_hero_subtitle')}
               </Text>
 
               {/* Desktop Multi-Field Search bar */}
-              <View style={[styles.searchContainer, styles.searchContainerDesktop]}>
+              <View
+                // @ts-ignore
+                className="heavenly-stagger-4"
+                style={[styles.searchContainer, styles.searchContainerDesktop]}
+              >
                 <View style={[styles.searchBar, styles.searchBarDesktop]}>
                   <MapPin size={18} color={colors.primary} strokeWidth={2.5} />
                   <TextInput
@@ -488,6 +504,8 @@ export default function HomeScreen() {
                   />
                 </View>
                 <TouchableOpacity
+                  // @ts-ignore
+                  className="heavenly-button"
                   style={styles.searchButton}
                   onPress={handleHeroSearch}
                   activeOpacity={0.85}
@@ -498,7 +516,11 @@ export default function HomeScreen() {
               </View>
 
               {/* Stats row */}
-              <View style={styles.heroStats}>
+              <View
+                // @ts-ignore
+                className="heavenly-stagger-5"
+                style={styles.heroStats}
+              >
                 {[
                   { value: '2,400+', label: t('home_stat_properties') || 'Properties' },
                   { value: '120+', label: t('home_stat_agents') || 'Agents' },
@@ -1365,6 +1387,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     borderWidth: 1,
     borderColor: '#E2E8F0',
     position: 'relative',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   categoryStoryChipActive: {
     backgroundColor: 'rgba(5, 150, 105, 0.1)',
@@ -1377,6 +1405,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 12.5,
     fontWeight: '600',
     color: '#475569',
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   categoryLabelActive: {
     color: '#059669',
@@ -1444,6 +1477,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   seeAll: {
     fontSize: 12,
@@ -1463,6 +1502,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   statusFilterPillActive: {
     backgroundColor: '#059669',
@@ -1471,6 +1516,11 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     fontSize: 11.5,
     fontWeight: '700',
     color: '#64748B',
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   statusFilterPillTextActive: {
     color: '#FFFFFF',
@@ -1487,6 +1537,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     height: 240,
     position: 'relative',
     backgroundColor: '#0F172A',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   featuredImage: {
     width: '100%',
@@ -2091,6 +2147,12 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 4,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   popularAreaImage: {
     width: '100%',

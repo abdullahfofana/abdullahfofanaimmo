@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Easing,
   FlatList,
   Modal,
   ScrollView,
@@ -164,7 +165,8 @@ export default function SearchScreen() {
     viewFadeAnim.setValue(0);
     Animated.timing(viewFadeAnim, {
       toValue: 1,
-      duration: 260,
+      duration: 300,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
       useNativeDriver: true,
     }).start();
   }, [viewMode]);
@@ -1344,6 +1346,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     borderRadius: 10,
     backgroundColor: 'transparent',
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   tabItemActive: {
     backgroundColor: '#059669',
@@ -1358,6 +1366,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748B',
     letterSpacing: 0.2,
+    ...Platform.select({
+      web: {
+        transition: 'color 0.2s ease',
+      },
+    }),
   },
   tabTextActive: {
     color: '#FFFFFF',
@@ -1381,6 +1394,11 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     borderWidth: 1,
+    ...Platform.select({
+      web: {
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+      },
+    }),
   },
   inputFieldText: {
     ...Typography.body,
@@ -1399,6 +1417,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: Spacing.md + 2,
     height: 56,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   inputPillText: {
     flex: 1,
@@ -1433,6 +1457,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
     marginTop: Spacing.lg,
+    cursor: 'pointer' as any,
+    ...Platform.select({
+      web: {
+        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   searchCTAText: {
     ...Typography.body,

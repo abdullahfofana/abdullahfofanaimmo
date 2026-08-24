@@ -160,9 +160,15 @@ const tabStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   wrapFocused: {
     backgroundColor: Colors.surfaceGreen,
+    transform: [{ scale: 1.05 }],
   },
 
   // Floating add button
@@ -174,8 +180,14 @@ const tabStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -2,
+    ...Platform.select({
+      web: {
+        transition: 'all 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
   },
   addOuterFocused: {
     backgroundColor: Colors.primary,
+    transform: [{ scale: 1.08 }],
   },
 });
