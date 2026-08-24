@@ -10,12 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 const { width, height } = Dimensions.get('window');
 
@@ -56,6 +58,7 @@ const slides: Slide[] = [
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
+  const { language } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const slidesRef = useRef<any>(null);
@@ -66,11 +69,22 @@ export default function OnboardingScreen() {
 
   const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+  const handleSkipOrComplete = async () => {
+    try {
+      await AsyncStorage.setItem('@immoci_onboarding_completed', 'true');
+    } catch {}
+    try {
+      router.replace('/auth');
+    } catch {
+      router.push('/auth');
+    }
+  };
+
   const scrollTo = () => {
     if (currentIndex < slides.length - 1) {
       slidesRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
-      router.replace('/auth');
+      handleSkipOrComplete();
     }
   };
 
@@ -121,8 +135,10 @@ export default function OnboardingScreen() {
     <View style={styles.container}>
       {/* Skip button — top right */}
       <View style={[styles.topBar, { paddingTop: insets.top + Spacing.md }]}>
-        <TouchableOpacity onPress={() => router.replace('/auth')} style={styles.skipBtn}>
-          <Text style={styles.skipText}>Passer</Text>
+        <TouchableOpacity onPress={handleSkipOrComplete} style={styles.skipBtn} activeOpacity={0.75}>
+          <Text style={styles.skipText}>
+            {language === 'en' ? 'Skip' : 'Passer'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -172,7 +188,9 @@ export default function OnboardingScreen() {
         {/* CTA button */}
         <TouchableOpacity style={styles.ctaBtn} onPress={scrollTo} activeOpacity={0.88}>
           <Text style={styles.ctaBtnText}>
-            {currentIndex === slides.length - 1 ? 'Commencer' : 'Suivant'}
+            {currentIndex === slides.length - 1
+              ? (language === 'en' ? 'Get Started' : 'Commencer')
+              : (language === 'en' ? 'Next' : 'Suivant')}
           </Text>
           <ArrowRight size={18} color={Colors.primary} strokeWidth={2.2} />
         </TouchableOpacity>

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Home } from 'lucide-react-native';
 
@@ -26,11 +27,37 @@ export default function Splash() {
       ]),
     ]).start();
 
-    const to = setTimeout(() => {
+    const to = setTimeout(async () => {
       if (Platform.OS === 'web') {
+        try {
+          router.replace('/(tabs)/home');
+        } catch {
+          router.push('/(tabs)/home');
+        }
+        return;
+      }
+
+      try {
+        const [onboardingDone, devSession] = await Promise.all([
+          AsyncStorage.getItem('@immoci_onboarding_completed'),
+          AsyncStorage.getItem('@immoci_auth_dev_session'),
+        ]);
+
+        if (devSession || onboardingDone === 'true') {
+          try {
+            router.replace('/(tabs)/home');
+          } catch {
+            router.push('/(tabs)/home');
+          }
+        } else {
+          try {
+            router.replace('/onboarding');
+          } catch {
+            router.push('/onboarding');
+          }
+        }
+      } catch {
         router.replace('/(tabs)/home');
-      } else {
-        router.replace('/onboarding');
       }
     }, 1700);
 

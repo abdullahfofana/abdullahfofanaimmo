@@ -24,11 +24,13 @@ import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { UserRole } from '@/types/property';
 import { useAuth } from '@/providers/AuthProvider';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 type AuthMode = 'login' | 'signup';
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
+  const { language } = useLanguage();
   const [mode, setMode] = useState<AuthMode>('login');
   const [role, setRole] = useState<UserRole>('renter');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,10 +38,28 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const { signIn, signUp, signInWithGoogle, signInWithFacebook, error: authError } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithFacebook, skipAuth, error: authError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   const isWeb = Platform.OS === 'web';
+
+  const handleSkipDev = async () => {
+    setIsLoading(true);
+    try {
+      if (skipAuth) {
+        await skipAuth();
+      }
+    } catch (e) {
+      console.warn('[Auth] skipAuth warning:', e);
+    } finally {
+      setIsLoading(false);
+      try {
+        router.replace('/(tabs)/home');
+      } catch {
+        router.push('/(tabs)/home');
+      }
+    }
+  };
 
   const handleAuth = async () => {
     setLocalError('');
@@ -235,8 +255,16 @@ export default function AuthScreen() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => router.replace('/(tabs)/home')} style={styles.skipRow}>
-        <Text style={styles.skipText}>Passer (Mode Développeur)</Text>
+      <TouchableOpacity
+        onPress={handleSkipDev}
+        style={styles.skipRow}
+        activeOpacity={0.75}
+        disabled={isLoading}
+        testID="skip-dev-mode-btn"
+      >
+        <Text style={styles.skipText}>
+          {language === 'en' ? '⚡ Skip (Developer Mode)' : '⚡ Passer (Mode Développeur)'}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );

@@ -1,9 +1,37 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/backend/supabase';
 import type { User, UserRole } from '@/types/property';
 import { Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
+
+const DEV_STORAGE_KEY = '@immoci_auth_dev_session';
+
+export const DEFAULT_DEV_USER: User = {
+  id: 'dev-user-001',
+  email: 'dev@immoci.ci',
+  name: 'Développeur ImmoCI',
+  phone: '+225 07 00 00 00 01',
+  role: 'agent',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop',
+};
+
+const createMockDevSession = (devUser: User): Session => ({
+  access_token: 'dev-access-token-immoci',
+  token_type: 'bearer',
+  expires_in: 3600 * 24 * 365,
+  refresh_token: 'dev-refresh-token-immoci',
+  user: {
+    id: devUser.id,
+    app_metadata: { provider: 'dev' },
+    user_metadata: { name: devUser.name, full_name: devUser.name },
+    aud: 'authenticated',
+    created_at: new Date().toISOString(),
+    email: devUser.email,
+  } as any,
+  expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 365,
+});
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<User | null>(null);
@@ -12,29 +40,73 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      const initialSession = data.session;
-      console.log('[Auth] Initial session:', initialSession?.user?.id);
-      setSession(initialSession);
-      if (initialSession?.user) {
-        loadUser(initialSession.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
+    let isMounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, newSession: Session | null) => {
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        const initialSession = data?.session;
+        if (initialSession?.user) {
+          console.log('[Auth] Initial Supabase session:', initialSession.user.id);
+          setSession(initialSession);
+          await loadUser(initialSession.user.id);
+        } else {
+          // Check for saved developer session in AsyncStorage
+          const savedDevSession = await AsyncStorage.getItem(DEV_STORAGE_KEY);
+          if (savedDevSession && isMounted) {
+            try {
+              const parsedUser = JSON.parse(savedDevSession) as User;
+              setUser(parsedUser);
+              setSession(createMockDevSession(parsedUser));
+              console.log('[Auth] Restored developer session:', parsedUser.name);
+            } catch {
+              setUser(DEFAULT_DEV_USER);
+              setSession(createMockDevSession(DEFAULT_DEV_USER));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Auth] Session init warning:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, newSession: Session | null) => {
+      if (!isMounted) return;
       console.log('[Auth] Auth state changed:', newSession?.user?.id);
-      setSession(newSession);
+      
       if (newSession?.user) {
-        loadUser(newSession.user.id);
+        setSession(newSession);
+        await loadUser(newSession.user.id);
       } else {
-        setUser(null);
-        setIsLoading(false);
+        // If Supabase session is null, check if we have a dev session active
+        const savedDev = await AsyncStorage.getItem(DEV_STORAGE_KEY);
+        if (savedDev && isMounted) {
+          try {
+            const parsed = JSON.parse(savedDev) as User;
+            setUser(parsed);
+            setSession(createMockDevSession(parsed));
+          } catch {
+            setUser(DEFAULT_DEV_USER);
+            setSession(createMockDevSession(DEFAULT_DEV_USER));
+          }
+        } else if (isMounted) {
+          setUser(null);
+          setSession(null);
+        }
+        if (isMounted) setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadUser = async (userId: string) => {
@@ -70,6 +142,32 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(false);
     }
   };
+
+  const skipAuth = async (customUser?: Partial<User>): Promise<User> => {
+    try {
+      setError(null);
+      const devUser: User = {
+        ...DEFAULT_DEV_USER,
+        ...customUser,
+      };
+
+      await Promise.all([
+        AsyncStorage.setItem(DEV_STORAGE_KEY, JSON.stringify(devUser)),
+        AsyncStorage.setItem('@immoci_onboarding_completed', 'true'),
+      ]);
+
+      setUser(devUser);
+      setSession(createMockDevSession(devUser));
+      console.log('[Auth] Dev mode skip activated:', devUser.id);
+      return devUser;
+    } catch (err: any) {
+      console.error('[Auth] Error setting dev mode:', err);
+      setUser(DEFAULT_DEV_USER);
+      return DEFAULT_DEV_USER;
+    }
+  };
+
+  const signInAsDev = skipAuth;
 
   const signUp = async (
     email: string,
@@ -223,13 +321,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const signOut = async () => {
     try {
       console.log('[Auth] Signing out...');
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await AsyncStorage.removeItem(DEV_STORAGE_KEY);
+      try {
+        await supabase.auth.signOut();
+      } catch {}
       setUser(null);
+      setSession(null);
       console.log('[Auth] User signed out');
     } catch (err) {
       console.error('[Auth] Sign out error:', err);
-      throw err;
+      setUser(null);
+      setSession(null);
     }
   };
 
@@ -244,5 +346,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signInWithFacebook,
     resetPassword,
     signOut,
+    skipAuth,
+    signInAsDev,
   };
 });
