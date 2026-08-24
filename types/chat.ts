@@ -11,6 +11,17 @@ export interface CaseStatusChange {
   note?: string;
 }
 
+export type AttachmentType = 'image' | 'document';
+
+export interface ChatAttachment {
+  id: string;
+  type: AttachmentType;
+  url: string;
+  name?: string;
+  size?: number; // Size in bytes
+  mimeType?: string;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
@@ -19,6 +30,7 @@ export interface ChatMessage {
   senderAvatar?: string;
   senderRole: MessageRole;
   message: string;
+  attachments?: ChatAttachment[];
   timestamp: string; // ISO string
   isRead: boolean;
   status: MessageStatus;

@@ -68,7 +68,7 @@ import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import type { PropertySubmission } from '@/types/property';
-import type { CaseStatus, CaseStatusChange } from '@/types/chat';
+import type { CaseStatus, CaseStatusChange, ChatAttachment } from '@/types/chat';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/providers/AuthProvider';
@@ -348,7 +348,7 @@ interface SupportTicket {
   conversationId?: string;
   assignedAgent?: string;
   statusHistory?: CaseStatusChange[];
-  messages: { sender: 'user' | 'admin' | 'ai'; text: string; time: string }[];
+  messages: { sender: 'user' | 'admin' | 'ai'; text: string; time: string; attachments?: ChatAttachment[] }[];
 }
 
 const mockTickets: SupportTicket[] = [
@@ -596,6 +596,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         return {
           sender: isAdmin ? ('admin' as const) : ('user' as const),
           text: m.message,
+          attachments: m.attachments,
           time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
       });
@@ -1820,9 +1821,49 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                           },
                         ]}
                       >
-                        <Text style={[styles.chatBubbleText, { color: isAdmin ? '#FFFFFF' : stitchTheme.textPrimary }]}>
-                          {msg.text}
-                        </Text>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <View style={{ gap: 6, marginBottom: msg.text ? 6 : 2 }}>
+                            {msg.attachments.map((att) => {
+                              if (att.type === 'image') {
+                                return (
+                                  <Image
+                                    key={att.id}
+                                    source={{ uri: att.url }}
+                                    style={{ width: 220, height: 140, borderRadius: 8, backgroundColor: '#000' }}
+                                    resizeMode="cover"
+                                  />
+                                );
+                              }
+                              return (
+                                <TouchableOpacity
+                                  key={att.id}
+                                  onPress={() => { if (att.url) Linking.openURL(att.url).catch(() => {}); }}
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    padding: 8,
+                                    borderRadius: 8,
+                                    backgroundColor: isAdmin ? 'rgba(255,255,255,0.2)' : (isDark ? '#0F172A' : '#FFFFFF'),
+                                    gap: 8,
+                                    maxWidth: 220,
+                                  }}
+                                >
+                                  <FileText size={16} color={isAdmin ? '#FFFFFF' : '#059669'} />
+                                  <Text style={{ fontSize: 12, fontWeight: '600', color: isAdmin ? '#FFFFFF' : stitchTheme.textPrimary, flex: 1 }} numberOfLines={1}>
+                                    {att.name || 'Document'}
+                                  </Text>
+                                  <Download size={14} color={isAdmin ? '#FFFFFF' : stitchTheme.textSecondary} />
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        )}
+
+                        {!!msg.text && (
+                          <Text style={[styles.chatBubbleText, { color: isAdmin ? '#FFFFFF' : stitchTheme.textPrimary }]}>
+                            {msg.text}
+                          </Text>
+                        )}
                       </View>
                       <Text style={[styles.chatBubbleTime, { color: stitchTheme.textSecondary, alignSelf: isAdmin ? 'flex-end' : 'flex-start' }]}>
                         {msg.time}

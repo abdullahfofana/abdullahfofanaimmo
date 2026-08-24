@@ -11,9 +11,13 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Haptics from 'expo-haptics';
 import {
   X,
   Send,
@@ -25,10 +29,17 @@ import {
   ExternalLink,
   MessageSquare,
   Sparkles,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  Camera,
+  Download,
+  Maximize2,
 } from 'lucide-react-native';
 import { useChat } from '@/providers/ChatProvider';
 import { useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
+import type { ChatAttachment } from '@/types/chat';
 
 const formatPrice = (price: number, currency = 'FCFA') => {
   if (price >= 1000000) {
@@ -73,6 +84,9 @@ export default function ChatModal() {
   } = useChat();
 
   const [inputMessage, setInputMessage] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentMessages = activeConversation
@@ -89,11 +103,104 @@ export default function ChatModal() {
 
   if (!isChatOpen || !activeConversation) return null;
 
+  const handlePickImage = async () => {
+    setShowAttachmentMenu(false);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsMultipleSelection: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newAtts: ChatAttachment[] = result.assets.map((asset, i) => ({
+          id: `att-img-${Date.now()}-${i}`,
+          type: 'image',
+          url: asset.uri,
+          name: asset.fileName || `Photo_${Date.now()}.jpg`,
+          size: asset.fileSize,
+          mimeType: asset.mimeType || 'image/jpeg',
+        }));
+        setPendingAttachments((prev) => [...prev, ...newAtts]);
+        try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+      }
+    } catch (e) {
+      console.warn('[Chat] Image pick error:', e);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setShowAttachmentMenu(false);
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const newAtt: ChatAttachment = {
+          id: `att-cam-${Date.now()}`,
+          type: 'image',
+          url: asset.uri,
+          name: asset.fileName || `Photo_Camera_${Date.now()}.jpg`,
+          size: asset.fileSize,
+          mimeType: asset.mimeType || 'image/jpeg',
+        };
+        setPendingAttachments((prev) => [...prev, newAtt]);
+        try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+      }
+    } catch (e) {
+      console.warn('[Chat] Camera error:', e);
+    }
+  };
+
+  const handlePickDocument = async () => {
+    setShowAttachmentMenu(false);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const doc = result.assets[0];
+        const isImg = doc.mimeType?.startsWith('image/') || doc.name.match(/\.(jpg|jpeg|png|webp)$/i);
+        const newAtt: ChatAttachment = {
+          id: `att-doc-${Date.now()}`,
+          type: isImg ? 'image' : 'document',
+          url: doc.uri,
+          name: doc.name || 'Document.pdf',
+          size: doc.size,
+          mimeType: doc.mimeType || 'application/pdf',
+        };
+        setPendingAttachments((prev) => [...prev, newAtt]);
+        try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+      }
+    } catch (e) {
+      console.warn('[Chat] Document pick error:', e);
+    }
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
   const handleSend = async () => {
-    if (!inputMessage.trim() || isSending) return;
+    const hasAttachments = pendingAttachments.length > 0;
+    if ((!inputMessage.trim() && !hasAttachments) || isSending) return;
+
     const textToSend = inputMessage;
+    const attsToSend = [...pendingAttachments];
+
     setInputMessage('');
-    await sendMessage(activeConversation.id, textToSend);
+    setPendingAttachments([]);
+    setShowAttachmentMenu(false);
+
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+
+    await sendMessage(activeConversation.id, textToSend, attsToSend.length > 0 ? attsToSend : undefined);
+
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -287,14 +394,84 @@ export default function ChatModal() {
                       isOutgoing ? styles.bubbleOutgoing : styles.bubbleIncoming,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.bubbleText,
-                        isOutgoing ? styles.bubbleTextOutgoing : styles.bubbleTextIncoming,
-                      ]}
-                    >
-                      {msg.message}
-                    </Text>
+                    {/* Attachments rendering */}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <View style={{ gap: 6, marginBottom: msg.message ? 6 : 2 }}>
+                        {msg.attachments.map((att) => {
+                          if (att.type === 'image') {
+                            return (
+                              <TouchableOpacity
+                                key={att.id}
+                                activeOpacity={0.9}
+                                onPress={() => setFullscreenImage(att.url)}
+                                style={styles.attachmentImageContainer}
+                              >
+                                <Image
+                                  source={{ uri: att.url }}
+                                  style={styles.attachmentImage}
+                                  resizeMode="cover"
+                                />
+                                <View style={styles.expandBadge}>
+                                  <Maximize2 size={11} color="#FFFFFF" />
+                                </View>
+                              </TouchableOpacity>
+                            );
+                          }
+
+                          // Document attachment
+                          return (
+                            <TouchableOpacity
+                              key={att.id}
+                              activeOpacity={0.8}
+                              onPress={() => {
+                                if (att.url) {
+                                  Linking.openURL(att.url).catch(() => {});
+                                }
+                              }}
+                              style={[
+                                styles.attachmentDocCard,
+                                isOutgoing ? styles.attachmentDocOutgoing : styles.attachmentDocIncoming,
+                              ]}
+                            >
+                              <View style={styles.docIconBox}>
+                                <FileText size={18} color="#059669" />
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text
+                                  style={[
+                                    styles.docName,
+                                    { color: isOutgoing ? '#FFFFFF' : '#0F172A' },
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {att.name || 'Document'}
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.docSize,
+                                    { color: isOutgoing ? 'rgba(255,255,255,0.8)' : '#64748B' },
+                                  ]}
+                                >
+                                  {att.size ? `${(att.size / (1024 * 1024)).toFixed(1)} MB` : 'Fichier joint'}
+                                </Text>
+                              </View>
+                              <Download size={15} color={isOutgoing ? '#FFFFFF' : '#059669'} />
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+
+                    {!!msg.message && (
+                      <Text
+                        style={[
+                          styles.bubbleText,
+                          isOutgoing ? styles.bubbleTextOutgoing : styles.bubbleTextIncoming,
+                        ]}
+                      >
+                        {msg.message}
+                      </Text>
+                    )}
 
                     <View style={styles.bubbleFooter}>
                       <Text
@@ -353,8 +530,77 @@ export default function ChatModal() {
             </View>
           )}
 
+          {/* ── PENDING ATTACHMENTS TRAY ─────────────────────────────────── */}
+          {pendingAttachments.length > 0 && (
+            <View style={styles.pendingTray}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {pendingAttachments.map((att) => (
+                  <View key={att.id} style={styles.pendingItem}>
+                    {att.type === 'image' ? (
+                      <Image source={{ uri: att.url }} style={styles.pendingImage} />
+                    ) : (
+                      <View style={styles.pendingDoc}>
+                        <FileText size={16} color="#059669" />
+                        <Text style={styles.pendingDocName} numberOfLines={1}>
+                          {att.name || 'Doc'}
+                        </Text>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      style={styles.pendingRemoveBtn}
+                      onPress={() => handleRemoveAttachment(att.id)}
+                      activeOpacity={0.8}
+                    >
+                      <X size={11} color="#FFFFFF" strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ── ATTACHMENT MENU POPOVER ──────────────────────────────────── */}
+          {showAttachmentMenu && (
+            <View style={styles.attachMenu}>
+              <TouchableOpacity style={styles.attachOption} onPress={handleTakePhoto} activeOpacity={0.8}>
+                <View style={[styles.attachIconCircle, { backgroundColor: '#ECFDF5' }]}>
+                  <Camera size={18} color="#059669" />
+                </View>
+                <Text style={styles.attachOptionText}>
+                  {language === 'fr' ? 'Prendre une photo' : 'Take Photo'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.attachOption} onPress={handlePickImage} activeOpacity={0.8}>
+                <View style={[styles.attachIconCircle, { backgroundColor: '#EFF6FF' }]}>
+                  <ImageIcon size={18} color="#3B82F6" />
+                </View>
+                <Text style={styles.attachOptionText}>
+                  {language === 'fr' ? 'Galerie Photos' : 'Photo Gallery'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.attachOption} onPress={handlePickDocument} activeOpacity={0.8}>
+                <View style={[styles.attachIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                  <FileText size={18} color="#D97706" />
+                </View>
+                <Text style={styles.attachOptionText}>
+                  {language === 'fr' ? 'Document (PDF / ACD / Reçu)' : 'Document (PDF / Deed / Receipt)'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* ── INPUT BAR ───────────────────────────────────────────────── */}
           <View style={styles.inputBar}>
+            <TouchableOpacity
+              style={[styles.attachBtn, showAttachmentMenu && styles.attachBtnActive]}
+              onPress={() => setShowAttachmentMenu(!showAttachmentMenu)}
+              activeOpacity={0.8}
+            >
+              <Paperclip size={19} color={showAttachmentMenu ? '#059669' : '#64748B'} />
+            </TouchableOpacity>
+
             <TextInput
               style={styles.textInput}
               placeholder={
@@ -373,10 +619,10 @@ export default function ChatModal() {
             <TouchableOpacity
               style={[
                 styles.sendBtn,
-                (!inputMessage.trim() || isSending) && styles.sendBtnDisabled,
+                (!inputMessage.trim() && pendingAttachments.length === 0 || isSending) && styles.sendBtnDisabled,
               ]}
               onPress={handleSend}
-              disabled={!inputMessage.trim() || isSending}
+              disabled={(!inputMessage.trim() && pendingAttachments.length === 0) || isSending}
               activeOpacity={0.85}
             >
               {isSending ? (
@@ -388,6 +634,31 @@ export default function ChatModal() {
           </View>
         </KeyboardAvoidingView>
       </View>
+
+      {/* ── FULLSCREEN IMAGE PREVIEW MODAL ───────────────────────────── */}
+      <Modal
+        visible={!!fullscreenImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFullscreenImage(null)}
+      >
+        <View style={styles.fullscreenOverlay}>
+          <TouchableOpacity
+            style={styles.fullscreenCloseBtn}
+            onPress={() => setFullscreenImage(null)}
+            activeOpacity={0.8}
+          >
+            <X size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+          {fullscreenImage && (
+            <Image
+              source={{ uri: fullscreenImage }}
+              style={styles.fullscreenImg}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -696,6 +967,67 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
 
+  // Attachment images & documents inside bubbles
+  attachmentImageContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    maxWidth: 240,
+    maxHeight: 200,
+    backgroundColor: '#000000',
+  },
+  attachmentImage: {
+    width: 240,
+    height: 180,
+    borderRadius: 12,
+  },
+  expandBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 4,
+    borderRadius: 6,
+  },
+  attachmentDocCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 10,
+    maxWidth: 240,
+  },
+  attachmentDocIncoming: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  attachmentDocOutgoing: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  docIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  docName: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  docSize: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+
   // Quick Chips
   quickChipsWrapper: {
     backgroundColor: '#FFFFFF',
@@ -723,6 +1055,96 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#059669',
     fontWeight: '600',
+  },
+
+  // Pending Attachments Tray
+  pendingTray: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  pendingItem: {
+    position: 'relative',
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  pendingImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 10,
+  },
+  pendingDoc: {
+    width: 90,
+    height: 54,
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  pendingDocName: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  pendingRemoveBtn: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Attachment Menu Popover
+  attachMenu: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  attachOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    cursor: 'pointer' as any,
+  },
+  attachIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  attachBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer' as any,
+  },
+  attachBtnActive: {
+    backgroundColor: 'rgba(5, 150, 105, 0.12)',
   },
 
   // Input Bar
@@ -766,5 +1188,30 @@ const styles = StyleSheet.create({
   sendBtnDisabled: {
     backgroundColor: '#94A3B8',
     shadowOpacity: 0,
+  },
+
+  // Fullscreen Image Overlay
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenCloseBtn: {
+    position: 'absolute',
+    top: 48,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer' as any,
+  },
+  fullscreenImg: {
+    width: '94%',
+    height: '80%',
   },
 });

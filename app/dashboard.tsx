@@ -29,6 +29,8 @@ import {
   Zap,
   Star,
   Send,
+  FileText,
+  Download,
 } from 'lucide-react-native';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
@@ -41,6 +43,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1723,13 +1727,54 @@ export default function DashboardScreen() {
                         borderBottomRightRadius: isAgentSender ? 2 : 14,
                         borderBottomLeftRadius: !isAgentSender ? 2 : 14,
                       }}>
-                        <Text style={{
-                          fontSize: 13,
-                          lineHeight: 18,
-                          color: isAgentSender ? '#FFFFFF' : theme.text,
-                        }}>
-                          {msg.message}
-                        </Text>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <View style={{ gap: 6, marginBottom: msg.message ? 6 : 2 }}>
+                            {msg.attachments.map((att) => {
+                              if (att.type === 'image') {
+                                return (
+                                  <Image
+                                    key={att.id}
+                                    source={{ uri: att.url }}
+                                    style={{ width: 220, height: 140, borderRadius: 8, backgroundColor: '#000000' }}
+                                    resizeMode="cover"
+                                  />
+                                );
+                              }
+                              return (
+                                <TouchableOpacity
+                                  key={att.id}
+                                  onPress={() => { if (att.url) Linking.openURL(att.url).catch(() => {}); }}
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    padding: 8,
+                                    borderRadius: 8,
+                                    backgroundColor: isAgentSender ? 'rgba(255,255,255,0.18)' : (isDark ? '#0F172A' : '#FFFFFF'),
+                                    gap: 8,
+                                    maxWidth: 220,
+                                  }}
+                                >
+                                  <FileText size={16} color={isAgentSender ? '#FFFFFF' : '#059669'} />
+                                  <Text style={{ fontSize: 12, fontWeight: '600', color: isAgentSender ? '#FFFFFF' : theme.text, flex: 1 }} numberOfLines={1}>
+                                    {att.name || 'Document'}
+                                  </Text>
+                                  <Download size={14} color={isAgentSender ? '#FFFFFF' : '#64748B'} />
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        )}
+
+                        {!!msg.message && (
+                          <Text style={{
+                            fontSize: 13,
+                            lineHeight: 18,
+                            color: isAgentSender ? '#FFFFFF' : theme.text,
+                          }}>
+                            {msg.message}
+                          </Text>
+                        )}
+
                         <Text style={{
                           fontSize: 10,
                           color: isAgentSender ? 'rgba(255,255,255,0.7)' : theme.textMuted,

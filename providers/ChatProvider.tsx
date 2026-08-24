@@ -8,6 +8,7 @@ import type { Property } from '@/types/property';
 import type {
   ChatConversation,
   ChatMessage,
+  ChatAttachment,
   ConversationParticipant,
   ConversationPropertyContext,
   MessageRole,
@@ -685,11 +686,19 @@ export const [ChatProvider, useChat] = createContextHook(() => {
 
   const sendMessage = async (
     conversationId: string,
-    text: string
+    text: string,
+    attachments?: ChatAttachment[]
   ): Promise<ChatMessage | null> => {
-    if (!text || !text.trim()) return null;
+    const hasAttachments = attachments && attachments.length > 0;
+    if ((!text || !text.trim()) && !hasAttachments) return null;
 
-    const trimmed = text.trim();
+    const trimmed = (text || '').trim();
+    const displaySummary = trimmed || (
+      hasAttachments
+        ? (attachments![0].type === 'image' ? '📷 Photo' : `📄 ${attachments![0].name || 'Document'}`)
+        : ''
+    );
+
     setIsSending(true);
 
     const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
@@ -705,6 +714,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       senderAvatar: user?.avatar,
       senderRole,
       message: trimmed,
+      attachments: hasAttachments ? attachments : undefined,
       timestamp: new Date().toISOString(),
       isRead: false,
       status: 'delivered',
@@ -737,7 +747,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
 
         activeUpdatedConv = {
           ...c,
-          lastMessage: trimmed,
+          lastMessage: displaySummary,
           lastMessageAt: newMsg.timestamp,
           caseStatus: nextCaseStatus,
           statusHistory: nextHistory,
