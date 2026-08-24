@@ -124,7 +124,6 @@ const mStyles = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useResponsive } from '@/constants/breakpoints';
-import WebNavbar from '@/components/WebNavbar';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -141,7 +140,6 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: isDesktop ? 0 : insets.top }]}>
-      {isDesktop && <WebNavbar />}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
