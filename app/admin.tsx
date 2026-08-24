@@ -68,6 +68,7 @@ import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import type { PropertySubmission } from '@/types/property';
+import type { CaseStatus, CaseStatusChange } from '@/types/chat';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/providers/AuthProvider';
@@ -263,16 +264,90 @@ const mockStaff: StaffMember[] = [
   },
 ];
 
+export const CASE_STATUSES: {
+  id: CaseStatus;
+  labelFr: string;
+  labelEn: string;
+  color: string;
+  bgDark: string;
+  bgLight: string;
+  descFr: string;
+  descEn: string;
+}[] = [
+  {
+    id: 'Open',
+    labelFr: 'Ouvert',
+    labelEn: 'Open',
+    color: '#10B981',
+    bgDark: 'rgba(16, 185, 129, 0.18)',
+    bgLight: '#ECFDF5',
+    descFr: 'Nouveau dossier non encore débuté',
+    descEn: 'New case not started yet',
+  },
+  {
+    id: 'In Progress',
+    labelFr: 'En cours',
+    labelEn: 'In Progress',
+    color: '#3B82F6',
+    bgDark: 'rgba(59, 130, 246, 0.18)',
+    bgLight: '#EFF6FF',
+    descFr: 'Le support client traite activement la demande',
+    descEn: 'Support is actively working on the case',
+  },
+  {
+    id: 'Hold',
+    labelFr: 'En attente',
+    labelEn: 'On Hold',
+    color: '#F59E0B',
+    bgDark: 'rgba(245, 158, 11, 0.18)',
+    bgLight: '#FFFBEB',
+    descFr: 'En attente d’informations ou d’approbation',
+    descEn: 'Waiting for info, approval, or action',
+  },
+  {
+    id: 'Solved',
+    labelFr: 'Solutionné',
+    labelEn: 'Solved',
+    color: '#8B5CF6',
+    bgDark: 'rgba(139, 92, 246, 0.18)',
+    bgLight: '#F5F3FF',
+    descFr: 'Une solution a été apportée au client',
+    descEn: 'Solution has been provided to customer',
+  },
+  {
+    id: 'Resolved',
+    labelFr: 'Résolu',
+    labelEn: 'Resolved',
+    color: '#64748B',
+    bgDark: 'rgba(100, 116, 139, 0.18)',
+    bgLight: '#F1F5F9',
+    descFr: 'Dossier finalisé et clôturé',
+    descEn: 'Case officially closed and completed',
+  },
+  {
+    id: 'Reopen',
+    labelFr: 'Réouvert',
+    labelEn: 'Reopened',
+    color: '#F43F5E',
+    bgDark: 'rgba(244, 63, 94, 0.18)',
+    bgLight: '#FFF1F2',
+    descFr: 'Dossier réouvert suite à une nouvelle question',
+    descEn: 'Reopened due to continued or new issue',
+  },
+];
+
 interface SupportTicket {
   id: string;
   user: string;
   email: string;
   subject: string;
-  department: DepartmentType;
-  status: 'Open' | 'In Progress' | 'Resolved';
+  department: string;
+  status: CaseStatus;
   priority: 'High' | 'Medium' | 'Low';
   timestamp: string;
   conversationId?: string;
+  assignedAgent?: string;
+  statusHistory?: CaseStatusChange[];
   messages: { sender: 'user' | 'admin' | 'ai'; text: string; time: string }[];
 }
 
@@ -282,10 +357,20 @@ const mockTickets: SupportTicket[] = [
     user: 'Amadou Touré',
     email: 'amadou.toure@gmail.com',
     subject: 'Issue with ACD cadastral deed upload for Cocody Villa',
-    department: 'Legal & Compliance',
+    department: 'Customer Care',
     status: 'Open',
     priority: 'High',
     timestamp: '10 min ago',
+    assignedAgent: 'Fatou Diallo (Customer Care)',
+    statusHistory: [
+      {
+        status: 'Open',
+        changedBy: 'Système',
+        changedByRole: 'system',
+        changedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+        note: 'Dossier créé par le client',
+      },
+    ],
     messages: [
       { sender: 'user', text: 'Hello, I uploaded the ACD deed twice for my property in Cocody Danga, but the verification status still says Pending. Could you please confirm if the document is legible?', time: '10 min ago' },
     ],
@@ -295,10 +380,26 @@ const mockTickets: SupportTicket[] = [
     user: 'Marie Kouakou',
     email: 'marie.k@hotmail.com',
     subject: 'Orange Money payment confirmation for listing boost',
-    department: 'Finance & Billing',
+    department: 'Customer Care',
     status: 'In Progress',
     priority: 'Medium',
     timestamp: '45 min ago',
+    assignedAgent: 'Jean-Marc Kouassi',
+    statusHistory: [
+      {
+        status: 'Open',
+        changedBy: 'Système',
+        changedByRole: 'system',
+        changedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+      },
+      {
+        status: 'In Progress',
+        changedBy: 'Jean-Marc Kouassi',
+        changedByRole: 'support',
+        changedAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+        note: 'Vérification en cours avec la passerelle Orange Money',
+      },
+    ],
     messages: [
       { sender: 'user', text: 'Transaction OM-992014 was debited from my account for 25,000 FCFA but the listing badge is not showing Featured yet.', time: '45 min ago' },
       { sender: 'admin', text: 'Bonjour Marie, we are verifying the transaction reference with the Orange Money gateway. Thank you for your patience.', time: '20 min ago' },
@@ -309,10 +410,26 @@ const mockTickets: SupportTicket[] = [
     user: 'David Brown',
     email: 'david.b@example.com',
     subject: 'Request to schedule physical property inspection in Plateau',
-    department: 'Sales & Commercial',
+    department: 'Customer Care',
     status: 'Resolved',
     priority: 'Low',
     timestamp: '2 hours ago',
+    assignedAgent: 'Fatou Diallo (Customer Care)',
+    statusHistory: [
+      {
+        status: 'Open',
+        changedBy: 'Système',
+        changedByRole: 'system',
+        changedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+      },
+      {
+        status: 'Resolved',
+        changedBy: 'Fatou Diallo',
+        changedByRole: 'support',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+        note: 'Visite confirmée avec le client',
+      },
+    ],
     messages: [
       { sender: 'user', text: 'Can an agency representative meet me on-site tomorrow at 2 PM?', time: '2 hours ago' },
       { sender: 'admin', text: 'Confirmed! Agent Fatou Diallo will meet you at the property at 2:00 PM.', time: '1 hour ago' },
@@ -455,12 +572,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     conversations: chatConversations,
     messages: chatMessagesMap,
     sendMessage: sendChatMessage,
+    updateCaseStatus,
     markAsRead: markChatAsRead,
   } = useChat();
 
   const [mockTicketsState, setMockTicketsState] = useState<SupportTicket[]>(mockTickets);
   const [selectedTicketId, setSelectedTicketId] = useState<string>('conv-support-1');
-  const [ticketFilter, setTicketFilter] = useState<'All' | 'Open' | 'In Progress' | 'Resolved'>('All');
+  const [ticketFilter, setTicketFilter] = useState<
+    'All' | 'Open' | 'In Progress' | 'Hold' | 'Solved' | 'Resolved' | 'Reopen'
+  >('All');
   const [replyText, setReplyText] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const supportMessagesScrollRef = useRef<ScrollView>(null);
@@ -472,7 +592,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       const convMsgs = chatMessagesMap[conv.id] || [];
 
       const formattedMsgs = convMsgs.map((m) => {
-        const isAdmin = m.senderRole === 'agent' || m.senderRole === 'admin';
+        const isAdmin = m.senderRole === 'agent' || m.senderRole === 'admin' || m.senderRole === 'support';
         return {
           sender: isAdmin ? ('admin' as const) : ('user' as const),
           text: m.message,
@@ -480,19 +600,18 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         };
       });
 
-      const status: 'Open' | 'In Progress' | 'Resolved' =
-        conv.status === 'archived'
+      const status: CaseStatus =
+        conv.caseStatus ||
+        (conv.status === 'archived'
           ? 'Resolved'
           : conv.unreadCountAgent > 0
           ? 'Open'
-          : 'In Progress';
+          : 'In Progress');
 
-      const dept: DepartmentType = isSupport
-        ? 'Legal & Compliance'
-        : 'Sales & Commercial';
+      const dept = conv.department || (isSupport ? 'Customer Care' : 'Sales & Commercial');
 
       const subject = isSupport
-        ? (language === 'fr' ? 'Demande d’assistance directe (Support 24/7)' : 'Direct User Support Inquiry')
+        ? (language === 'fr' ? 'Demande d’assistance directe (Support Client)' : 'Direct Customer Support Request')
         : conv.property
         ? (language === 'fr' ? `Demande : ${conv.property.title}` : `Inquiry: ${conv.property.title}`)
         : (language === 'fr' ? 'Demande client' : 'Customer inquiry');
@@ -512,6 +631,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         subject,
         department: dept,
         status,
+        assignedAgent: conv.assignedAgent?.name || (isSupport ? 'Fatou Diallo (Customer Care)' : 'Agent ImmoCI'),
+        statusHistory: conv.statusHistory,
         priority: conv.unreadCountAgent > 0 ? ('High' as const) : ('Medium' as const),
         timestamp: timeStr,
         conversationId: conv.id,
@@ -548,6 +669,51 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleUpdateStatus = async (ticket: SupportTicket, newStatus: CaseStatus) => {
+    // Check role permission
+    const isAuthorized = activeRole === 'Super Admin' || activeRole === 'Sales Agent' || activeRole === 'Operations Manager' || user?.role === 'support' || user?.role === 'admin';
+    if (!isAuthorized) {
+      showToast(language === 'fr' ? 'Action réservée aux agents Support & Admins' : 'Authorized for Support & Admin agents only');
+      return;
+    }
+
+    const changerName = user?.name || activeRole || 'Agent Support';
+    const note = language === 'fr' ? `Statut passé à "${newStatus}" par ${changerName}` : `Status updated to "${newStatus}" by ${changerName}`;
+
+    if (ticket.conversationId && updateCaseStatus) {
+      await updateCaseStatus(ticket.conversationId, newStatus, note);
+    } else {
+      setMockTicketsState((prev) =>
+        prev.map((t) => {
+          if (t.id === ticket.id) {
+            const hist = t.statusHistory || [];
+            return {
+              ...t,
+              status: newStatus,
+              statusHistory: [
+                ...hist,
+                {
+                  status: newStatus,
+                  changedBy: changerName,
+                  changedByRole: 'support',
+                  changedAt: new Date().toISOString(),
+                  note,
+                },
+              ],
+            };
+          }
+          return t;
+        })
+      );
+    }
+
+    showToast(
+      language === 'fr'
+        ? `Statut du dossier mis à jour : ${newStatus}`
+        : `Case status updated: ${newStatus}`
+    );
   };
 
   // Static analytics data — avoids tRPC hook issues in static Vercel export
@@ -1341,6 +1507,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     });
 
     const activeTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
+    const activeStatusMeta = activeTicket ? (CASE_STATUSES.find((s) => s.id === activeTicket.status) || CASE_STATUSES[0]) : CASE_STATUSES[0];
 
     return (
       <View style={styles.animateView}>
@@ -1350,94 +1517,138 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {t('admin_tickets_title')}
             </Text>
             <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
-              {t('admin_support_desk_sub')}
+              {language === 'fr'
+                ? 'Gestion dédiée du support client et suivi en temps réel du statut des dossiers'
+                : 'Dedicated customer care desk with live case status tracking & management'}
             </Text>
           </View>
         </View>
 
-        {/* Ticket Filter Pills */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-          {(['All', 'Open', 'In Progress', 'Resolved'] as const).map((filter) => {
-            const isSelected = ticketFilter === filter;
-            return (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  styles.deptPill,
-                  {
-                    backgroundColor: isSelected ? '#059669' : isDark ? '#1E293B' : '#FFFFFF',
-                    borderColor: isSelected ? '#059669' : stitchTheme.cardBorder,
-                  },
-                ]}
-                onPress={() => setTicketFilter(filter)}
-              >
-                <Text style={[styles.deptPillText, { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary }]}>
-                  {filter === 'All' ? (language === 'fr' ? 'Tous' : 'All') : filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        {/* Ticket Filter Pills for all 6 Case Statuses */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 2 }}>
+            {(['All', 'Open', 'In Progress', 'Hold', 'Solved', 'Resolved', 'Reopen'] as const).map((filter) => {
+              const isSelected = ticketFilter === filter;
+              const statusDef = CASE_STATUSES.find((s) => s.id === filter);
+              const count = filter === 'All'
+                ? tickets.length
+                : tickets.filter((t) => t.status === filter).length;
+
+              return (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.deptPill,
+                    {
+                      backgroundColor: isSelected
+                        ? (statusDef ? statusDef.color : '#059669')
+                        : isDark
+                        ? '#1E293B'
+                        : '#FFFFFF',
+                      borderColor: isSelected
+                        ? (statusDef ? statusDef.color : '#059669')
+                        : stitchTheme.cardBorder,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                    },
+                  ]}
+                  onPress={() => setTicketFilter(filter)}
+                >
+                  {statusDef && (
+                    <View
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: 4,
+                        backgroundColor: isSelected ? '#FFFFFF' : statusDef.color,
+                      }}
+                    />
+                  )}
+                  <Text style={[styles.deptPillText, { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary }]}>
+                    {filter === 'All'
+                      ? (language === 'fr' ? 'Tous' : 'All')
+                      : (language === 'fr' ? (statusDef?.labelFr || filter) : (statusDef?.labelEn || filter))}{' '}
+                    <Text style={{ opacity: 0.8, fontSize: 11 }}>({count})</Text>
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
 
         {/* Two column layout: ticket list & conversation view */}
         <View style={styles.supportLayout}>
           {/* Left Column: Tickets Queue */}
           <View style={[styles.ticketListCol, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
-            {filteredTickets.map((t) => {
-              const isSelected = t.id === selectedTicketId;
-              return (
-                <TouchableOpacity
-                  key={t.id}
-                  style={[
-                    styles.ticketCard,
-                    {
-                      backgroundColor: isSelected ? (isDark ? '#1E293B' : '#EFF6FF') : 'transparent',
-                      borderBottomColor: stitchTheme.cardBorder,
-                    },
-                  ]}
-                  onPress={() => {
-                    setSelectedTicketId(t.id);
-                    if (t.conversationId) {
-                      markChatAsRead(t.conversationId);
-                    }
-                  }}
-                >
-                  <View style={styles.ticketCardHeader}>
-                    <Text style={[styles.ticketUser, { color: stitchTheme.textPrimary }]}>{t.user}</Text>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        t.status === 'Open'
-                          ? styles.statusPending
-                          : t.status === 'In Progress'
-                          ? { backgroundColor: 'rgba(59, 130, 246, 0.15)' }
-                          : styles.statusApproved,
-                      ]}
-                    >
-                      <Text
+            {filteredTickets.length === 0 ? (
+              <View style={{ padding: 24, alignItems: 'center' }}>
+                <Headphones size={32} color={stitchTheme.textSecondary} style={{ marginBottom: 8, opacity: 0.5 }} />
+                <Text style={{ color: stitchTheme.textSecondary, fontSize: 13, textAlign: 'center' }}>
+                  {language === 'fr' ? 'Aucun dossier dans cette catégorie' : 'No cases in this status category'}
+                </Text>
+              </View>
+            ) : (
+              filteredTickets.map((t) => {
+                const isSelected = t.id === selectedTicketId;
+                const statusMeta = CASE_STATUSES.find((s) => s.id === t.status) || CASE_STATUSES[0];
+
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[
+                      styles.ticketCard,
+                      {
+                        backgroundColor: isSelected ? (isDark ? '#1E293B' : '#EFF6FF') : 'transparent',
+                        borderBottomColor: stitchTheme.cardBorder,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedTicketId(t.id);
+                      if (t.conversationId) {
+                        markChatAsRead(t.conversationId);
+                      }
+                    }}
+                  >
+                    <View style={styles.ticketCardHeader}>
+                      <Text style={[styles.ticketUser, { color: stitchTheme.textPrimary }]}>{t.user}</Text>
+                      <View
                         style={[
-                          styles.statusText,
-                          t.status === 'Open'
-                            ? styles.statusTextPendingTable
-                            : t.status === 'In Progress'
-                            ? { color: '#3B82F6' }
-                            : styles.statusTextApproved,
+                          styles.statusBadge,
+                          {
+                            backgroundColor: isDark ? statusMeta.bgDark : statusMeta.bgLight,
+                            borderColor: statusMeta.color + '40',
+                            borderWidth: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                          },
                         ]}
                       >
-                        {t.status}
-                      </Text>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusMeta.color }} />
+                        <Text style={[styles.statusText, { color: statusMeta.color, fontWeight: '700' }]}>
+                          {language === 'fr' ? statusMeta.labelFr : statusMeta.labelEn}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <Text style={[styles.ticketSubject, { color: stitchTheme.textPrimary }]} numberOfLines={1}>
-                    {t.subject}
-                  </Text>
-                  <View style={styles.ticketMeta}>
-                    <Text style={[styles.ticketDept, { color: '#059669' }]}>{t.department}</Text>
-                    <Text style={[styles.ticketTime, { color: stitchTheme.textSecondary }]}>{t.timestamp}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                    <Text style={[styles.ticketSubject, { color: stitchTheme.textPrimary }]} numberOfLines={1}>
+                      {t.subject}
+                    </Text>
+                    <View style={styles.ticketMeta}>
+                      <Text style={[styles.ticketDept, { color: '#059669' }]}>
+                        {t.department || 'Customer Care'}
+                      </Text>
+                      <Text style={[styles.ticketTime, { color: stitchTheme.textSecondary }]}>{t.timestamp}</Text>
+                    </View>
+                    {t.assignedAgent && (
+                      <Text style={{ fontSize: 11, color: stitchTheme.textSecondary, marginTop: 4 }} numberOfLines={1}>
+                        👤 {language === 'fr' ? 'Assigné à :' : 'Assigned to:'} <Text style={{ fontWeight: '600' }}>{t.assignedAgent}</Text>
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
 
           {/* Right Column: Conversation Thread */}
@@ -1445,52 +1656,139 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <View style={[styles.ticketThreadCol, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
               {/* Thread Header */}
               <View style={[styles.threadHeader, { borderBottomColor: stitchTheme.cardBorder }]}>
-                <View>
-                  <Text style={[styles.threadSubject, { color: stitchTheme.textPrimary }]}>{activeTicket.subject}</Text>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                    <Text style={[styles.threadSubject, { color: stitchTheme.textPrimary }]}>{activeTicket.subject}</Text>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: isDark ? activeStatusMeta.bgDark : activeStatusMeta.bgLight,
+                          borderColor: activeStatusMeta.color + '50',
+                          borderWidth: 1,
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4,
+                        },
+                      ]}
+                    >
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activeStatusMeta.color }} />
+                      <Text style={{ color: activeStatusMeta.color, fontWeight: '800', fontSize: 11 }}>
+                        {language === 'fr' ? activeStatusMeta.labelFr : activeStatusMeta.labelEn}
+                      </Text>
+                    </View>
+                  </View>
+
                   <Text style={[styles.threadUser, { color: stitchTheme.textSecondary }]}>
-                    {activeTicket.user} ({activeTicket.email}) • {activeTicket.department}
+                    {activeTicket.user} ({activeTicket.email}) • <Text style={{ color: '#059669', fontWeight: '700' }}>{activeTicket.department || 'Customer Care'}</Text>
+                    {activeTicket.assignedAgent && (
+                      <Text style={{ color: stitchTheme.textSecondary }}>
+                        {' • '}👤 <Text style={{ fontWeight: '600', color: stitchTheme.textPrimary }}>{activeTicket.assignedAgent}</Text>
+                      </Text>
+                    )}
                   </Text>
                 </View>
-                {/* Status Toggle */}
-                <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    {
-                      backgroundColor: activeTicket.status === 'Resolved' ? '#64748B' : '#059669',
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                    },
-                  ]}
-                  onPress={() => {
-                    const nextStatus = activeTicket.status === 'Resolved' ? 'Open' : 'Resolved';
-                    if (!activeTicket.conversationId) {
-                      setMockTicketsState((prev) =>
-                        prev.map((t) => (t.id === activeTicket.id ? { ...t, status: nextStatus } : t))
-                      );
-                    }
-                    showToast(
-                      nextStatus === 'Resolved'
-                        ? language === 'fr'
-                          ? 'Ticket marqué comme résolu'
-                          : 'Ticket resolved'
-                        : language === 'fr'
-                        ? 'Ticket réouvert'
-                        : 'Ticket reopened'
+              </View>
+
+              {/* Status Controls Toolbar for Customer Support Agent */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: stitchTheme.cardBorder,
+                  backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Sliders size={14} color={stitchTheme.textSecondary} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: stitchTheme.textSecondary }}>
+                    {language === 'fr' ? 'Changer le statut du dossier :' : 'Change Case Status:'}
+                  </Text>
+                </View>
+
+                {/* 6 One-Click Status Action Buttons */}
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  {CASE_STATUSES.map((st) => {
+                    const isCurrent = activeTicket.status === st.id;
+                    return (
+                      <TouchableOpacity
+                        key={st.id}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4,
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
+                          backgroundColor: isCurrent ? st.color : isDark ? '#1E293B' : '#FFFFFF',
+                          borderWidth: 1,
+                          borderColor: isCurrent ? st.color : stitchTheme.cardBorder,
+                        }}
+                        onPress={() => handleUpdateStatus(activeTicket, st.id)}
+                      >
+                        <View
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: isCurrent ? '#FFFFFF' : st.color,
+                          }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: isCurrent ? '800' : '600',
+                            color: isCurrent ? '#FFFFFF' : stitchTheme.textPrimary,
+                          }}
+                        >
+                          {language === 'fr' ? st.labelFr : st.labelEn}
+                        </Text>
+                      </TouchableOpacity>
                     );
+                  })}
+                </View>
+              </View>
+
+              {/* Status Audit Trail Banner (Date/Time & Changer Agent) */}
+              {activeTicket.statusHistory && activeTicket.statusHistory.length > 0 && (
+                <View
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 6,
+                    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.5)' : '#F1F5F9',
+                    borderBottomWidth: 1,
+                    borderBottomColor: stitchTheme.cardBorder,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  <CheckCircle size={15} color="#FFFFFF" />
-                  <Text style={styles.primaryButtonText}>
-                    {activeTicket.status === 'Resolved'
-                      ? language === 'fr'
-                        ? 'Réouvrir'
-                        : 'Reopen'
-                      : language === 'fr'
-                      ? 'Marquer Résolu'
-                      : 'Resolve'}
+                  <CheckCircle size={12} color="#059669" />
+                  <Text style={{ fontSize: 11, color: stitchTheme.textSecondary }} numberOfLines={1}>
+                    {language === 'fr' ? 'Dernière modification :' : 'Last status transition:'}{' '}
+                    <Text style={{ fontWeight: '700', color: stitchTheme.textPrimary }}>
+                      {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].status}
+                    </Text>
+                    {' '}{language === 'fr' ? 'par' : 'by'}{' '}
+                    <Text style={{ fontWeight: '600', color: stitchTheme.textPrimary }}>
+                      {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].changedBy}
+                    </Text>
+                    {' • '}
+                    {new Date(activeTicket.statusHistory[activeTicket.statusHistory.length - 1].changedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].note
+                      ? ` (${activeTicket.statusHistory[activeTicket.statusHistory.length - 1].note})`
+                      : ''}
                   </Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+              )}
 
               {/* Messages Area */}
               <ScrollView

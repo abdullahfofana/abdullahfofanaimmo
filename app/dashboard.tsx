@@ -1625,22 +1625,73 @@ export default function DashboardScreen() {
                   </View>
                 </View>
 
-                {activeConv.property && (
-                  <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: isDark ? 'rgba(45,106,79,0.18)' : 'rgba(5, 150, 105, 0.08)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 8,
-                  }}>
-                    <Building2 size={13} color={theme.purpleLight} />
-                    <Text style={{ fontSize: 11.5, fontWeight: '700', color: theme.purpleLight }}>
-                      {(activeConv.property.price / 1000000).toFixed(1)}M FCFA
-                    </Text>
-                  </View>
-                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {activeConv.caseStatus && (
+                    <View style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 6,
+                      backgroundColor: activeConv.caseStatus === 'Open'
+                        ? 'rgba(16,185,129,0.15)'
+                        : activeConv.caseStatus === 'In Progress'
+                        ? 'rgba(59,130,246,0.15)'
+                        : activeConv.caseStatus === 'Hold'
+                        ? 'rgba(245,158,11,0.15)'
+                        : activeConv.caseStatus === 'Solved'
+                        ? 'rgba(139,92,246,0.15)'
+                        : activeConv.caseStatus === 'Reopen'
+                        ? 'rgba(244,63,94,0.15)'
+                        : 'rgba(100,116,139,0.15)',
+                      borderWidth: 1,
+                      borderColor: activeConv.caseStatus === 'Open'
+                        ? '#10B981'
+                        : activeConv.caseStatus === 'In Progress'
+                        ? '#3B82F6'
+                        : activeConv.caseStatus === 'Hold'
+                        ? '#F59E0B'
+                        : activeConv.caseStatus === 'Solved'
+                        ? '#8B5CF6'
+                        : activeConv.caseStatus === 'Reopen'
+                        ? '#F43F5E'
+                        : '#64748B',
+                    }}>
+                      <Text style={{
+                        fontSize: 10.5,
+                        fontWeight: '800',
+                        color: activeConv.caseStatus === 'Open'
+                          ? '#10B981'
+                          : activeConv.caseStatus === 'In Progress'
+                          ? '#3B82F6'
+                          : activeConv.caseStatus === 'Hold'
+                          ? '#F59E0B'
+                          : activeConv.caseStatus === 'Solved'
+                          ? '#8B5CF6'
+                          : activeConv.caseStatus === 'Reopen'
+                          ? '#F43F5E'
+                          : '#64748B',
+                      }}>
+                        {activeConv.caseStatus}
+                      </Text>
+                    </View>
+                  )}
+
+                  {activeConv.property && (
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      backgroundColor: isDark ? 'rgba(45,106,79,0.18)' : 'rgba(5, 150, 105, 0.08)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 8,
+                    }}>
+                      <Building2 size={13} color={theme.purpleLight} />
+                      <Text style={{ fontSize: 11.5, fontWeight: '700', color: theme.purpleLight }}>
+                        {(activeConv.property.price / 1000000).toFixed(1)}M FCFA
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
               {/* Messages Thread Scroll */}

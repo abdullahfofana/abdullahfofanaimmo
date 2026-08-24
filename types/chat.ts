@@ -1,6 +1,16 @@
 export type MessageRole = 'buyer' | 'agent' | 'admin' | 'support';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
 
+export type CaseStatus = 'Open' | 'In Progress' | 'Hold' | 'Solved' | 'Resolved' | 'Reopen';
+
+export interface CaseStatusChange {
+  status: CaseStatus;
+  changedBy: string;
+  changedByRole: string;
+  changedAt: string; // ISO string
+  note?: string;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
@@ -30,6 +40,7 @@ export interface ConversationParticipant {
   role: MessageRole;
   avatar?: string;
   phone?: string;
+  department?: string;
 }
 
 export interface ChatConversation {
@@ -43,6 +54,10 @@ export interface ChatConversation {
   unreadCountBuyer: number;
   unreadCountAgent: number;
   status: 'active' | 'archived';
+  caseStatus?: CaseStatus;
+  department?: string; // e.g. 'Customer Care'
+  assignedAgent?: ConversationParticipant;
+  statusHistory?: CaseStatusChange[];
   createdAt: string;
   updatedAt: string;
 }

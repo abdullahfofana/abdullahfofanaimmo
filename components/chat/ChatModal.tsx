@@ -47,6 +47,18 @@ const QUICK_SUGGESTIONS = [
   '🔑 Quel est le montant de la caution demandée ?',
 ];
 
+const CASE_STATUS_CONFIG: Record<
+  string,
+  { labelFr: string; labelEn: string; color: string; bg: string }
+> = {
+  Open: { labelFr: 'Dossier Ouvert', labelEn: 'Case Open', color: '#10B981', bg: '#ECFDF5' },
+  'In Progress': { labelFr: 'En cours de traitement', labelEn: 'In Progress', color: '#3B82F6', bg: '#EFF6FF' },
+  Hold: { labelFr: 'En attente', labelEn: 'On Hold', color: '#F59E0B', bg: '#FFFBEB' },
+  Solved: { labelFr: 'Solutionné', labelEn: 'Solved', color: '#8B5CF6', bg: '#F5F3FF' },
+  Resolved: { labelFr: 'Dossier Clôturé', labelEn: 'Resolved & Closed', color: '#64748B', bg: '#F1F5F9' },
+  Reopen: { labelFr: 'Dossier Réouvert', labelEn: 'Case Reopened', color: '#F43F5E', bg: '#FFF1F2' },
+};
+
 export default function ChatModal() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
@@ -168,6 +180,26 @@ export default function ChatModal() {
               <X size={20} color="#64748B" />
             </TouchableOpacity>
           </View>
+
+          {/* ── CUSTOMER SUPPORT CASE STATUS BANNER ──────────────────────── */}
+          {isSupportChat && (() => {
+            const rawStatus = activeConversation.caseStatus || 'In Progress';
+            const caseMeta = CASE_STATUS_CONFIG[rawStatus] || CASE_STATUS_CONFIG['Open'];
+            return (
+              <View style={[styles.supportCaseBanner, { backgroundColor: caseMeta.bg, borderColor: caseMeta.color + '30' }]}>
+                <View style={styles.supportCaseLeft}>
+                  <View style={[styles.caseDot, { backgroundColor: caseMeta.color }]} />
+                  <Text style={[styles.caseBadgeText, { color: caseMeta.color }]}>
+                    {language === 'fr' ? caseMeta.labelFr : caseMeta.labelEn}
+                  </Text>
+                </View>
+                <Text style={styles.caseDeptText}>
+                  {activeConversation.department || 'Customer Care'}
+                  {activeConversation.assignedAgent?.name ? ` • ${activeConversation.assignedAgent.name}` : ''}
+                </Text>
+              </View>
+            );
+          })()}
 
           {/* ── PROPERTY CONTEXT CARD (IF LINKED TO PROPERTY) ───────────── */}
           {property && (
@@ -476,6 +508,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer' as any,
+  },
+
+  // Customer Support Case Banner
+  supportCaseBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  supportCaseLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  caseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  caseBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  caseDeptText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
   },
 
   // Property Banner Context

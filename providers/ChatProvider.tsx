@@ -11,6 +11,8 @@ import type {
   ConversationParticipant,
   ConversationPropertyContext,
   MessageRole,
+  CaseStatus,
+  CaseStatusChange,
 } from '@/types/chat';
 
 const STORAGE_CONVERSATIONS_KEY = '@immoci_chat_conversations_v3';
@@ -88,6 +90,8 @@ const INITIAL_CONVERSATIONS: ChatConversation[] = [
   {
     id: 'conv-support-1',
     propertyId: 'support',
+    department: 'Customer Care',
+    caseStatus: 'In Progress',
     property: undefined,
     buyer: {
       id: 'buyer-current',
@@ -95,12 +99,36 @@ const INITIAL_CONVERSATIONS: ChatConversation[] = [
       role: 'buyer',
     },
     agent: {
-      id: 'support-team',
-      name: 'Support Client ImmoCI',
+      id: 'support-agent-fatou',
+      name: 'Fatou Diallo (Customer Care)',
       role: 'support',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
       phone: '+225 07 00 00 00 00',
+      department: 'Customer Care',
     },
+    assignedAgent: {
+      id: 'support-agent-fatou',
+      name: 'Fatou Diallo',
+      role: 'support',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
+      department: 'Customer Care',
+    },
+    statusHistory: [
+      {
+        status: 'Open',
+        changedBy: 'System',
+        changedByRole: 'system',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        note: 'Demande créée via le widget support client',
+      },
+      {
+        status: 'In Progress',
+        changedBy: 'Fatou Diallo',
+        changedByRole: 'support',
+        changedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        note: 'Dossier assigné au support client dédié',
+      },
+    ],
     lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
     lastMessageAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     unreadCountBuyer: 1,
@@ -221,6 +249,22 @@ export const [ChatProvider, useChat] = createContextHook(() => {
               }
               return sortConversations(next);
             });
+          } else if (data.type === 'CASE_STATUS_UPDATED') {
+            const { conversationId, newStatus, changeRecord } = data;
+            setConversations((prev) =>
+              prev.map((c) => {
+                if (c.id === conversationId) {
+                  const history = c.statusHistory || [];
+                  return {
+                    ...c,
+                    caseStatus: newStatus,
+                    statusHistory: changeRecord ? [...history, changeRecord] : history,
+                    updatedAt: changeRecord?.changedAt || new Date().toISOString(),
+                  };
+                }
+                return c;
+              })
+            );
           } else if (data.type === 'MARK_READ') {
             const { conversationId, role } = data;
             setConversations((prev) =>
@@ -381,10 +425,28 @@ export const [ChatProvider, useChat] = createContextHook(() => {
           let nextConvs = prevConvs.map((c) => {
             if (c.id === convId) {
               found = true;
+              const isBuyerMsg = newMsg.senderRole === 'buyer';
+              const shouldReopen = isBuyerMsg && (c.caseStatus === 'Solved' || c.caseStatus === 'Resolved');
+              const nextCaseStatus = shouldReopen ? ('Reopen' as CaseStatus) : c.caseStatus;
+              const nextHistory = shouldReopen
+                ? [
+                    ...(c.statusHistory || []),
+                    {
+                      status: 'Reopen' as CaseStatus,
+                      changedBy: newMsg.senderName || 'Client',
+                      changedByRole: 'buyer',
+                      changedAt: newMsg.timestamp,
+                      note: 'Dossier réouvert automatiquement suite au message du client',
+                    },
+                  ]
+                : c.statusHistory;
+
               return {
                 ...c,
                 lastMessage: newMsg.message,
                 lastMessageAt: newMsg.timestamp,
+                caseStatus: nextCaseStatus,
+                statusHistory: nextHistory,
                 unreadCountAgent:
                   newMsg.senderRole === 'buyer' ? c.unreadCountAgent + 1 : c.unreadCountAgent,
                 unreadCountBuyer:
@@ -550,6 +612,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     const newSupportConv: ChatConversation = {
       id: supportConvId,
       propertyId: 'support',
+      department: 'Customer Care',
+      caseStatus: 'Open',
       property: undefined,
       buyer: {
         id: currentBuyerId,
@@ -557,12 +621,29 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         role: 'buyer',
       },
       agent: {
-        id: 'support-team',
-        name: 'Support Client ImmoCI',
+        id: 'support-agent-fatou',
+        name: 'Fatou Diallo (Customer Care)',
         role: 'support',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop',
+        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
         phone: '+225 07 00 00 00 00',
+        department: 'Customer Care',
       },
+      assignedAgent: {
+        id: 'support-agent-fatou',
+        name: 'Fatou Diallo',
+        role: 'support',
+        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
+        department: 'Customer Care',
+      },
+      statusHistory: [
+        {
+          status: 'Open',
+          changedBy: 'System',
+          changedByRole: 'system',
+          changedAt: new Date().toISOString(),
+          note: 'Dossier créé via le support client',
+        },
+      ],
       lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd\u2019hui dans votre recherche immobili\u00e8re ?',
       lastMessageAt: new Date().toISOString(),
       unreadCountBuyer: 0,
@@ -575,8 +656,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     const initialSupportMsg: ChatMessage = {
       id: `msg-sup-${Date.now()}`,
       conversationId: supportConvId,
-      senderId: 'support-team',
-      senderName: 'Support Client ImmoCI',
+      senderId: 'support-agent-fatou',
+      senderName: 'Fatou Diallo (Customer Care)',
       senderRole: 'support',
       message: 'Bonjour ! Comment pouvons-nous vous aider aujourd\u2019hui dans votre recherche immobili\u00e8re ?',
       timestamp: new Date().toISOString(),
@@ -611,8 +692,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     const trimmed = text.trim();
     setIsSending(true);
 
-    const isAgentUser = user?.role === 'agent' || user?.role === 'admin';
-    const senderRole: MessageRole = isAgentUser ? 'agent' : 'buyer';
+    const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
+    const senderRole: MessageRole = isAgentUser ? (user?.role === 'support' ? 'support' : 'agent') : 'buyer';
     const senderId = user?.id || (isAgentUser ? 'agent-current' : 'buyer-current');
     const senderName = user?.name || (isAgentUser ? 'Agent ImmoCI' : 'Acheteur');
 
@@ -638,12 +719,30 @@ export const [ChatProvider, useChat] = createContextHook(() => {
 
     const updatedConvs = conversations.map((c) => {
       if (c.id === conversationId) {
+        const isBuyerMsg = senderRole === 'buyer';
+        const shouldReopen = isBuyerMsg && (c.caseStatus === 'Solved' || c.caseStatus === 'Resolved');
+        const nextCaseStatus = shouldReopen ? ('Reopen' as CaseStatus) : c.caseStatus;
+        const nextHistory = shouldReopen
+          ? [
+              ...(c.statusHistory || []),
+              {
+                status: 'Reopen' as CaseStatus,
+                changedBy: senderName,
+                changedByRole: 'buyer',
+                changedAt: newMsg.timestamp,
+                note: 'Dossier réouvert automatiquement suite au message du client',
+              },
+            ]
+          : c.statusHistory;
+
         activeUpdatedConv = {
           ...c,
           lastMessage: trimmed,
           lastMessageAt: newMsg.timestamp,
-          unreadCountAgent: senderRole === 'buyer' ? c.unreadCountAgent + 1 : c.unreadCountAgent,
-          unreadCountBuyer: senderRole === 'agent' ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
+          caseStatus: nextCaseStatus,
+          statusHistory: nextHistory,
+          unreadCountAgent: isBuyerMsg ? c.unreadCountAgent + 1 : c.unreadCountAgent,
+          unreadCountBuyer: !isBuyerMsg ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
           updatedAt: newMsg.timestamp,
         };
         return activeUpdatedConv;
@@ -668,8 +767,54 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     return newMsg;
   };
 
+  const updateCaseStatus = async (
+    conversationId: string,
+    newStatus: CaseStatus,
+    note?: string
+  ): Promise<void> => {
+    const changerName = user?.name || 'Fatou Diallo';
+    const changerRole = user?.role || 'support';
+    const timestamp = new Date().toISOString();
+
+    const changeRecord: CaseStatusChange = {
+      status: newStatus,
+      changedBy: changerName,
+      changedByRole: changerRole,
+      changedAt: timestamp,
+      note: note || `Statut mis à jour : ${newStatus}`,
+    };
+
+    let updatedConv: ChatConversation | undefined;
+
+    const updatedConvs = conversations.map((c) => {
+      if (c.id === conversationId) {
+        const history = c.statusHistory || [];
+        updatedConv = {
+          ...c,
+          caseStatus: newStatus,
+          statusHistory: [...history, changeRecord],
+          updatedAt: timestamp,
+        };
+        return updatedConv;
+      }
+      return c;
+    });
+
+    const sortedConvs = sortConversations(updatedConvs);
+    setConversations(sortedConvs);
+    persistChatData(sortedConvs, messages);
+
+    broadcastEvent({
+      type: 'CASE_STATUS_UPDATED',
+      conversationId,
+      newStatus,
+      changeRecord,
+      conversation: updatedConv,
+    });
+  };
+
   const markAsRead = async (conversationId: string) => {
-    const isAgentUser = user?.role === 'agent' || user?.role === 'admin';
+    const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
     const roleToClear = isAgentUser ? 'agent' : 'buyer';
 
     const updatedConvs = conversations.map((c) => {
@@ -703,7 +848,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   };
 
   // Compute total unread counter
-  const isAgentUser = user?.role === 'agent' || user?.role === 'admin';
+  const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
   const totalUnreadCount = conversations.reduce((sum, c) => {
     return sum + (isAgentUser ? c.unreadCountAgent : c.unreadCountBuyer);
   }, 0);
@@ -722,6 +867,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     startOrGetConversation,
     startSupportConversation,
     sendMessage,
+    updateCaseStatus,
     markAsRead,
     retryMessage,
   };
