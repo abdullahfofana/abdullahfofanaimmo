@@ -1,5 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/backend/supabase';
 import { useAuth } from '@/providers/AuthProvider';
@@ -12,8 +13,8 @@ import type {
   MessageRole,
 } from '@/types/chat';
 
-const STORAGE_CONVERSATIONS_KEY = '@immoci_chat_conversations_v2';
-const STORAGE_MESSAGES_KEY = '@immoci_chat_messages_v2';
+const STORAGE_CONVERSATIONS_KEY = '@immoci_chat_conversations_v3';
+const STORAGE_MESSAGES_KEY = '@immoci_chat_messages_v3';
 
 const INITIAL_CONVERSATIONS: ChatConversation[] = [
   {
@@ -90,7 +91,7 @@ const INITIAL_CONVERSATIONS: ChatConversation[] = [
     property: undefined,
     buyer: {
       id: 'buyer-current',
-      name: 'Vous',
+      name: 'Acheteur',
       role: 'buyer',
     },
     agent: {
@@ -174,6 +175,13 @@ const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
   ],
 };
 
+// Helper: sort conversations by newest message first
+const sortConversations = (convs: ChatConversation[]) => {
+  return [...convs].sort(
+    (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+  );
+};
+
 export const [ChatProvider, useChat] = createContextHook(() => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ChatConversation[]>(INITIAL_CONVERSATIONS);
@@ -183,19 +191,95 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
 
-  // Load stored chat conversations & messages on boot
+  const broadcastChannelRef = useRef<any>(null);
+
+  // 1. Initialize local cache and Cross-Tab BroadcastChannel
   useEffect(() => {
     loadLocalChatData();
-    syncWithSupabase();
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('immoci_live_chat_sync');
+        broadcastChannelRef.current = bc;
+
+        bc.onmessage = (event) => {
+          const data = event.data;
+          if (!data) return;
+
+          if (data.type === 'NEW_MESSAGE') {
+            const { message, conversation } = data;
+            applyIncomingMessage(message, conversation);
+          } else if (data.type === 'CONVERSATION_UPDATED') {
+            const { conversation } = data;
+            setConversations((prev) => {
+              const existingIdx = prev.findIndex((c) => c.id === conversation.id);
+              let next: ChatConversation[];
+              if (existingIdx >= 0) {
+                next = prev.map((c) => (c.id === conversation.id ? { ...c, ...conversation } : c));
+              } else {
+                next = [conversation, ...prev];
+              }
+              return sortConversations(next);
+            });
+          } else if (data.type === 'MARK_READ') {
+            const { conversationId, role } = data;
+            setConversations((prev) =>
+              prev.map((c) => {
+                if (c.id === conversationId) {
+                  return {
+                    ...c,
+                    unreadCountAgent: role === 'agent' ? 0 : c.unreadCountAgent,
+                    unreadCountBuyer: role === 'buyer' ? 0 : c.unreadCountBuyer,
+                  };
+                }
+                return c;
+              })
+            );
+          }
+        };
+
+        return () => {
+          bc.close();
+        };
+      } catch (e) {
+        console.warn('[Chat] BroadcastChannel setup failed:', e);
+      }
+    }
   }, []);
 
-  // Set up Supabase Realtime subscription
+  // 2. Storage event listener for Web cross-tab sync fallback
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_CONVERSATIONS_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setConversations(sortConversations(parsed));
+          }
+        } catch {}
+      }
+      if (e.key === STORAGE_MESSAGES_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === 'object') {
+            setMessages(parsed);
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // 3. Supabase Realtime fallback
   useEffect(() => {
     try {
       // @ts-ignore
       if (!supabase || typeof supabase.channel !== 'function') return;
 
-      // Subscribe to inserts on messages table
       const channel = supabase
         .channel('immoci-chat-realtime')
         .on(
@@ -218,7 +302,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
               status: 'delivered',
             };
 
-            handleIncomingRealtimeMessage(receivedMsg);
+            applyIncomingMessage(receivedMsg);
           }
         )
         .subscribe();
@@ -227,9 +311,9 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         supabase.removeChannel(channel);
       };
     } catch (e) {
-      console.warn('[Chat] Supabase realtime unavailable:', e);
+      console.warn('[Chat] Supabase realtime channel unavailable:', e);
     }
-  }, [user]);
+  }, []);
 
   const loadLocalChatData = async () => {
     try {
@@ -241,7 +325,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       if (storedConvs) {
         const parsedConvs: ChatConversation[] = JSON.parse(storedConvs);
         if (Array.isArray(parsedConvs) && parsedConvs.length > 0) {
-          setConversations(parsedConvs);
+          setConversations(sortConversations(parsedConvs));
         }
       }
       if (storedMsgs) {
@@ -260,8 +344,9 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     updatedMsgs: Record<string, ChatMessage[]>
   ) => {
     try {
+      const sorted = sortConversations(updatedConvs);
       await Promise.all([
-        AsyncStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(updatedConvs)),
+        AsyncStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(sorted)),
         AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(updatedMsgs)),
       ]);
     } catch (e) {
@@ -269,75 +354,76 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     }
   };
 
-  const syncWithSupabase = async () => {
+  const broadcastEvent = (payload: any) => {
     try {
-      const { data: convData, error: convErr } = await supabase
-        .from('conversations')
-        .select('*')
-        .order('last_message_at', { ascending: false });
-
-      if (!convErr && convData && convData.length > 0) {
-        const mappedConvs: ChatConversation[] = convData.map((c: any) => ({
-          id: c.id,
-          propertyId: c.property_id,
-          property: c.property_data,
-          buyer: c.buyer_data,
-          agent: c.agent_data,
-          lastMessage: c.last_message || '',
-          lastMessageAt: c.last_message_at || c.created_at,
-          unreadCountBuyer: c.unread_count_buyer || 0,
-          unreadCountAgent: c.unread_count_agent || 0,
-          status: c.status || 'active',
-          createdAt: c.created_at,
-          updatedAt: c.updated_at,
-        }));
-        setConversations(mappedConvs);
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.postMessage(payload);
       }
     } catch (e) {
-      // Offline or schema not ready - local state takes over seamlessly
+      console.warn('[Chat] Broadcast postMessage error:', e);
     }
   };
 
-  const handleIncomingRealtimeMessage = useCallback(
-    (newMsg: ChatMessage) => {
-      setMessages((prev) => {
+  const applyIncomingMessage = useCallback(
+    (newMsg: ChatMessage, extraConv?: ChatConversation) => {
+      setMessages((prevMsgs) => {
         const convId = newMsg.conversationId;
-        const currentList = prev[convId] || [];
+        const currentList = prevMsgs[convId] || [];
         if (currentList.some((m) => m.id === newMsg.id)) {
-          return prev;
+          return prevMsgs;
         }
-        const nextList = [...currentList, newMsg];
-        const nextMap = { ...prev, [convId]: nextList };
 
-        // Also update conversations last message
+        const nextList = [...currentList, newMsg];
+        const nextMap = { ...prevMsgs, [convId]: nextList };
+
         setConversations((prevConvs) => {
-          const nextConvs = prevConvs.map((c) => {
+          let found = false;
+          let nextConvs = prevConvs.map((c) => {
             if (c.id === convId) {
-              const isCurrentActive = activeConversation?.id === convId && isChatOpen;
+              found = true;
               return {
                 ...c,
                 lastMessage: newMsg.message,
                 lastMessageAt: newMsg.timestamp,
-                unreadCountBuyer:
-                  newMsg.senderRole !== 'buyer' && !isCurrentActive
-                    ? c.unreadCountBuyer + 1
-                    : c.unreadCountBuyer,
                 unreadCountAgent:
-                  newMsg.senderRole === 'buyer' && !isCurrentActive
-                    ? c.unreadCountAgent + 1
-                    : c.unreadCountAgent,
+                  newMsg.senderRole === 'buyer' ? c.unreadCountAgent + 1 : c.unreadCountAgent,
+                unreadCountBuyer:
+                  newMsg.senderRole !== 'buyer' ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
+                updatedAt: newMsg.timestamp,
               };
             }
             return c;
           });
-          persistChatData(nextConvs, nextMap);
-          return nextConvs;
+
+          if (!found && extraConv) {
+            nextConvs = [extraConv, ...nextConvs];
+          } else if (!found) {
+            // Generate placeholder conversation card so dashboard sees it immediately
+            const fallbackConv: ChatConversation = {
+              id: convId,
+              propertyId: 'general',
+              buyer: { id: newMsg.senderId, name: newMsg.senderName, role: 'buyer' },
+              agent: { id: 'agent-general', name: 'Agent ImmoCI', role: 'agent' },
+              lastMessage: newMsg.message,
+              lastMessageAt: newMsg.timestamp,
+              unreadCountBuyer: 0,
+              unreadCountAgent: 1,
+              status: 'active',
+              createdAt: newMsg.timestamp,
+              updatedAt: newMsg.timestamp,
+            };
+            nextConvs = [fallbackConv, ...nextConvs];
+          }
+
+          const sorted = sortConversations(nextConvs);
+          persistChatData(sorted, nextMap);
+          return sorted;
         });
 
         return nextMap;
       });
     },
-    [activeConversation, isChatOpen]
+    []
   );
 
   const openChat = (conv: ChatConversation) => {
@@ -354,12 +440,12 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     property: Property,
     agentOverride?: any
   ): Promise<ChatConversation> => {
-    const currentBuyerId = user?.id || 'guest-buyer';
-    const currentBuyerName = user?.name || 'Visiteur';
+    const currentBuyerId = user?.id || 'buyer-live';
+    const currentBuyerName = user?.name || 'Acheteur Intéressé';
     const currentBuyerRole: MessageRole = 'buyer';
 
-    const targetAgentId = agentOverride?.phone || property.agent?.phone || 'agent-default';
-    const targetAgentName = agentOverride?.name || property.agent?.name || 'Agent Immobilier';
+    const targetAgentId = agentOverride?.phone || property.agent?.phone || 'agent-1';
+    const targetAgentName = agentOverride?.name || property.agent?.name || 'Agent Responsable';
     const targetAgentAvatar = agentOverride?.avatar || property.agent?.avatar || '';
 
     // Check if an existing conversation exists for this buyer and this property
@@ -374,7 +460,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       return existing;
     }
 
-    // Create a brand new conversation
+    // Create new conversation
     const newConvId = `conv-${property.id}-${Date.now()}`;
     const propertyContext: ConversationPropertyContext = {
       id: property.id,
@@ -385,6 +471,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       image: property.images?.[0] || '',
       status: property.status,
     };
+
+    const initialText = `Bonjour, je vous contacte au sujet de votre bien : "${property.title}" (${(property.price / 1000000).toFixed(1)}M FCFA). Est-il toujours disponible ?`;
 
     const newConversation: ChatConversation = {
       id: newConvId,
@@ -404,7 +492,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         avatar: targetAgentAvatar,
         phone: agentOverride?.phone || property.agent?.phone,
       },
-      lastMessage: `Bonjour, je suis intéressé par : ${property.title}`,
+      lastMessage: initialText,
       lastMessageAt: new Date().toISOString(),
       unreadCountBuyer: 0,
       unreadCountAgent: 1,
@@ -413,20 +501,19 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Initial greeting message from buyer
     const initialGreeting: ChatMessage = {
       id: `msg-init-${Date.now()}`,
       conversationId: newConvId,
       senderId: currentBuyerId,
       senderName: currentBuyerName,
       senderRole: currentBuyerRole,
-      message: `Bonjour, je vous contacte au sujet de cette annonce : "${property.title}" (${(property.price / 1000000).toFixed(1)}M FCFA). Est-elle toujours disponible ?`,
+      message: initialText,
       timestamp: new Date().toISOString(),
       isRead: false,
-      status: 'sent',
+      status: 'delivered',
     };
 
-    const nextConvs = [newConversation, ...conversations];
+    const nextConvs = sortConversations([newConversation, ...conversations]);
     const nextMsgs = { ...messages, [newConvId]: [initialGreeting] };
 
     setConversations(nextConvs);
@@ -435,36 +522,12 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setIsChatOpen(true);
     persistChatData(nextConvs, nextMsgs);
 
-    // Save to Supabase in background
-    try {
-      await supabase.from('conversations').insert({
-        id: newConversation.id,
-        property_id: newConversation.propertyId,
-        property_data: newConversation.property,
-        buyer_id: newConversation.buyer.id,
-        buyer_data: newConversation.buyer,
-        agent_id: newConversation.agent.id,
-        agent_data: newConversation.agent,
-        last_message: newConversation.lastMessage,
-        last_message_at: newConversation.lastMessageAt,
-        unread_count_buyer: 0,
-        unread_count_agent: 1,
-        status: 'active',
-      });
-
-      await supabase.from('messages').insert({
-        id: initialGreeting.id,
-        conversation_id: initialGreeting.conversationId,
-        sender_id: initialGreeting.senderId,
-        sender_name: initialGreeting.senderName,
-        sender_role: initialGreeting.senderRole,
-        message: initialGreeting.message,
-        is_read: false,
-        created_at: initialGreeting.timestamp,
-      });
-    } catch (e) {
-      console.warn('[Chat] Background Supabase insert skipped:', e);
-    }
+    // Broadcast creation to all other tabs (Agent Dashboard)
+    broadcastEvent({
+      type: 'NEW_MESSAGE',
+      message: initialGreeting,
+      conversation: newConversation,
+    });
 
     return newConversation;
   };
@@ -478,8 +541,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       return existing;
     }
 
-    const currentBuyerId = user?.id || 'guest-user';
-    const currentBuyerName = user?.name || 'Visiteur';
+    const currentBuyerId = user?.id || 'buyer-live';
+    const currentBuyerName = user?.name || 'Acheteur';
 
     const supportConvId = `conv-support-${Date.now()}`;
     const newSupportConv: ChatConversation = {
@@ -498,7 +561,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop',
         phone: '+225 07 00 00 00 00',
       },
-      lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui ?',
+      lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
       lastMessageAt: new Date().toISOString(),
       unreadCountBuyer: 0,
       unreadCountAgent: 0,
@@ -513,13 +576,13 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       senderId: 'support-team',
       senderName: 'Support Client ImmoCI',
       senderRole: 'support',
-      message: 'Bonjour ! Bienvenue sur l\'assistance en direct ImmoCI. Comment pouvons-nous vous accompagner dans votre projet immobilier ?',
+      message: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
       timestamp: new Date().toISOString(),
       isRead: true,
       status: 'delivered',
     };
 
-    const nextConvs = [newSupportConv, ...conversations];
+    const nextConvs = sortConversations([newSupportConv, ...conversations]);
     const nextMsgs = { ...messages, [supportConvId]: [initialSupportMsg] };
 
     setConversations(nextConvs);
@@ -527,6 +590,12 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setActiveConversation(newSupportConv);
     setIsChatOpen(true);
     persistChatData(nextConvs, nextMsgs);
+
+    broadcastEvent({
+      type: 'NEW_MESSAGE',
+      message: initialSupportMsg,
+      conversation: newSupportConv,
+    });
 
     return newSupportConv;
   };
@@ -542,8 +611,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
 
     const isAgentUser = user?.role === 'agent' || user?.role === 'admin';
     const senderRole: MessageRole = isAgentUser ? 'agent' : 'buyer';
-    const senderId = user?.id || (isAgentUser ? 'current-agent' : 'current-buyer');
-    const senderName = user?.name || (isAgentUser ? 'Agent ImmoCI' : 'Moi');
+    const senderId = user?.id || (isAgentUser ? 'agent-current' : 'buyer-current');
+    const senderName = user?.name || (isAgentUser ? 'Agent ImmoCI' : 'Acheteur');
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -555,7 +624,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       message: trimmed,
       timestamp: new Date().toISOString(),
       isRead: false,
-      status: 'sending',
+      status: 'delivered',
     };
 
     // 1. Optimistic local update
@@ -563,9 +632,11 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     const updatedConvMsgs = [...currentConvMsgs, newMsg];
     const updatedMessagesMap = { ...messages, [conversationId]: updatedConvMsgs };
 
+    let activeUpdatedConv: ChatConversation | undefined;
+
     const updatedConvs = conversations.map((c) => {
       if (c.id === conversationId) {
-        return {
+        activeUpdatedConv = {
           ...c,
           lastMessage: trimmed,
           lastMessageAt: newMsg.timestamp,
@@ -573,68 +644,31 @@ export const [ChatProvider, useChat] = createContextHook(() => {
           unreadCountBuyer: senderRole === 'agent' ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
           updatedAt: newMsg.timestamp,
         };
+        return activeUpdatedConv;
       }
       return c;
     });
 
+    const sortedConvs = sortConversations(updatedConvs);
+
     setMessages(updatedMessagesMap);
-    setConversations(updatedConvs);
-    persistChatData(updatedConvs, updatedMessagesMap);
+    setConversations(sortedConvs);
+    persistChatData(sortedConvs, updatedMessagesMap);
 
-    // 2. Deliver message to Supabase
-    try {
-      const { error: insertErr } = await supabase.from('messages').insert({
-        id: newMsg.id,
-        conversation_id: newMsg.conversationId,
-        sender_id: newMsg.senderId,
-        sender_name: newMsg.senderName,
-        sender_avatar: newMsg.senderAvatar,
-        sender_role: newMsg.senderRole,
-        message: newMsg.message,
-        is_read: false,
-        created_at: newMsg.timestamp,
-      });
+    // 2. Broadcast immediately to all open tabs / windows
+    broadcastEvent({
+      type: 'NEW_MESSAGE',
+      message: newMsg,
+      conversation: activeUpdatedConv,
+    });
 
-      if (!insertErr) {
-        // Mark as sent
-        const finalMsgs = updatedConvMsgs.map((m) =>
-          m.id === newMsg.id ? { ...m, status: 'sent' as const } : m
-        );
-        const finalMap = { ...messages, [conversationId]: finalMsgs };
-        setMessages(finalMap);
-        persistChatData(updatedConvs, finalMap);
-
-        // Also update conversation in Supabase
-        await supabase
-          .from('conversations')
-          .update({
-            last_message: trimmed,
-            last_message_at: newMsg.timestamp,
-            updated_at: newMsg.timestamp,
-          })
-          .eq('id', conversationId);
-      } else {
-        // Fallback status to delivered locally
-        const finalMsgs = updatedConvMsgs.map((m) =>
-          m.id === newMsg.id ? { ...m, status: 'delivered' as const } : m
-        );
-        setMessages({ ...messages, [conversationId]: finalMsgs });
-      }
-    } catch (e) {
-      console.warn('[Chat] Message sent locally:', e);
-      const finalMsgs = updatedConvMsgs.map((m) =>
-        m.id === newMsg.id ? { ...m, status: 'delivered' as const } : m
-      );
-      setMessages({ ...messages, [conversationId]: finalMsgs });
-    } finally {
-      setIsSending(false);
-    }
-
+    setIsSending(false);
     return newMsg;
   };
 
   const markAsRead = async (conversationId: string) => {
     const isAgentUser = user?.role === 'agent' || user?.role === 'admin';
+    const roleToClear = isAgentUser ? 'agent' : 'buyer';
 
     const updatedConvs = conversations.map((c) => {
       if (c.id === conversationId) {
@@ -655,21 +689,11 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setMessages(nextMsgMap);
     persistChatData(updatedConvs, nextMsgMap);
 
-    try {
-      await supabase
-        .from('conversations')
-        .update({
-          ...(isAgentUser ? { unread_count_agent: 0 } : { unread_count_buyer: 0 }),
-        })
-        .eq('id', conversationId);
-
-      await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('conversation_id', conversationId);
-    } catch (e) {
-      // offline silent
-    }
+    broadcastEvent({
+      type: 'MARK_READ',
+      conversationId,
+      role: roleToClear,
+    });
   };
 
   const retryMessage = async (failedMsg: ChatMessage) => {

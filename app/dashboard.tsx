@@ -1368,6 +1368,16 @@ export default function DashboardScreen() {
   );
 
   // ── Messages & Live Chat Tab
+  const dashScrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      setTimeout(() => {
+        dashScrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [activeTab, selectedConvId, messages]);
+
   const messagesView = () => {
     const activeConv = conversations.find(c => c.id === selectedConvId) || conversations[0];
     const activeMsgs = activeConv ? messages[activeConv.id] || [] : [];
@@ -1387,6 +1397,9 @@ export default function DashboardScreen() {
       const text = dashReplyText.trim();
       setDashReplyText('');
       await sendMessage(activeConv.id, text);
+      setTimeout(() => {
+        dashScrollRef.current?.scrollToEnd({ animated: true });
+      }, 80);
     };
 
     return (
@@ -1452,6 +1465,8 @@ export default function DashboardScreen() {
                 {filteredConvs.map(conv => {
                   const isSelected = activeConv?.id === conv.id;
                   const hasUnread = conv.unreadCountAgent > 0;
+                  const isSupport = conv.propertyId === 'support';
+
                   return (
                     <TouchableOpacity
                       key={conv.id}
@@ -1474,17 +1489,17 @@ export default function DashboardScreen() {
                       }}
                       activeOpacity={0.8}
                     >
-                      {/* Buyer Avatar */}
+                      {/* Buyer / User Avatar */}
                       <View style={{
                         width: 38,
                         height: 38,
                         borderRadius: 19,
-                        backgroundColor: isSelected ? theme.purple : theme.borderLight,
+                        backgroundColor: isSupport ? '#3B82F6' : (isSelected ? theme.purple : theme.borderLight),
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                        <Text style={{ fontSize: 13, fontWeight: '800', color: isSelected ? '#FFFFFF' : theme.text }}>
-                          {conv.buyer?.name?.charAt(0) || 'A'}
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: (isSupport || isSelected) ? '#FFFFFF' : theme.text }}>
+                          {isSupport ? '🎧' : (conv.buyer?.name?.charAt(0) || 'A')}
                         </Text>
                       </View>
 
@@ -1492,18 +1507,22 @@ export default function DashboardScreen() {
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                           <Text style={{ fontSize: 13, fontWeight: '700', color: theme.text }} numberOfLines={1}>
-                            {conv.buyer?.name}
+                            {isSupport ? 'Assistance Directe' : (conv.buyer?.name || 'Acheteur')}
                           </Text>
                           <Text style={{ fontSize: 10, color: theme.textMuted }}>
                             {new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </Text>
                         </View>
 
-                        {conv.property && (
+                        {isSupport ? (
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#3B82F6', marginTop: 1 }} numberOfLines={1}>
+                            💬 Support Client 24/7
+                          </Text>
+                        ) : conv.property ? (
                           <Text style={{ fontSize: 11, fontWeight: '600', color: theme.purpleLight, marginTop: 1 }} numberOfLines={1}>
                             📍 {conv.property.title}
                           </Text>
-                        )}
+                        ) : null}
 
                         <Text
                           style={{
@@ -1570,20 +1589,20 @@ export default function DashboardScreen() {
                     width: 36,
                     height: 36,
                     borderRadius: 18,
-                    backgroundColor: theme.purple,
+                    backgroundColor: activeConv.propertyId === 'support' ? '#3B82F6' : theme.purple,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>
-                      {activeConv.buyer?.name?.charAt(0) || 'A'}
+                      {activeConv.propertyId === 'support' ? '🎧' : (activeConv.buyer?.name?.charAt(0) || 'A')}
                     </Text>
                   </View>
                   <View>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: theme.text }}>
-                      {activeConv.buyer?.name}
+                      {activeConv.propertyId === 'support' ? 'Assistance Support ImmoCI' : activeConv.buyer?.name}
                     </Text>
                     <Text style={{ fontSize: 11, color: theme.textMuted }}>
-                      {activeConv.buyer?.phone || 'Acheteur Vérifié ImmoCI'}
+                      {activeConv.propertyId === 'support' ? 'Canal direct utilisateur' : (activeConv.buyer?.phone || 'Acheteur Vérifié ImmoCI')}
                     </Text>
                   </View>
                 </View>
@@ -1608,12 +1627,16 @@ export default function DashboardScreen() {
 
               {/* Messages Thread Scroll */}
               <ScrollView
+                ref={dashScrollRef}
                 style={{ flex: 1, padding: 14 }}
                 contentContainerStyle={{ gap: 10 }}
                 showsVerticalScrollIndicator={true}
+                onContentSizeChange={() => {
+                  dashScrollRef.current?.scrollToEnd({ animated: true });
+                }}
               >
                 {activeMsgs.map(msg => {
-                  const isAgentSender = msg.senderRole === 'agent' || msg.senderRole === 'admin';
+                  const isAgentSender = msg.senderRole === 'agent' || msg.senderRole === 'admin' || msg.senderRole === 'support';
                   return (
                     <View
                       key={msg.id}

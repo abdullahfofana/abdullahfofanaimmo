@@ -1,6 +1,6 @@
 import { createTRPCRouter } from "./create-context";
 import hiRoute from "./routes/example/hi/route";
-// import { chatRouter } from "./routes/chat/route";
+import { chatRouter } from "./routes/chat/route";
 import { notificationsRouter } from "./routes/notifications/route";
 import { activitiesRouter } from "./routes/activities/route";
 import { propertiesRouter } from "./routes/properties/route";
@@ -14,7 +14,7 @@ export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
     hi: hiRoute,
   }),
-  // chat: chatRouter,
+  chat: chatRouter,
   notifications: notificationsRouter,
   activities: activitiesRouter,
   properties: propertiesRouter,
