@@ -34,6 +34,7 @@ export interface Property {
   };
   isFeatured: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface User {
@@ -80,6 +81,7 @@ export interface PropertySubmission {
   submissionStatus: SubmissionStatus;
   submittedAt: string;
   reviewedAt?: string;
+  updatedAt?: string;
   rejectionReason?: string;
   is_test?: boolean;
 }

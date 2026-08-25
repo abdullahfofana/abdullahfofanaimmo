@@ -245,6 +245,7 @@ export default function HomeScreen() {
     },
     isFeatured: false,
     createdAt: submission.submittedAt,
+    updatedAt: submission.updatedAt || submission.submittedAt,
   });
 
   const realProperties = React.useMemo(() => {
@@ -252,7 +253,19 @@ export default function HomeScreen() {
     catch { return []; }
   }, [approvedSubmissions]);
 
-  const allProperties = React.useMemo(() => [...realProperties, ...mockProperties], [realProperties]);
+  // Deduplicate all properties by unique ID
+  const allProperties = React.useMemo(() => {
+    const seen = new Set<string>();
+    const list: Property[] = [];
+    for (const p of [...realProperties, ...mockProperties]) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        list.push(p);
+      }
+    }
+    return list;
+  }, [realProperties]);
+
   const featuredProperties = React.useMemo(() =>
     allProperties.filter((p) => p.isFeatured || p.price > 100000000).slice(0, 6),
     [allProperties]);
@@ -291,14 +304,30 @@ export default function HomeScreen() {
     { key: 'commercial', label: t('search_commercial') || 'Bureaux & Pro', icon: '🏬' },
   ];
 
-  // Filtered properties based on current status and category
-  const filteredFeedProperties = useMemo(() => {
-    return allProperties.filter(p => {
-      const matchesStatus = listingFilter === 'all' || p.status === listingFilter;
-      const matchesCategory = selectedCategory === 'all' || p.type === selectedCategory;
-      return matchesStatus && matchesCategory;
-    });
+  // All matching properties based on status and category (sorted by latest date)
+  const allMatchingProperties = useMemo(() => {
+    return allProperties
+      .filter((p) => {
+        const matchesStatus = listingFilter === 'all' || p.status === listingFilter;
+        const matchesCategory = selectedCategory === 'all' || p.type === selectedCategory;
+        return matchesStatus && matchesCategory;
+      })
+      .sort((a, b) => {
+        const timeA = new Date((a as any).updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date((b as any).updatedAt || b.createdAt || 0).getTime();
+        if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+      });
   }, [allProperties, listingFilter, selectedCategory]);
+
+  // HOMEPAGE PREVIEW: Strictly display ONLY the 4 latest published/updated property ads
+  const HOMEPAGE_RECENT_LIMIT = 4;
+  const homepageRecentProperties = useMemo(() => {
+    return allMatchingProperties.slice(0, HOMEPAGE_RECENT_LIMIT);
+  }, [allMatchingProperties]);
+
+  // Retain filteredFeedProperties as alias for backwards compatibility
+  const filteredFeedProperties = homepageRecentProperties;
 
   const recentItems = useMemo(() =>
     (listingFilter === 'all'
@@ -729,56 +758,76 @@ export default function HomeScreen() {
         {/* ─── EXPLORE PROPERTIES (Responsive Multi-Column Grid on Web & Luxury Cards on Mobile) ─── */}
         <View style={styles.section}>
           <View style={[styles.sectionHeader, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]}>
-            <View>
+            <View style={{ flex: 1, minWidth: 260 }}>
               <View style={[styles.sectionBadge, styles.sectionBadgeRecent]}>
                 <Building2 size={11} color="#059669" />
                 <Text style={[styles.sectionBadgeText, styles.sectionBadgeTextRecent]}>
-                  {language === 'fr' ? 'ANNONCES RÉCENTES' : 'RECENT LISTINGS'}
+                  {language === 'fr' ? 'ANNONCES RÉCENTES' : 'RECENT ANNOUNCEMENTS'}
                 </Text>
               </View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? 'Toutes les Annonces' : 'All Available Properties'}
+                {language === 'fr' ? 'Dernières Annonces' : 'Latest Property Ads'}
               </Text>
               <Text style={styles.sectionSubtitle}>
-                {filteredFeedProperties.length} {language === 'fr' ? 'biens disponibles à Abidjan & environs' : 'verified listings available'}
+                {homepageRecentProperties.length} {language === 'fr' ? `annonces récentes affichées · ${allMatchingProperties.length} biens au total sur ImmoCI` : `recent ads shown · ${allMatchingProperties.length} total available`}
               </Text>
             </View>
 
-            {/* Quick Status Filter Switcher */}
-            <View style={styles.statusFilterPillRow}>
-              {(['all', 'sale', 'rent'] as const).map((f) => {
-                const label = f === 'all'
-                  ? (language === 'fr' ? 'Tout' : 'All')
-                  : f === 'sale'
-                    ? (language === 'fr' ? '🏷️ À Vendre' : '🏷️ Buy')
-                    : (language === 'fr' ? '🔑 À Louer' : '🔑 Rent');
-                const isActive = listingFilter === f;
-                const isHovered = hoveredListingFilter === f;
-                return (
-                  <TouchableOpacity
-                    key={f}
-                    onPress={() => setListingFilter(f)}
-                    activeOpacity={0.8}
-                    // @ts-ignore
-                    onMouseEnter={() => setHoveredListingFilter(f)}
-                    // @ts-ignore
-                    onMouseLeave={() => setHoveredListingFilter(null)}
-                    style={[
-                      styles.statusFilterPill,
-                      isActive && styles.statusFilterPillActive,
-                      !isActive && isHovered && styles.statusFilterPillHovered,
-                    ]}
-                  >
-                    <Text style={[
-                      styles.statusFilterPillText,
-                      isActive && styles.statusFilterPillTextActive,
-                      !isActive && isHovered && styles.statusFilterPillTextHovered,
-                    ]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {/* Quick Status Filter Switcher */}
+              <View style={styles.statusFilterPillRow}>
+                {(['all', 'sale', 'rent'] as const).map((f) => {
+                  const label = f === 'all'
+                    ? (language === 'fr' ? 'Tout' : 'All')
+                    : f === 'sale'
+                      ? (language === 'fr' ? '🏷️ À Vendre' : '🏷️ For Sale')
+                      : (language === 'fr' ? '🔑 À Louer' : '🔑 For Rent');
+                  const isActive = listingFilter === f;
+                  const isHovered = hoveredListingFilter === f;
+                  return (
+                    <TouchableOpacity
+                      key={f}
+                      onPress={() => setListingFilter(f)}
+                      activeOpacity={0.8}
+                      // @ts-ignore
+                      onMouseEnter={() => setHoveredListingFilter(f)}
+                      // @ts-ignore
+                      onMouseLeave={() => setHoveredListingFilter(null)}
+                      style={[
+                        styles.statusFilterPill,
+                        isActive && styles.statusFilterPillActive,
+                        !isActive && isHovered && styles.statusFilterPillHovered,
+                      ]}
+                    >
+                      <Text style={[
+                        styles.statusFilterPillText,
+                        isActive && styles.statusFilterPillTextActive,
+                        !isActive && isHovered && styles.statusFilterPillTextHovered,
+                      ]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* View All Button in Header */}
+              <TouchableOpacity
+                style={styles.seeAllButton}
+                onPress={() => router.push({
+                  pathname: '/(tabs)/search',
+                  params: {
+                    status: listingFilter === 'all' ? undefined : listingFilter,
+                    type: selectedCategory === 'all' ? undefined : selectedCategory,
+                  },
+                })}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.seeAll}>
+                  {language === 'fr' ? `Voir tout (${allMatchingProperties.length})` : `View All (${allMatchingProperties.length})`}
+                </Text>
+                <ArrowRight size={13} color={colors.primary} strokeWidth={2.4} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -976,6 +1025,47 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+            )}
+
+            {/* ── Prominent "View All Ads" CTA Card / Button ──────────────── */}
+            {allMatchingProperties.length > 0 && (
+              <View style={{ marginTop: 16 }}>
+                <TouchableOpacity
+                  style={styles.viewAllAdsCtaBtn}
+                  onPress={() => router.push({
+                    pathname: '/(tabs)/search',
+                    params: {
+                      status: listingFilter === 'all' ? undefined : listingFilter,
+                      type: selectedCategory === 'all' ? undefined : selectedCategory,
+                    },
+                  })}
+                  activeOpacity={0.88}
+                >
+                  <View style={styles.viewAllAdsCtaLeft}>
+                    <View style={styles.viewAllAdsCtaIconCircle}>
+                      <Building2 size={20} color="#059669" strokeWidth={2.4} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.viewAllAdsCtaTitle}>
+                        {language === 'fr'
+                          ? `Voir toutes les annonces (${allMatchingProperties.length} biens disponibles)`
+                          : `View All Ads (${allMatchingProperties.length} Properties Available)`}
+                      </Text>
+                      <Text style={styles.viewAllAdsCtaSubtitle}>
+                        {language === 'fr'
+                          ? 'Accédez à l\'inventaire complet avec filtres avancés, carte interactive et détails'
+                          : 'Explore complete inventory with advanced filters, interactive map & verified listings'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.viewAllAdsCtaArrowPill}>
+                    <Text style={styles.viewAllAdsCtaArrowText}>
+                      {language === 'fr' ? 'Explorer tout' : 'Explore All'}
+                    </Text>
+                    <ArrowRight size={15} color="#FFFFFF" strokeWidth={2.5} />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -1868,6 +1958,72 @@ const createStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create
     borderRadius: 12,
   },
   emptyFeedResetBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // ── Prominent "View All Ads" CTA Card ───────────────────────
+  viewAllAdsCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(5, 150, 105, 0.25)',
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 16,
+    shadowColor: 'rgba(5, 150, 105, 0.12)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 3,
+    cursor: 'pointer' as any,
+    flexWrap: 'wrap',
+    ...Platform.select({
+      web: {
+        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    }),
+  },
+  viewAllAdsCtaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+    minWidth: 260,
+  },
+  viewAllAdsCtaIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(5, 150, 105, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewAllAdsCtaTitle: {
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  viewAllAdsCtaSubtitle: {
+    fontSize: 12.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  viewAllAdsCtaArrowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#059669',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  viewAllAdsCtaArrowText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',

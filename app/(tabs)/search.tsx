@@ -199,15 +199,26 @@ export default function SearchScreen() {
     features: submission.features,
     agent: {
       id: 'agent-' + submission.id,
-      name: submission.agent.name,
-      phone: submission.agent.phone,
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=256&q=80',
+      name: submission.agent?.name || 'Agent ImmoCI',
+      phone: submission.agent?.phone || '+225 07 48 22 19 00',
+      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80',
     },
-    isFeatured: false,
-    createdAt: submission.submittedAt,
+    isFeatured: !!submission.isFeatured,
+    createdAt: submission.submittedAt || new Date().toISOString(),
+    updatedAt: submission.updatedAt || submission.submittedAt || new Date().toISOString(),
   });
 
-  const allProperties = useMemo(() => [...approvedSubmissions.map(mapSubmissionToProperty), ...mockProperties], [approvedSubmissions]);
+  const allProperties = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Property[] = [];
+    for (const p of [...approvedSubmissions.map(mapSubmissionToProperty), ...mockProperties]) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        list.push(p);
+      }
+    }
+    return list;
+  }, [approvedSubmissions]);
 
   const applyFilters = useCallback((query: string = searchQuery, currentFilters: Filters = filters) => {
     let filtered = allProperties;
@@ -250,6 +261,11 @@ export default function SearchScreen() {
     setFilteredProperties(filtered);
   }, [filters, searchQuery, allProperties]);
 
+  // Keep filteredProperties synchronized with allProperties and filters
+  useEffect(() => {
+    applyFilters(searchQuery, filters);
+  }, [allProperties, filters, searchQuery, applyFilters]);
+
   // Dynamic Average Price Stats for the active searched area
   const activeAreaStats = useMemo(() => {
     const raw = (searchQuery || locationSearch || '').trim();
@@ -280,6 +296,18 @@ export default function SearchScreen() {
     }
     return list;
   }, [filteredProperties, sortBy]);
+
+  const PAGE_SIZE = 12;
+  const [displayedCount, setDisplayedCount] = useState<number>(PAGE_SIZE);
+
+  // Reset pagination whenever filters or sorting changes
+  useEffect(() => {
+    setDisplayedCount(PAGE_SIZE);
+  }, [filters, searchQuery, sortBy]);
+
+  const paginatedProperties = useMemo(() => {
+    return sortedProperties.slice(0, displayedCount);
+  }, [sortedProperties, displayedCount]);
 
   const filteredLocations = useMemo(() => {
     if (!locationSearch) return ivoryCoastLocations;
@@ -860,11 +888,38 @@ export default function SearchScreen() {
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('search_no_properties')}</Text>
                 </View>
               ) : (
-                sortedProperties.map((property) => (
-                  <View key={property.id} style={{ marginBottom: 16 }}>
-                    <PropertyCard property={property} />
-                  </View>
-                ))
+                <>
+                  {paginatedProperties.map((property) => (
+                    <View key={property.id} style={{ marginBottom: 16 }}>
+                      <PropertyCard property={property} />
+                    </View>
+                  ))}
+
+                  {displayedCount < sortedProperties.length && (
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: colors.surface,
+                        borderWidth: 1.5,
+                        borderColor: '#059669',
+                        borderRadius: 14,
+                        paddingVertical: 14,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginTop: 8,
+                        marginBottom: 20,
+                        cursor: 'pointer' as any,
+                      }}
+                      onPress={() => setDisplayedCount((prev) => prev + PAGE_SIZE)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={{ fontSize: 13.5, fontWeight: '700', color: '#059669' }}>
+                        {language === 'fr'
+                          ? `Afficher plus de biens (${sortedProperties.length - displayedCount} restants)`
+                          : `Load More Properties (${sortedProperties.length - displayedCount} remaining)`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
 
@@ -898,7 +953,7 @@ export default function SearchScreen() {
         <View style={{ flex: 1, paddingTop: insets.top }}>
           {viewMode === 'list' ? (
             <FlatList
-              data={sortedProperties}
+              data={paginatedProperties}
               ListHeaderComponent={
                 <View>
                   {renderSearchHeaderContent()}
@@ -947,6 +1002,30 @@ export default function SearchScreen() {
               ]}
               columnWrapperStyle={columns > 1 ? styles.columnWrapper : undefined}
               showsVerticalScrollIndicator={false}
+              ListFooterComponent={
+                displayedCount < sortedProperties.length ? (
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderWidth: 1.5,
+                      borderColor: '#059669',
+                      borderRadius: 14,
+                      paddingVertical: 13,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginVertical: 16,
+                    }}
+                    onPress={() => setDisplayedCount((prev) => prev + PAGE_SIZE)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>
+                      {language === 'fr'
+                        ? `Afficher plus d'annonces (${sortedProperties.length - displayedCount} restantes)`
+                        : `Load More Listings (${sortedProperties.length - displayedCount} remaining)`}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null
+              }
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('search_no_properties')}</Text>
