@@ -160,11 +160,6 @@ const tabStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    ...Platform.select({
-      web: {
-        transition: 'all 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
-      },
-    }),
   },
   wrapFocused: {
     backgroundColor: Colors.surfaceGreen,
@@ -180,11 +175,6 @@ const tabStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -2,
-    ...Platform.select({
-      web: {
-        transition: 'all 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
-      },
-    }),
   },
   addOuterFocused: {
     backgroundColor: Colors.primary,

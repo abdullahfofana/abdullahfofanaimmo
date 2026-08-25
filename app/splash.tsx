@@ -87,7 +87,7 @@ export default function Splash() {
         />
       </Animated.View>
 
-      <Animated.View style={[styles.glow, glowStyle]} />
+      <Animated.View style={[styles.glow, glowStyle, Platform.OS === 'web' ? { filter: 'blur(60px)' } as any : null]} />
 
       <Animated.View
         style={[
@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
     borderRadius: (width * 0.9) / 2,
     backgroundColor: Colors.white,
     opacity: 0.2,
-    filter: Platform.OS === 'web' ? ('blur(60px)' as any) : undefined,
   },
   logo: {
     alignItems: 'center',

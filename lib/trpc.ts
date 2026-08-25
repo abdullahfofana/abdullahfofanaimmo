@@ -21,14 +21,14 @@ export const getBaseUrl = () => {
     }
   }
 
-  // Native / Expo Go
+  // Native / Expo Go (development)
   const hostUri = Constants.expoConfig?.hostUri;
   if (hostUri) {
     return `http://${hostUri}`;
   }
 
-  // SSR static rendering — no real URL needed, API calls won't fire server-side
-  return '';
+  // Standalone APK / production build — use the deployed backend URL
+  return 'https://rork-immoci-mobile-ui-kit-prototype.vercel.app';
 };
 
 const createHttpLink = () => {
