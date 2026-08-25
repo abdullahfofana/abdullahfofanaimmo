@@ -41,6 +41,38 @@ import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 
+class MapErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any) {
+    console.warn('[MapNative] MapView error caught:', error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9', padding: 20 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#475569', marginBottom: 6 }}>📍 Carte en mode simplifié</Text>
+          <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginBottom: 12 }}>
+            La vue satellite/interactive n'est pas disponible sur cet appareil.
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#059669', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 }}
+            onPress={() => this.setState({ hasError: false })}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 interface PropertyMapProps {
   properties: Property[];
   initialSelectedId?: string;
@@ -330,80 +362,82 @@ export default function PropertyMapNative({
 
   return (
     <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_DEFAULT}
-        style={styles.map}
-        initialRegion={defaultRegion}
-        mapType={mapType}
-        showsUserLocation
-        showsMyLocationButton={false}
-        showsCompass={false}
-      >
-        {/* Connecting Dashed Line from Buyer to Selected Property */}
-        {userLocation && selectedProperty && (
-          <Polyline
-            coordinates={[
-              {
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-              },
-              {
-                latitude: selectedProperty.location.coordinates.latitude,
-                longitude: selectedProperty.location.coordinates.longitude,
-              },
-            ]}
-            strokeColor="#059669"
-            strokeWidth={3}
-            lineDashPattern={[6, 6]}
-          />
-        )}
+      <MapErrorBoundary>
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_DEFAULT}
+          style={styles.map}
+          initialRegion={defaultRegion}
+          mapType={mapType}
+          showsUserLocation
+          showsMyLocationButton={false}
+          showsCompass={false}
+        >
+          {/* Connecting Dashed Line from Buyer to Selected Property */}
+          {userLocation && selectedProperty && (
+            <Polyline
+              coordinates={[
+                {
+                  latitude: userLocation.latitude,
+                  longitude: userLocation.longitude,
+                },
+                {
+                  latitude: selectedProperty.location.coordinates.latitude,
+                  longitude: selectedProperty.location.coordinates.longitude,
+                },
+              ]}
+              strokeColor="#059669"
+              strokeWidth={3}
+              lineDashPattern={[6, 6]}
+            />
+          )}
 
-        {/* Property Price Bubble Markers (Emerald Green matching screenshot) */}
-        {filteredProperties.map((property) => {
-          const isSelected = internalSelectedId === property.id;
-          const isSale = property.status === 'sale';
-          const isFeatured = property.isFeatured || property.price > 100000000;
+          {/* Property Price Bubble Markers (Emerald Green matching screenshot) */}
+          {filteredProperties.map((property) => {
+            const isSelected = internalSelectedId === property.id;
+            const isSale = property.status === 'sale';
+            const isFeatured = property.isFeatured || property.price > 100000000;
 
-          return (
-            <Marker
-              key={property.id}
-              coordinate={{
-                latitude: property.location.coordinates.latitude,
-                longitude: property.location.coordinates.longitude,
-              }}
-              tracksViewChanges={false}
-              onPress={() => handleMarkerPress(property)}
-              zIndex={isSelected ? 99 : 10}
-            >
-              <View style={[styles.markerAnchor, isSelected && styles.markerAnchorActive]}>
-                <View
-                  style={[
-                    styles.priceBubble,
-                    isFeatured && styles.priceBubbleFeatured,
-                    !isSale && styles.priceBubbleRent,
-                    isSelected && styles.priceBubbleActive,
-                  ]}
-                >
-                  {isFeatured && <Text style={styles.bubbleStar}>⭐</Text>}
-                  <Text style={styles.priceBubbleText}>
-                    {formatPriceBadge(property.price, property.currency)}
-                  </Text>
-                  <Text style={styles.bubbleCheck}>✔️</Text>
+            return (
+              <Marker
+                key={property.id}
+                coordinate={{
+                  latitude: property.location.coordinates.latitude,
+                  longitude: property.location.coordinates.longitude,
+                }}
+                tracksViewChanges={false}
+                onPress={() => handleMarkerPress(property)}
+                zIndex={isSelected ? 99 : 10}
+              >
+                <View style={[styles.markerAnchor, isSelected && styles.markerAnchorActive]}>
+                  <View
+                    style={[
+                      styles.priceBubble,
+                      isFeatured && styles.priceBubbleFeatured,
+                      !isSale && styles.priceBubbleRent,
+                      isSelected && styles.priceBubbleActive,
+                    ]}
+                  >
+                    {isFeatured && <Text style={styles.bubbleStar}>⭐</Text>}
+                    <Text style={styles.priceBubbleText}>
+                      {formatPriceBadge(property.price, property.currency)}
+                    </Text>
+                    <Text style={styles.bubbleCheck}>✔️</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.priceTail,
+                      isFeatured && styles.priceTailFeatured,
+                      !isSale && styles.priceTailRent,
+                      isSelected && styles.priceTailActive,
+                    ]}
+                  />
                 </View>
-                <View
-                  style={[
-                    styles.priceTail,
-                    isFeatured && styles.priceTailFeatured,
-                    !isSale && styles.priceTailRent,
-                    isSelected && styles.priceTailActive,
-                  ]}
-                />
-              </View>
-            </Marker>
-          );
-        })}
-      </MapView>
+              </Marker>
+            );
+          })}
+        </MapView>
+      </MapErrorBoundary>
 
       {/* ── TOP PLACES & RADIUS BAR ───────────────────────────────── */}
       <View style={[styles.topBarContainer, { top: insets.top > 0 ? 8 : 12 }]}>

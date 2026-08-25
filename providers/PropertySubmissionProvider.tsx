@@ -5,6 +5,7 @@ import type { PropertySubmission, SubmissionStatus } from '@/types/property';
 import { useIntegrations } from '@/providers/IntegrationProvider';
 import { storageService } from '@/lib/supabase-storage';
 import { supabase } from '@/backend/supabase';
+import { generateUUID } from '@/utils/uuid';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Direct Supabase helpers — used for static web builds where no tRPC server exists
@@ -35,7 +36,7 @@ async function insertPropertyToSupabase(submission: PropertySubmission): Promise
   const { id, submittedAt, submissionStatus, ...rest } = submission as any;
   const payload = {
     ...rest,
-    id: id ?? crypto.randomUUID(),
+    id: id ?? generateUUID(),
     submittedAt: submittedAt ?? new Date().toISOString(),
     submissionStatus: submissionStatus ?? 'pending',
     // Ensure arrays are valid JSON
@@ -222,7 +223,7 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
         photos: uploadedPhotos,
         video: uploadedVideo,
         document: uploadedDocument,
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         submittedAt: new Date().toISOString(),
         submissionStatus: 'pending',
       };
@@ -258,7 +259,7 @@ export const [PropertySubmissionProvider, usePropertySubmissions] = createContex
         if (submission.agent.phone) {
           const generatedEmail = `${submission.agent.phone.replace(/\D/g, '')}@immoci.com`;
           await supabase.from('users').insert({
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             name: submission.agent.name,
             email: generatedEmail,
             role: submission.status === 'sale' ? 'agent' : 'landlord',

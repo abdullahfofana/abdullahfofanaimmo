@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
-const supabaseKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+const DEFAULT_SUPABASE_URL = 'https://hhgsabphhgidxdfdhgdd.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoZ3NhYnBoaGdpZHhkZmRoZ2RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MzYzNTksImV4cCI6MjEwMjIxMjM1OX0.oStesJQjnaZmKhJQC97Lca2dC6xJGBD2WUxG6E81BFs';
+
+const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim();
+const supabaseKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY).trim();
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('[Supabase] Credentials not configured. Using local JSON fallback.');
@@ -74,8 +79,10 @@ const createSafeClient = () => {
   try {
     return createClient(supabaseUrl, supabaseKey, {
       auth: {
-        persistSession: true,   // Store session across restarts
-        autoRefreshToken: true, // Refresh JWT before expiry to avoid silent 401s
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: Platform.OS === 'web',
       },
     });
   } catch (error) {
