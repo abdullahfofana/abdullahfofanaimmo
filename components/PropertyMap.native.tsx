@@ -165,51 +165,61 @@ export default function PropertyMapNative({
     );
   }, [properties]);
 
-  // Request Native User Location
-  const requestUserLocation = useCallback(async () => {
-    setIsLocatingUser(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setHasLocationPermission(false);
-        // Fallback location for demo
-        setUserLocation({ latitude: 5.3485, longitude: -4.0125 });
-        setIsLocatingUser(false);
-        return;
-      }
-
-      setHasLocationPermission(true);
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const coords = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-      setUserLocation(coords);
-
-      mapRef.current?.animateToRegion(
-        {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        },
-        800
-      );
-    } catch (err) {
-      console.warn('[Location Native] Error getting location:', err);
-      setHasLocationPermission(false);
-      setUserLocation({ latitude: 5.3485, longitude: -4.0125 });
-    } finally {
-      setIsLocatingUser(false);
-    }
-  }, []);
-
+  // Real-time continuous GPS tracking
   useEffect(() => {
-    requestUserLocation();
-  }, [requestUserLocation]);
+    let subscription: Location.LocationSubscription | null = null;
+    let isMounted = true;
+
+    async function startWatching() {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          if (isMounted) {
+            setHasLocationPermission(false);
+            setUserLocation({ latitude: 5.3485, longitude: -4.0125 });
+          }
+          return;
+        }
+
+        if (isMounted) setHasLocationPermission(true);
+
+        const initial = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        if (isMounted && initial?.coords) {
+          setUserLocation({
+            latitude: Number(initial.coords.latitude.toFixed(6)),
+            longitude: Number(initial.coords.longitude.toFixed(6)),
+          });
+        }
+
+        subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 3000,
+            distanceInterval: 10,
+          },
+          (loc) => {
+            if (isMounted && loc?.coords) {
+              setUserLocation({
+                latitude: Number(loc.coords.latitude.toFixed(6)),
+                longitude: Number(loc.coords.longitude.toFixed(6)),
+              });
+            }
+          }
+        );
+      } catch (err) {
+        console.warn('[Realtime GPS Watch]:', err);
+      }
+    }
+
+    startWatching();
+
+    return () => {
+      isMounted = false;
+      subscription?.remove();
+    };
+  }, []);
 
   // Filter by distance radius if selected
   const filteredProperties = useMemo(() => {
@@ -432,6 +442,24 @@ export default function PropertyMapNative({
               />
             )}
 
+          {/* Real-Time Live User GPS Pin with Glowing Radar */}
+          {userLocation?.latitude != null && !isNaN(userLocation.latitude) && (
+            <Marker
+              coordinate={userLocation}
+              title="Vous êtes ici"
+              description="Position GPS en temps réel"
+              zIndex={9999}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <View style={styles.userLivePulseWrapper}>
+                <View style={styles.userLivePulseRing} />
+                <View style={styles.userLiveCenterDot}>
+                  <Navigation size={11} color="#FFFFFF" strokeWidth={3} />
+                </View>
+              </View>
+            </Marker>
+          )}
+
           {/* Property Price Bubble Markers (Emerald Green matching screenshot) */}
           {filteredProperties.map((property) => {
             const coords = property?.location?.coordinates;
@@ -498,7 +526,16 @@ export default function PropertyMapNative({
               styles.gpsPlaceChip,
               userLocation && styles.gpsPlaceChipActive,
             ]}
-            onPress={requestUserLocation}
+            onPress={() => {
+              if (userLocation) {
+                mapRef.current?.animateToRegion({
+                  latitude: userLocation.latitude,
+                  longitude: userLocation.longitude,
+                  latitudeDelta: 0.03,
+                  longitudeDelta: 0.03,
+                }, 700);
+              }
+            }}
             activeOpacity={0.8}
           >
             {isLocatingUser ? (
@@ -713,6 +750,38 @@ const styles = StyleSheet.create({
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+
+  // ── Real-Time Live User GPS Pin ────────────────────────────────
+  userLivePulseWrapper: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userLivePulseRing: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(5, 150, 105, 0.22)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(5, 150, 105, 0.45)',
+  },
+  userLiveCenterDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
   // ── Emerald Price Bubble Marker ────────────────────────────────

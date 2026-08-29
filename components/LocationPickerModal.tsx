@@ -24,6 +24,7 @@ import * as Location from 'expo-location';
 
 import { searchLocationSuggestions, reverseGeocodeCoordinates, GeocodedLocation } from '@/services/googleMapsService';
 import { useLanguage } from '@/providers/LanguageProvider';
+import LocationPickerMap from '@/components/LocationPickerMap';
 
 interface LocationPickerModalProps {
   visible: boolean;
@@ -342,9 +343,29 @@ export default function LocationPickerModal({
               title="Location Picker Map"
             />
           ) : (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Text>Map Picker...</Text>
-            </View>
+            <LocationPickerMap
+              initialCoordinates={currentCoords}
+              onLocationSelect={async (coords) => {
+                setCurrentCoords(coords);
+                setIsReverseGeocoding(true);
+                try {
+                  const geocoded = await reverseGeocodeCoordinates(coords.latitude, coords.longitude);
+                  if (geocoded) {
+                    setSelectedAddress(geocoded.formattedAddress);
+                    setSelectedDistrict(geocoded.district || coords.commune || selectedDistrict);
+                    setSelectedCity(geocoded.city || selectedCity);
+                  } else if (coords.commune) {
+                    setSelectedDistrict(coords.commune);
+                    setSelectedAddress(`${coords.commune}, ${selectedCity}`);
+                  }
+                } catch (e) {
+                  if (coords.commune) setSelectedDistrict(coords.commune);
+                } finally {
+                  setIsReverseGeocoding(false);
+                }
+              }}
+              height={400}
+            />
           )}
         </View>
 
