@@ -368,15 +368,23 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       ]);
 
       if (storedConvs) {
-        const parsedConvs: ChatConversation[] = JSON.parse(storedConvs);
-        if (Array.isArray(parsedConvs) && parsedConvs.length > 0) {
-          setConversations(sortConversations(parsedConvs));
+        try {
+          const parsedConvs: ChatConversation[] = JSON.parse(storedConvs);
+          if (Array.isArray(parsedConvs) && parsedConvs.length > 0) {
+            setConversations(sortConversations(parsedConvs));
+          }
+        } catch (err) {
+          console.warn('[Chat] Corrupt conversation storage:', err);
         }
       }
       if (storedMsgs) {
-        const parsedMsgs: Record<string, ChatMessage[]> = JSON.parse(storedMsgs);
-        if (parsedMsgs && typeof parsedMsgs === 'object') {
-          setMessages(parsedMsgs);
+        try {
+          const parsedMsgs: Record<string, ChatMessage[]> = JSON.parse(storedMsgs);
+          if (parsedMsgs && typeof parsedMsgs === 'object') {
+            setMessages(parsedMsgs);
+          }
+        } catch (err) {
+          console.warn('[Chat] Corrupt messages storage:', err);
         }
       }
     } catch (e) {

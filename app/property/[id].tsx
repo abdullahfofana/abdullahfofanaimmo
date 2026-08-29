@@ -28,6 +28,8 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Platform,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -47,7 +49,6 @@ import NearbyServicesSection from '@/components/NearbyServicesSection';
 import BuyerDistanceWidget from '@/components/BuyerDistanceWidget';
 import AreaPriceStatsCard from '@/components/AreaPriceStatsCard';
 import { calculateAreaPriceStats } from '@/utils/priceStats';
-import { Platform } from 'react-native';
 import { useFavorites } from '@/providers/FavoritesProvider';
 
 export default function PropertyDetailScreen() {
@@ -157,6 +158,34 @@ export default function PropertyDetailScreen() {
     return `${price.toLocaleString()} ${currency} `;
   };
 
+  const handleShare = async () => {
+    if (!property) return;
+    try {
+      const shareUrl = Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.location.href
+        : `https://immoci.ci/property/${property.id}`;
+      const message = `${property.title}\n💰 ${formatPrice(property.price, property.currency)}\n📍 ${property.location.district}, ${property.location.city}\n\n${shareUrl}`;
+
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).share) {
+        await (navigator as any).share({
+          title: property.title,
+          text: message,
+          url: shareUrl,
+        });
+      } else {
+        await Share.share({
+          title: property.title,
+          message: message,
+          url: shareUrl,
+        });
+      }
+    } catch (error: any) {
+      if (error?.message && !error.message.includes('dismissed') && !error.message.includes('AbortError')) {
+        console.warn('[PropertyDetail] Share error:', error);
+      }
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -200,7 +229,11 @@ export default function PropertyDetailScreen() {
                   <ArrowLeft size={24} color={Colors.text} />
                 </TouchableOpacity>
                 <View style={styles.headerRight}>
-                  <TouchableOpacity style={styles.headerButton}>
+                  <TouchableOpacity
+                    style={styles.headerButton}
+                    onPress={handleShare}
+                    activeOpacity={0.8}
+                  >
                     <Share2 size={22} color={Colors.text} />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -412,13 +445,40 @@ export default function PropertyDetailScreen() {
                       >
                         <MessageSquare size={19} color={Colors.white} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.agentButton} onPress={() => { if (Platform.OS === 'web') { window.location.href = 'tel:' + property.agent.phone; } else { Linking.openURL('tel:' + property.agent.phone); } }}>
+                      <TouchableOpacity
+                        style={styles.agentButton}
+                        onPress={() => {
+                          const clean = property.agent?.phone ? property.agent.phone.replace(/\D/g, '') : '';
+                          if (!clean) return;
+                          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                            window.location.href = 'tel:' + clean;
+                          } else {
+                            Linking.openURL('tel:' + clean).catch(() => {});
+                          }
+                        }}
+                      >
                         <Phone size={19} color={Colors.white} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.agentButton, { backgroundColor: '#25D366' }]} onPress={() => Linking.openURL('https://wa.me/' + property.agent.phone.replace(/\D/g,''))}>
+                      <TouchableOpacity
+                        style={[styles.agentButton, { backgroundColor: '#25D366' }]}
+                        onPress={() => {
+                          const clean = property.agent?.phone ? property.agent.phone.replace(/\D/g, '') : '';
+                          if (!clean) return;
+                          Linking.openURL('https://wa.me/' + clean).catch(() => {});
+                        }}
+                      >
                         <MessageCircle size={19} color={Colors.white} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.agentButton} onPress={() => { if (Platform.OS === 'web') { window.location.href = 'mailto:'; } else { Linking.openURL('mailto:'); } }}>
+                      <TouchableOpacity
+                        style={styles.agentButton}
+                        onPress={() => {
+                          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                            window.location.href = 'mailto:contact@immoci.ci';
+                          } else {
+                            Linking.openURL('mailto:contact@immoci.ci').catch(() => {});
+                          }
+                        }}
+                      >
                         <Mail size={19} color={Colors.white} />
                       </TouchableOpacity>
                     </View>
@@ -454,7 +514,7 @@ export default function PropertyDetailScreen() {
           </View>
 
           {/* Desktop Web Footer */}
-          <WebFooter />
+          {isDesktop && <WebFooter />}
         </ScrollView>
 
         {!isDesktop && (
@@ -488,9 +548,10 @@ export default function PropertyDetailScreen() {
               <TouchableOpacity
                 style={styles.mobileStickyWhatsAppBtn}
                 onPress={() => {
-                  const phone = property.agent.phone.replace(/\D/g, '');
+                  const phone = property.agent?.phone ? property.agent.phone.replace(/\D/g, '') : '';
+                  if (!phone) return;
                   const text = encodeURIComponent(`Bonjour, je vous contacte au sujet de : ${property.title} (${formatPrice(property.price, property.currency)}) sur ImmoCI.`);
-                  Linking.openURL(`https://wa.me/${phone}?text=${text}`);
+                  Linking.openURL(`https://wa.me/${phone}?text=${text}`).catch((err) => console.warn('[WhatsApp Error]:', err));
                 }}
                 activeOpacity={0.88}
               >
@@ -501,7 +562,11 @@ export default function PropertyDetailScreen() {
               {/* Call Button */}
               <TouchableOpacity
                 style={styles.mobileStickyCallBtn}
-                onPress={() => Linking.openURL('tel:' + property.agent.phone.replace(/\D/g, ''))}
+                onPress={() => {
+                  const clean = property.agent?.phone ? property.agent.phone.replace(/\D/g, '') : '';
+                  if (!clean) return;
+                  Linking.openURL('tel:' + clean).catch((err) => console.warn('[Call Error]:', err));
+                }}
                 activeOpacity={0.88}
               >
                 <Phone size={16} color="#FFFFFF" strokeWidth={2.4} />

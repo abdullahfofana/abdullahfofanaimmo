@@ -27,12 +27,14 @@ export default function Splash() {
       ]),
     ]).start();
 
+    let isMounted = true;
     const to = setTimeout(async () => {
+      if (!isMounted) return;
       if (Platform.OS === 'web') {
         try {
           router.replace('/(tabs)/home');
         } catch {
-          router.push('/(tabs)/home');
+          try { router.push('/(tabs)/home'); } catch {}
         }
         return;
       }
@@ -43,25 +45,32 @@ export default function Splash() {
           AsyncStorage.getItem('@immoci_auth_dev_session'),
         ]);
 
+        if (!isMounted) return;
+
         if (devSession || onboardingDone === 'true') {
           try {
             router.replace('/(tabs)/home');
           } catch {
-            router.push('/(tabs)/home');
+            try { router.push('/(tabs)/home'); } catch {}
           }
         } else {
           try {
             router.replace('/onboarding');
           } catch {
-            router.push('/onboarding');
+            try { router.push('/onboarding'); } catch {}
           }
         }
       } catch {
-        router.replace('/(tabs)/home');
+        if (isMounted) {
+          try { router.replace('/(tabs)/home'); } catch {}
+        }
       }
     }, 1700);
 
-    return () => clearTimeout(to);
+    return () => {
+      isMounted = false;
+      clearTimeout(to);
+    };
   }, [bgOpacity, glowScale, logoOpacity, logoScale]);
 
   const glowStyle = useMemo(

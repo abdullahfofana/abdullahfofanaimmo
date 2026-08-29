@@ -366,18 +366,26 @@ export default function HomeScreen() {
   }, [isWeb, recentItems.length, carouselAnim]);
 
   const handleWhatsAppContact = (phone: string, title: string) => {
+    if (!phone) return;
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
+    if (!cleanPhone) return;
     const text = encodeURIComponent(
       language === 'fr'
         ? `Bonjour, je vous contacte concernant l'annonce : ${title} sur ImmoCI.`
         : `Hello, I'm contacting you regarding the listing: ${title} on ImmoCI.`
     );
-    Linking.openURL(`https://wa.me/${cleanPhone}?text=${text}`);
+    Linking.openURL(`https://wa.me/${cleanPhone}?text=${text}`).catch((err) => {
+      console.warn('[WhatsApp Linking Error]:', err);
+    });
   };
 
   const handleCallContact = (phone: string) => {
+    if (!phone) return;
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
-    Linking.openURL(`tel:${cleanPhone}`);
+    if (!cleanPhone) return;
+    Linking.openURL(`tel:${cleanPhone}`).catch((err) => {
+      console.warn('[Phone Linking Error]:', err);
+    });
   };
 
   return (
@@ -1150,7 +1158,23 @@ export default function HomeScreen() {
               activeOpacity={0.92}
             >
               <View style={styles.mobileMapBannerInner}>
-                <PropertyMap properties={allProperties.slice(0, 8)} />
+                <Image
+                  source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80' }}
+                  style={{ width: '100%', height: '100%', opacity: 0.85 }}
+                  resizeMode="cover"
+                />
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(15, 23, 42, 0.25)', alignItems: 'center', justifyContent: 'center' }]}>
+                  <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16 }}>
+                    <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.92)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <MapPin size={12} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>Cocody · 85M</Text>
+                    </View>
+                    <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.92)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <MapPin size={12} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>Plateau · 35M</Text>
+                    </View>
+                  </View>
+                </View>
               </View>
               <LinearGradient
                 colors={['transparent', 'rgba(15, 23, 42, 0.88)']}

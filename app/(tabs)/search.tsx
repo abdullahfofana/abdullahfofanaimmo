@@ -683,7 +683,7 @@ export default function SearchScreen() {
               {/* Bathrooms */}
               <TouchableOpacity
                 testID="bathPickerButton"
-                onPress={() => setShowBedPicker(true)}
+                onPress={() => setShowBathPicker(true)}
                 style={[styles.inputPill, { flex: 1, backgroundColor: colors.backgroundSecondary }]}
               >
                 <Text style={[styles.inputPillPrefix, { color: colors.textSecondary }]}>Baths</Text>

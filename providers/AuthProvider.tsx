@@ -81,7 +81,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, newSession: Session | null) => {
+    const authStateResult = supabase.auth.onAuthStateChange(async (_event: string, newSession: Session | null) => {
       if (!isMounted) return;
       console.log('[Auth] Auth state changed:', newSession?.user?.id);
       
@@ -90,27 +90,40 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         await loadUser(newSession.user.id);
       } else {
         // If Supabase session is null, check if we have a dev session active
-        const savedDev = await AsyncStorage.getItem(DEV_STORAGE_KEY);
-        if (savedDev && isMounted) {
-          try {
-            const parsed = JSON.parse(savedDev) as User;
-            setUser(parsed);
-            setSession(createMockDevSession(parsed));
-          } catch {
-            setUser(DEFAULT_DEV_USER);
-            setSession(createMockDevSession(DEFAULT_DEV_USER));
+        try {
+          const savedDev = await AsyncStorage.getItem(DEV_STORAGE_KEY);
+          if (savedDev && isMounted) {
+            try {
+              const parsed = JSON.parse(savedDev) as User;
+              setUser(parsed);
+              setSession(createMockDevSession(parsed));
+            } catch {
+              setUser(DEFAULT_DEV_USER);
+              setSession(createMockDevSession(DEFAULT_DEV_USER));
+            }
+          } else if (isMounted) {
+            setUser(null);
+            setSession(null);
           }
-        } else if (isMounted) {
-          setUser(null);
-          setSession(null);
+        } catch {
+          if (isMounted) {
+            setUser(null);
+            setSession(null);
+          }
         }
         if (isMounted) setIsLoading(false);
       }
     });
 
+    const subscription = authStateResult?.data?.subscription;
+
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        try {
+          subscription.unsubscribe();
+        } catch {}
+      }
     };
   }, []);
 
@@ -128,7 +141,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setUser(data as User);
       } else {
         // Row doesn't exist yet (e.g. first OAuth sign-in) — auto-create it
-        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const authUserRes = await supabase.auth.getUser().catch(() => ({ data: { user: null }, error: null }));
+        const authUser = authUserRes?.data?.user;
         if (authUser) {
           const newUser: User = {
             id: authUser.id,

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import {
   Eye, EyeOff, Mail, Lock, User, Phone,
-  Chrome, Facebook, AlertCircle,
+  Globe, ExternalLink, AlertCircle,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -235,11 +235,11 @@ export default function AuthScreen() {
 
       {/* Social */}
       <TouchableOpacity style={styles.socialBtn} onPress={handleGoogleSignIn} disabled={isLoading}>
-        <Chrome size={18} color={Colors.text} strokeWidth={1.8} />
+        <Globe size={18} color={Colors.text} strokeWidth={1.8} />
         <Text style={styles.socialBtnText}>Continuer avec Google</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.socialBtn} onPress={handleFacebookSignIn} disabled={isLoading}>
-        <Facebook size={18} color={Colors.text} strokeWidth={1.8} />
+        <ExternalLink size={18} color={Colors.text} strokeWidth={1.8} />
         <Text style={styles.socialBtnText}>Continuer avec Facebook</Text>
       </TouchableOpacity>
 

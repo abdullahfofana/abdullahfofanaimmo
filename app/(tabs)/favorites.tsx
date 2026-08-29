@@ -12,13 +12,15 @@ import { useFavorites } from '@/providers/FavoritesProvider';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { mockProperties } from '@/mocks/properties';
 import type { Property } from '@/types/property';
+import { useResponsive } from '@/constants/breakpoints';
 
 import FadeInView from '@/components/FadeInView';
 import WebFooter from '@/components/WebFooter';
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
+  const { isDesktop } = useResponsive();
+  const { t, language } = useLanguage();
   const { favoriteIds } = useFavorites();
   const { getApprovedSubmissions } = usePropertySubmissions();
   const colors = useColors();
@@ -68,16 +70,16 @@ export default function FavoritesScreen() {
   }, [favoriteIds, getApprovedSubmissions]);
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 0 : insets.top }]}>
+    <View style={[styles.container, { paddingTop: isDesktop ? 0 : insets.top }]}>
       {/* Header */}
       <FadeInView delay={60}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>{t('favorites_title')}</Text>
+            <Text style={styles.title}>{t('favorites_title') || 'Mes Favoris'}</Text>
             <Text style={styles.subtitle}>
               {favorites.length > 0
-                ? `${favorites.length} ${t('favorites_properties')}`
-                : t('favorites_empty_title')}
+                ? `${favorites.length} ${t('favorites_properties') || 'biens sauvegardés'}`
+                : (language === 'fr' ? 'Aucun favori enregistré' : 'No favorites saved')}
             </Text>
           </View>
           {favorites.length > 0 && (
@@ -99,26 +101,32 @@ export default function FavoritesScreen() {
           </FadeInView>
         )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.list, { paddingBottom: 120 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 130 }]}
         showsVerticalScrollIndicator={true}
-        ListFooterComponent={<WebFooter />}
+        ListFooterComponent={isDesktop ? <WebFooter /> : null}
         ListEmptyComponent={
           <FadeInView delay={120}>
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconBox}>
-                <Heart size={40} color={colors.textLight} strokeWidth={1.5} />
+                <Heart size={40} color="#EF4444" strokeWidth={1.5} />
               </View>
-              <Text style={styles.emptyTitle}>{t('favorites_empty_title')}</Text>
-              <Text style={styles.emptyText}>{t('favorites_empty_text')}</Text>
+              <Text style={styles.emptyTitle}>
+                {language === 'fr' ? 'Votre liste de favoris est vide' : 'Your favorites list is empty'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {language === 'fr'
+                  ? 'Appuyez sur le cœur d’une annonce pour l’ajouter à vos favoris et la retrouver facilement.'
+                  : 'Tap the heart icon on any property to save it here for quick access.'}
+              </Text>
               <TouchableOpacity
-                // @ts-ignore
-                className="heavenly-button"
                 style={styles.exploreButton}
                 onPress={() => router.push('/(tabs)/search')}
-                activeOpacity={0.85}
+                activeOpacity={0.88}
               >
-                <Search size={18} color="#FFFFFF" strokeWidth={2.2} />
-                <Text style={styles.exploreButtonText}>{t('favorites_explore_button')}</Text>
+                <Search size={18} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.exploreButtonText}>
+                  {language === 'fr' ? 'Explorer les biens' : 'Explore Properties'}
+                </Text>
               </TouchableOpacity>
             </View>
           </FadeInView>
@@ -131,7 +139,7 @@ export default function FavoritesScreen() {
 const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -140,24 +148,24 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: '#E2E8F0',
   },
   title: {
     fontSize: 24,
-    fontWeight: '700' as const,
-    color: colors.text,
+    fontWeight: '800' as const,
+    color: '#0F172A',
     letterSpacing: -0.5,
     marginBottom: 2,
   },
   subtitle: {
     fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '400' as const,
+    color: '#64748B',
+    fontWeight: '500' as const,
   },
   countBadge: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#059669',
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -167,11 +175,11 @@ const createStyles = (colors: any) => StyleSheet.create({
   countBadgeText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '700' as const,
+    fontWeight: '800' as const,
   },
   list: {
     padding: Spacing.lg,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -184,45 +192,47 @@ const createStyles = (colors: any) => StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: '#FECACA',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: '#0F172A',
     letterSpacing: -0.3,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontSize: 13.5,
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
     fontWeight: '400' as const,
+    maxWidth: 320,
   },
   exploreButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginTop: 8,
-    cursor: 'pointer' as any,
-    ...Platform.select({
-      web: {
-        transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
-      },
-    }),
+    paddingHorizontal: 20,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: '#059669',
+    marginTop: 10,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   exploreButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '800' as const,
   },
 });
+

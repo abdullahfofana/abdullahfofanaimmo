@@ -15,18 +15,26 @@ export const openInGoogleMaps = (latitude: number, longitude: number, label: str
     });
   } else {
     const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-    Linking.openURL(webUrl);
+    Linking.openURL(webUrl).catch((err) => {
+      console.warn('Failed to open web maps:', err);
+    });
   }
 };
 
 export const openInWaze = (latitude: number, longitude: number) => {
   const url = `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`;
   
-  Linking.canOpenURL(url).then((supported) => {
-    if (supported) {
-      Linking.openURL(url);
-    } else {
-      Alert.alert('Waze Not Installed', 'Please install Waze app to use this feature.');
-    }
-  });
+  Linking.canOpenURL(url)
+    .then((supported) => {
+      if (supported) {
+        Linking.openURL(url).catch((err) => {
+          console.warn('Failed to open Waze:', err);
+        });
+      } else {
+        Alert.alert('Waze Not Installed', 'Please install Waze app to use this feature.');
+      }
+    })
+    .catch((err) => {
+      console.warn('Cannot open Waze:', err);
+    });
 };

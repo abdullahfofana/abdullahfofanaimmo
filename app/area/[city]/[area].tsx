@@ -341,7 +341,7 @@ export default function AreaLandingPage() {
           </View>
 
           {/* Desktop Pro Web Footer */}
-          <WebFooter />
+          {isDesktop && <WebFooter />}
         </ScrollView>
       </View>
     </>

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
@@ -12,12 +12,12 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ChatProvider } from "@/providers/ChatProvider";
 import ChatModal from "@/components/chat/ChatModal";
-import { View, Platform } from "react-native";
+import { View, Platform, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { trpc, getBaseUrl } from "@/lib/trpc";
 import { httpLink } from "@trpc/client";
 import superjson from "superjson";
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const figmaAnimationsStyle = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -204,7 +204,158 @@ const figmaAnimationsStyle = `
   }
 `;
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      retryDelay: 1000,
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class GlobalErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[GlobalErrorBoundary] Uncaught application error:', error, errorInfo);
+  }
+
+  handleRestart = () => {
+    this.setState({ hasError: false, error: null });
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.href = '/';
+      } else {
+        router.replace('/(tabs)/home');
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={fallbackStyles.container}>
+          <View style={fallbackStyles.card}>
+            <Text style={fallbackStyles.icon}>🏠</Text>
+            <Text style={fallbackStyles.title}>ImmoCI</Text>
+            <Text style={fallbackStyles.subtitle}>
+              Une erreur inattendue est survenue, mais vos données sont en sécurité.
+            </Text>
+            <TouchableOpacity
+              style={fallbackStyles.button}
+              onPress={this.handleRestart}
+              activeOpacity={0.85}
+            >
+              <Text style={fallbackStyles.buttonText}>Recharger l'application</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return (
+    <View style={fallbackStyles.container}>
+      <View style={fallbackStyles.card}>
+        <Text style={fallbackStyles.icon}>⚠️</Text>
+        <Text style={fallbackStyles.title}>Navigation Interrompue</Text>
+        <Text style={fallbackStyles.subtitle}>
+          {error?.message || 'Une erreur est survenue lors du chargement de cette page.'}
+        </Text>
+        <TouchableOpacity
+          style={fallbackStyles.button}
+          onPress={() => {
+            try {
+              retry();
+            } catch {
+              router.replace('/(tabs)/home');
+            }
+          }}
+          activeOpacity={0.85}
+        >
+          <Text style={fallbackStyles.buttonText}>Réessayer</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const fallbackStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0F0C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: '#172019',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+    maxWidth: 380,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  icon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  button: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 14,
+    width: '100%',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
 
 function RootLayoutNav() {
   return (
@@ -239,7 +390,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    SplashScreen.hideAsync();
+    SplashScreen.hideAsync().catch(() => {});
 
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       const styleId = 'immoci-figma-animations-style';
@@ -253,29 +404,31 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <AuthProvider>
-          <ThemeProvider>
-            <IntegrationProvider>
-              <PropertySubmissionProvider>
-                <FavoritesProvider>
-                  <LanguageProvider>
-                    <ChatProvider>
-                      <GestureHandlerRootView style={{ flex: 1 }}>
-                        <View style={{ flex: 1 }}>
-                          <RootLayoutNav />
-                          <ChatModal />
-                        </View>
-                      </GestureHandlerRootView>
-                    </ChatProvider>
-                  </LanguageProvider>
-                </FavoritesProvider>
-              </PropertySubmissionProvider>
-            </IntegrationProvider>
-          </ThemeProvider>
-        </AuthProvider>
-      </trpc.Provider>
-    </QueryClientProvider>
+    <GlobalErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <AuthProvider>
+            <ThemeProvider>
+              <IntegrationProvider>
+                <PropertySubmissionProvider>
+                  <FavoritesProvider>
+                    <LanguageProvider>
+                      <ChatProvider>
+                        <GestureHandlerRootView style={{ flex: 1 }}>
+                          <View style={{ flex: 1 }}>
+                            <RootLayoutNav />
+                            <ChatModal />
+                          </View>
+                        </GestureHandlerRootView>
+                      </ChatProvider>
+                    </LanguageProvider>
+                  </FavoritesProvider>
+                </PropertySubmissionProvider>
+              </IntegrationProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </trpc.Provider>
+      </QueryClientProvider>
+    </GlobalErrorBoundary>
   );
 }

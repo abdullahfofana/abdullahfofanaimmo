@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -8,6 +8,8 @@ import {
   Animated,
   Platform,
   Image,
+  Alert,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -25,6 +27,9 @@ import {
   Bell,
   Star,
   Edit3,
+  CheckCircle2,
+  X,
+  Sparkles,
 } from 'lucide-react-native';
 
 import Spacing from '@/constants/spacing';
@@ -32,6 +37,10 @@ import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useColors } from '@/hooks/useColors';
 import { ThemeColors } from '@/constants/colors';
+import { useAuth } from '@/providers/AuthProvider';
+import { useFavorites } from '@/providers/FavoritesProvider';
+import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
+import { useResponsive } from '@/constants/breakpoints';
 
 // ── Row menu item ─────────────────────────────────────────────────────────────
 interface MenuItemProps {
@@ -67,7 +76,7 @@ function MenuItem({
         onPress={onPress}
         onPressIn={onIn}
         onPressOut={onOut}
-        activeOpacity={1}
+        activeOpacity={0.8}
       >
         <View style={mStyles.left}>
           <View style={[mStyles.iconBox, { backgroundColor: iconBg }]}>
@@ -123,33 +132,83 @@ const mStyles = StyleSheet.create({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useResponsive } from '@/constants/breakpoints';
-
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const { user, signOut } = useAuth();
+  const { favoriteIds } = useFavorites();
+  const { submissions } = usePropertySubmissions();
+
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+
+  const userName = user?.name || (language === 'fr' ? 'Jean Kouassi' : 'Jean Kouassi');
+  const userEmail = user?.email || 'jean.kouassi@example.com';
+  const userRole = user?.role || 'agent';
+
   const stats = [
-    { value: '3', label: 'Listings', icon: <Building2 size={15} color={colors.primary} strokeWidth={2} /> },
-    { value: '12', label: 'Saved', icon: <Heart size={15} color="#EF4444" strokeWidth={2} fill="#EF4444" /> },
-    { value: '4.9', label: 'Rating', icon: <Star size={15} color={colors.accent} strokeWidth={2} fill={colors.accent} /> },
+    {
+      value: `${submissions?.length || 0}`,
+      label: language === 'fr' ? 'Annonces' : 'Listings',
+      icon: <Building2 size={16} color={colors.primary} strokeWidth={2} />,
+      onPress: () => router.push('/my-listings'),
+    },
+    {
+      value: `${favoriteIds?.length || 0}`,
+      label: language === 'fr' ? 'Favoris' : 'Saved',
+      icon: <Heart size={16} color="#EF4444" strokeWidth={2} fill="#EF4444" />,
+      onPress: () => router.push('/(tabs)/favorites'),
+    },
+    {
+      value: '4.9 ★',
+      label: language === 'fr' ? 'Confiance' : 'Rating',
+      icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
+      onPress: () => setShowRatingModal(true),
+    },
   ];
+
+  const handleLogout = () => {
+    const title = language === 'fr' ? 'Déconnexion' : 'Log Out';
+    const message = language === 'fr'
+      ? 'Êtes-vous sûr de vouloir vous déconnecter de votre compte ImmoCI ?'
+      : 'Are you sure you want to log out from ImmoCI?';
+    const confirmText = language === 'fr' ? 'Se déconnecter' : 'Log Out';
+    const cancelText = language === 'fr' ? 'Annuler' : 'Cancel';
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n${message}`)) {
+        signOut().then(() => router.replace('/auth'));
+      }
+    } else {
+      Alert.alert(title, message, [
+        { text: cancelText, style: 'cancel' },
+        {
+          text: confirmText,
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/auth');
+          },
+        },
+      ]);
+    }
+  };
 
   return (
     <View style={[styles.container, { paddingTop: isDesktop ? 0 : insets.top }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: isDesktop ? 60 : 120,
+          paddingBottom: isDesktop ? 60 : 130,
           maxWidth: 680,
           width: '100%',
           alignSelf: 'center',
         }}
       >
-
         {/* ── HEADER BLOCK ──────────────────────────────────────── */}
         <View style={styles.header}>
           {/* Background wash */}
@@ -157,21 +216,39 @@ export default function ProfileScreen() {
 
           {/* Avatar */}
           <View style={styles.avatarShell}>
-            <View style={styles.avatar}>
-              <User size={38} color={colors.primary} strokeWidth={1.5} />
-            </View>
-            <TouchableOpacity style={styles.avatarEdit} onPress={() => router.push('/edit-profile')}>
-              <Edit3 size={12} color="#fff" strokeWidth={2.5} />
+            <TouchableOpacity
+              style={styles.avatar}
+              activeOpacity={0.88}
+              onPress={() => router.push('/edit-profile')}
+            >
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarInitials}>
+                  {userName.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.avatarEdit}
+              onPress={() => router.push('/edit-profile')}
+              activeOpacity={0.8}
+            >
+              <Edit3 size={13} color="#fff" strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.name}>Jean Kouassi</Text>
-          <Text style={styles.emailText}>jean.kouassi@example.com</Text>
+          <Text style={styles.name}>{userName}</Text>
+          <Text style={styles.emailText}>{userEmail}</Text>
 
           {/* Verified badge */}
           <View style={styles.verifiedBadge}>
-            <Shield size={10} color={colors.primary} strokeWidth={2.5} />
-            <Text style={styles.verifiedText}>Verified Agent</Text>
+            <Shield size={12} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={styles.verifiedText}>
+              {userRole === 'agent'
+                ? (language === 'fr' ? 'Agent Certifié ImmoCI' : 'Verified Agent')
+                : (language === 'fr' ? 'Compte Acheteur Vérifié' : 'Verified Buyer')}
+            </Text>
           </View>
         </View>
 
@@ -179,11 +256,15 @@ export default function ProfileScreen() {
         <View style={styles.statsCard}>
           {stats.map((s, i) => (
             <React.Fragment key={i}>
-              <View style={styles.statItem}>
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={s.onPress}
+                activeOpacity={0.7}
+              >
                 <View style={styles.statIconRow}>{s.icon}</View>
                 <Text style={styles.statValue}>{s.value}</Text>
                 <Text style={styles.statLabel}>{s.label}</Text>
-              </View>
+              </TouchableOpacity>
               {i < stats.length - 1 && <View style={styles.statDivider} />}
             </React.Fragment>
           ))}
@@ -199,45 +280,49 @@ export default function ProfileScreen() {
             <Plus size={20} color={colors.primary} strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.addCtaTitle}>{t('nav_add_property')}</Text>
-            <Text style={styles.addCtaSub}>{t('add_property_cta')}</Text>
+            <Text style={styles.addCtaTitle}>{t('nav_add_property') || 'Publier une annonce'}</Text>
+            <Text style={styles.addCtaSub}>
+              {language === 'fr'
+                ? 'Vendez ou louez votre bien en quelques clics'
+                : 'Sell or rent your property in a few taps'}
+            </Text>
           </View>
           <ChevronRight size={18} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
 
         {/* ── MY ACCOUNT ─────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('profile_my_account')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile_my_account') || 'Mon Compte'}</Text>
           <View style={styles.menuCard}>
             <MenuItem
               icon={<Heart size={17} color="#EF4444" strokeWidth={2} />}
               iconBg="rgba(239,68,68,0.10)"
-              title={t('profile_my_favorites')}
-              subtitle="12 saved properties"
+              title={t('profile_my_favorites') || 'Mes Favoris'}
+              subtitle={`${favoriteIds?.length || 0} ${language === 'fr' ? 'biens enregistrés' : 'saved properties'}`}
               onPress={() => router.push('/(tabs)/favorites')}
               colors={colors}
             />
             <MenuItem
               icon={<Building2 size={17} color={colors.primary} strokeWidth={2} />}
               iconBg={colors.surfaceGreen}
-              title={t('profile_my_listings')}
-              subtitle="3 active listings"
+              title={t('profile_my_listings') || 'Mes Annonces'}
+              subtitle={`${submissions?.length || 0} ${language === 'fr' ? 'annonces publiées' : 'active listings'}`}
               onPress={() => router.push('/my-listings')}
               colors={colors}
             />
             <MenuItem
               icon={<Bell size={17} color={colors.accent} strokeWidth={2} />}
               iconBg={colors.accentMuted}
-              title="Notifications"
-              subtitle="Search alerts & updates"
-              onPress={() => {}}
+              title={language === 'fr' ? 'Notifications & Alertes' : 'Notifications & Alerts'}
+              subtitle={language === 'fr' ? 'Alertes de recherche & mises à jour' : 'Search alerts & updates'}
+              onPress={() => setShowNotificationsModal(true)}
               colors={colors}
             />
             <MenuItem
               icon={<LayoutDashboard size={17} color={colors.primary} strokeWidth={2} />}
               iconBg={colors.surfaceGreen}
-              title="Dashboard"
-              subtitle="Analytics & performance"
+              title="Dashboard Pro"
+              subtitle={language === 'fr' ? 'Statistiques & performance marché' : 'Analytics & market insights'}
               onPress={() => router.push('/dashboard')}
               colors={colors}
               isLast
@@ -247,13 +332,13 @@ export default function ProfileScreen() {
 
         {/* ── ADMIN ──────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Admin</Text>
+          <Text style={styles.sectionLabel}>ADMINISTRATION</Text>
           <View style={styles.menuCard}>
             <MenuItem
               icon={<Shield size={17} color={colors.primary} strokeWidth={2} />}
               iconBg={colors.surfaceGreen}
-              title="Admin Dashboard"
-              subtitle="Manage listings & users"
+              title="Admin & Modération"
+              subtitle={language === 'fr' ? 'Gérer les annonces & utilisateurs' : 'Manage listings & users'}
               onPress={() => router.push('/admin')}
               colors={colors}
               isLast
@@ -263,19 +348,19 @@ export default function ProfileScreen() {
 
         {/* ── SETTINGS ───────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('profile_settings')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile_settings') || 'Paramètres'}</Text>
           <View style={styles.menuCard}>
             <MenuItem
               icon={<Settings size={17} color={colors.textSecondary} strokeWidth={2} />}
               iconBg={colors.backgroundSecondary}
-              title={t('profile_settings')}
+              title={t('profile_settings') || 'Paramètres généraux'}
               onPress={() => router.push('/settings')}
               colors={colors}
             />
             <MenuItem
               icon={<HelpCircle size={17} color="#3B82F6" strokeWidth={2} />}
               iconBg="rgba(59,130,246,0.10)"
-              title={t('profile_help')}
+              title={t('profile_help') || 'Aide & Support'}
               onPress={() => router.push('/help')}
               colors={colors}
               isLast
@@ -289,8 +374,8 @@ export default function ProfileScreen() {
             <MenuItem
               icon={<LogOut size={17} color="#EF4444" strokeWidth={2} />}
               iconBg="rgba(239,68,68,0.10)"
-              title={t('profile_logout')}
-              onPress={() => {}}
+              title={t('profile_logout') || 'Se déconnecter'}
+              onPress={handleLogout}
               showChevron={false}
               colors={colors}
               danger
@@ -298,11 +383,85 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
-
       </ScrollView>
+
+      {/* ── NOTIFICATIONS MODAL ───────────────────────────────────── */}
+      <Modal
+        visible={showNotificationsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNotificationsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Bell size={20} color="#059669" />
+                <Text style={styles.modalTitle}>
+                  {language === 'fr' ? 'Alertes & Notifications' : 'Alerts & Notifications'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalBodyText}>
+              {language === 'fr'
+                ? '🔔 Vos alertes de recherche pour Abidjan et Cocody sont actives. Vous recevrez instantanément une notification dès qu’un bien correspondant à vos critères est publié.'
+                : '🔔 Your search alerts for Abidjan & Cocody are active. You will receive instant notifications when matching properties are listed.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.modalPrimaryBtn}
+              onPress={() => setShowNotificationsModal(false)}
+            >
+              <Text style={styles.modalPrimaryBtnText}>
+                {language === 'fr' ? 'D’accord' : 'Got it'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── RATING MODAL ─────────────────────────────────────────── */}
+      <Modal
+        visible={showRatingModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRatingModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Star size={20} color="#D97706" fill="#D97706" />
+                <Text style={styles.modalTitle}>
+                  {language === 'fr' ? 'Score de Confiance : 4.9/5' : 'Trust Score: 4.9/5'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowRatingModal(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalBodyText}>
+              {language === 'fr'
+                ? '⭐ Ce score est basé sur la vérification des titres fonciers (ACD), la réactivité aux messages et les avis des acheteurs vérifiés sur la plateforme ImmoCI.'
+                : '⭐ This score is calculated from deed verifications (ACD), message responsiveness, and feedback from verified buyers on ImmoCI.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.modalPrimaryBtn}
+              onPress={() => setShowRatingModal(false)}
+            >
+              <Text style={styles.modalPrimaryBtnText}>
+                {language === 'fr' ? 'Fermer' : 'Close'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
 
 const createStyles = (colors: any) => StyleSheet.create({
   container: {
@@ -482,5 +641,66 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+  },
+
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarInitials: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.primary,
+  },
+
+  // ── Modal Styles ─────────────────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 22,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalBodyText: {
+    fontSize: 14,
+    color: '#475569',
+    lineHeight: 21,
+    marginBottom: 20,
+  },
+  modalPrimaryBtn: {
+    backgroundColor: '#059669',
+    paddingVertical: 13,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
   },
 });

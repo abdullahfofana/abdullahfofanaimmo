@@ -472,28 +472,32 @@ export default function AddPropertyStandaloneScreen() {
   };
 
   const pickImage = async () => {
-    const remaining = 3 - formData.photos.length;
-    if (remaining <= 0) {
-      const msg = language === 'fr' ? 'Maximum 3 photos autorisées' : 'Maximum 3 photos allowed';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert(msg);
-      return;
-    }
+    try {
+      const remaining = 3 - formData.photos.length;
+      if (remaining <= 0) {
+        const msg = language === 'fr' ? 'Maximum 3 photos autorisées' : 'Maximum 3 photos allowed';
+        if (Platform.OS === 'web') alert(msg);
+        else Alert.alert(msg);
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      selectionLimit: remaining,
-      allowsEditing: false,
-      quality: 0.8,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        selectionLimit: remaining,
+        allowsEditing: false,
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
-      const newUris = result.assets.slice(0, remaining).map(a => a.uri);
-      setFormData(prev => ({
-        ...prev,
-        photos: [...prev.photos, ...newUris].slice(0, 3),
-      }));
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newUris = result.assets.slice(0, remaining).map(a => a.uri);
+        setFormData(prev => ({
+          ...prev,
+          photos: [...prev.photos, ...newUris].slice(0, 3),
+        }));
+      }
+    } catch (e) {
+      console.warn('[AddProperty ImagePick Error]:', e);
     }
   };
 
@@ -505,31 +509,39 @@ export default function AddPropertyStandaloneScreen() {
   };
 
   const pickVideo = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 0.8,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setFormData(prev => ({
-        ...prev,
-        video: result.assets[0].uri,
-      }));
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setFormData(prev => ({
+          ...prev,
+          video: result.assets[0].uri,
+        }));
+      }
+    } catch (e) {
+      console.warn('[AddProperty VideoPick Error]:', e);
     }
   };
 
   const pickDocument = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/*'],
-      copyToCacheDirectory: true,
-    });
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setFormData(prev => ({
-        ...prev,
-        document: result.assets[0].uri,
-      }));
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setFormData(prev => ({
+          ...prev,
+          document: result.assets[0].uri,
+        }));
+      }
+    } catch (e) {
+      console.warn('[AddProperty DocPick Error]:', e);
     }
   };
 

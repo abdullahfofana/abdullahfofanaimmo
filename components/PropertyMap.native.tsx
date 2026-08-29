@@ -148,6 +148,7 @@ export default function PropertyMapNative({
   const [selectedRadiusId, setSelectedRadiusId] = useState<string>('all');
   const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid'>('standard');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState<boolean>(false);
   const [isLocatingUser, setIsLocatingUser] = useState<boolean>(false);
   const cardSlideAnim = useRef(new Animated.Value(0)).current;
 
@@ -155,10 +156,10 @@ export default function PropertyMapNative({
   const validProperties = useMemo(() => {
     return properties.filter(
       (p) =>
-        p.location?.coordinates?.latitude != null &&
-        p.location?.coordinates?.longitude != null &&
-        !isNaN(p.location.coordinates.latitude) &&
-        !isNaN(p.location.coordinates.longitude)
+        p?.location?.coordinates?.latitude != null &&
+        p?.location?.coordinates?.longitude != null &&
+        !isNaN(Number(p.location.coordinates.latitude)) &&
+        !isNaN(Number(p.location.coordinates.longitude))
     );
   }, [properties]);
 
@@ -168,12 +169,14 @@ export default function PropertyMapNative({
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
+        setHasLocationPermission(false);
         // Fallback location for demo
         setUserLocation({ latitude: 5.3485, longitude: -4.0125 });
         setIsLocatingUser(false);
         return;
       }
 
+      setHasLocationPermission(true);
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -195,6 +198,7 @@ export default function PropertyMapNative({
       );
     } catch (err) {
       console.warn('[Location Native] Error getting location:', err);
+      setHasLocationPermission(false);
       setUserLocation({ latitude: 5.3485, longitude: -4.0125 });
     } finally {
       setIsLocatingUser(false);
@@ -369,31 +373,38 @@ export default function PropertyMapNative({
           style={styles.map}
           initialRegion={defaultRegion}
           mapType={mapType}
-          showsUserLocation
+          showsUserLocation={hasLocationPermission}
           showsMyLocationButton={false}
           showsCompass={false}
         >
           {/* Connecting Dashed Line from Buyer to Selected Property */}
-          {userLocation && selectedProperty && (
-            <Polyline
-              coordinates={[
-                {
-                  latitude: userLocation.latitude,
-                  longitude: userLocation.longitude,
-                },
-                {
-                  latitude: selectedProperty.location.coordinates.latitude,
-                  longitude: selectedProperty.location.coordinates.longitude,
-                },
-              ]}
-              strokeColor="#059669"
-              strokeWidth={3}
-              lineDashPattern={[6, 6]}
-            />
-          )}
+          {userLocation?.latitude != null &&
+            !isNaN(userLocation.latitude) &&
+            selectedProperty?.location?.coordinates?.latitude != null &&
+            !isNaN(selectedProperty.location.coordinates.latitude) && (
+              <Polyline
+                coordinates={[
+                  {
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                  },
+                  {
+                    latitude: selectedProperty.location.coordinates.latitude,
+                    longitude: selectedProperty.location.coordinates.longitude,
+                  },
+                ]}
+                strokeColor="#059669"
+                strokeWidth={3}
+                lineDashPattern={[6, 6]}
+              />
+            )}
 
           {/* Property Price Bubble Markers (Emerald Green matching screenshot) */}
           {filteredProperties.map((property) => {
+            const coords = property?.location?.coordinates;
+            if (!coords || coords.latitude == null || coords.longitude == null || isNaN(Number(coords.latitude)) || isNaN(Number(coords.longitude))) {
+              return null;
+            }
             const isSelected = internalSelectedId === property.id;
             const isSale = property.status === 'sale';
             const isFeatured = property.isFeatured || property.price > 100000000;
@@ -402,8 +413,8 @@ export default function PropertyMapNative({
               <Marker
                 key={property.id}
                 coordinate={{
-                  latitude: property.location.coordinates.latitude,
-                  longitude: property.location.coordinates.longitude,
+                  latitude: Number(coords.latitude),
+                  longitude: Number(coords.longitude),
                 }}
                 tracksViewChanges={false}
                 onPress={() => handleMarkerPress(property)}
