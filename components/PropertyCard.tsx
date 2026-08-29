@@ -162,13 +162,19 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
           </View>
 
           {/* ── FAVORITE BUTTON ───────────────────────────────────── */}
-          <Animated.View style={{ transform: [{ scale: favScale }] }}>
+          <Animated.View
+            style={[
+              styles.favoriteBtnWrapper,
+              { transform: [{ scale: favScale }] },
+            ]}
+            pointerEvents="box-none"
+          >
             <TouchableOpacity
               // @ts-ignore
               className="immoci-favorite-btn"
               style={[styles.favoriteBtn, favorite && styles.favoriteBtnActive]}
               onPress={handleFavorite}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               activeOpacity={0.8}
             >
               <Heart
@@ -342,19 +348,21 @@ const createStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  favoriteBtn: {
+  favoriteBtnWrapper: {
     position: 'absolute',
     top: 10,
     right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    zIndex: 20,
+  },
+  favoriteBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    zIndex: 10,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -362,7 +370,7 @@ const createStyles = (colors: any) => StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3,
       },
-      android: { elevation: 2 },
+      android: { elevation: 3 },
       web: {
         // @ts-ignore
         boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',

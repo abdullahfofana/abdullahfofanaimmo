@@ -1102,13 +1102,25 @@ export default function SearchScreen() {
           )}
 
           {/* Floating Toggle Button on Mobile */}
-          <Animated.View style={{ transform: [{ scale: floatingButtonScale }], position: 'absolute', bottom: insets.bottom + Spacing.xl + (isTablet || isDesktop ? 0 : 50), alignSelf: 'center', left: 0, right: 0, alignItems: 'center', zIndex: 100 }}>
+          <Animated.View
+            style={{
+              transform: [{ scale: floatingButtonScale }],
+              position: 'absolute',
+              bottom: insets.bottom + Spacing.xl + (isTablet || isDesktop ? 0 : 50),
+              alignSelf: 'center',
+              left: 0,
+              right: 0,
+              alignItems: 'center',
+              zIndex: 100,
+            }}
+            pointerEvents="box-none"
+          >
             <TouchableOpacity
               style={[styles.floatingButton, { backgroundColor: colors.text }]}
               onPress={() => setViewMode((m) => (m === 'list' ? 'map' : 'list'))}
               onPressIn={() => Animated.spring(floatingButtonScale, { toValue: 0.94, useNativeDriver: true, speed: 30, bounciness: 4 }).start()}
               onPressOut={() => Animated.spring(floatingButtonScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()}
-              activeOpacity={1}
+              activeOpacity={0.9}
             >
               {viewMode === 'list' ? (
                 <MapIcon size={20} color={colors.white} />
@@ -1124,15 +1136,13 @@ export default function SearchScreen() {
       )}
 
       <Modal visible={showLocationPicker} animationType="fade" transparent onRequestClose={() => setShowLocationPicker(false)}>
-        <TouchableOpacity
-          style={styles.pickerOverlay}
-          activeOpacity={1}
-          onPress={() => setShowLocationPicker(false)}
-        >
+        <View style={styles.pickerOverlay}>
           <TouchableOpacity
+            style={StyleSheet.absoluteFill}
             activeOpacity={1}
-            style={[styles.pickerCard, { backgroundColor: colors.surface, maxHeight: 600 }]}
-          >
+            onPress={() => setShowLocationPicker(false)}
+          />
+          <View style={[styles.pickerCard, { backgroundColor: colors.surface, maxHeight: 600 }]}>
             <View style={{ padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <View style={[styles.inputField, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border, height: 44 }]}>
                 <SearchIcon size={18} color={colors.textSecondary} style={{ marginRight: Spacing.xs }} />
@@ -1158,13 +1168,15 @@ export default function SearchScreen() {
             >
               {filteredLocations.length === 0 ? (
                 <View style={{ padding: Spacing.lg, alignItems: 'center' }}>
-                  <Text style={{ color: colors.textSecondary }}>No locations found</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    {t('search_no_results')}
+                  </Text>
                 </View>
               ) : (
                 filteredLocations.map((location) => (
                   <View key={location.city}>
                     <TouchableOpacity
-                      style={[styles.pickerItem, { borderBottomColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                      style={[styles.pickerItem, { borderBottomColor: colors.border }]}
                       onPress={() => {
                         handleSelectLocation(location.city);
                         setShowLocationPicker(false);
@@ -1173,7 +1185,7 @@ export default function SearchScreen() {
                     >
                       <MapPin size={16} color={colors.primary} style={{ marginRight: Spacing.xs }} />
                       <Text style={[styles.pickerText, { color: colors.text, fontWeight: '700' }]}>
-                        {location.city}
+                        {location.city} ({t('search_all_districts')})
                       </Text>
                     </TouchableOpacity>
                     {location.districts.map((district) => (
@@ -1200,12 +1212,13 @@ export default function SearchScreen() {
                   </View>
                 )))}
             </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       <Modal visible={showTypePicker} animationType="fade" transparent onRequestClose={() => setShowTypePicker(false)}>
         <View style={styles.pickerOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowTypePicker(false)} />
           <View style={[styles.pickerCard, { backgroundColor: colors.surface }]}>
             {(['all', 'apartment', 'house', 'villa', 'land', 'commercial'] as const).map((type) => (
               <TouchableOpacity
@@ -1229,6 +1242,7 @@ export default function SearchScreen() {
 
       <Modal visible={showBedPicker} animationType="fade" transparent onRequestClose={() => setShowBedPicker(false)}>
         <View style={styles.pickerOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowBedPicker(false)} />
           <View style={[styles.pickerCard, { backgroundColor: colors.surface }]}>
             {(['all', 1, 2, 3, 4, 5] as const).map((b) => (
               <TouchableOpacity
@@ -1252,6 +1266,7 @@ export default function SearchScreen() {
 
       <Modal visible={showBathPicker} animationType="fade" transparent onRequestClose={() => setShowBathPicker(false)}>
         <View style={styles.pickerOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowBathPicker(false)} />
           <View style={[styles.pickerCard, { backgroundColor: colors.surface }]}>
             {(['all', 1, 2, 3, 4] as const).map((b) => (
               <TouchableOpacity

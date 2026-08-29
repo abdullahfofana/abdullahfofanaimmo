@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import { router } from 'expo-router';
 import {
   MapPin,
@@ -31,6 +31,8 @@ import {
   MessageCircle,
   Phone,
   Eye,
+  Plus,
+  Minus,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
@@ -360,6 +362,22 @@ export default function PropertyMapNative({
     mapRef.current?.animateToRegion(defaultRegion, 700);
   };
 
+  const handleZoomIn = () => {
+    mapRef.current?.getCamera().then((camera) => {
+      if (camera && camera.zoom !== undefined) {
+        mapRef.current?.animateCamera({ zoom: Math.min((camera.zoom || 14) + 1.2, 20) }, { duration: 300 });
+      }
+    }).catch(() => {});
+  };
+
+  const handleZoomOut = () => {
+    mapRef.current?.getCamera().then((camera) => {
+      if (camera && camera.zoom !== undefined) {
+        mapRef.current?.animateCamera({ zoom: Math.max((camera.zoom || 14) - 1.2, 3) }, { duration: 300 });
+      }
+    }).catch(() => {});
+  };
+
   const toggleMapType = () => {
     setMapType((prev) => (prev === 'standard' ? 'hybrid' : 'standard'));
   };
@@ -375,8 +393,23 @@ export default function PropertyMapNative({
           mapType={mapType}
           showsUserLocation={hasLocationPermission}
           showsMyLocationButton={false}
-          showsCompass={false}
+          showsCompass={true}
+          scrollEnabled={true}
+          zoomEnabled={true}
+          rotateEnabled={true}
+          pitchEnabled={true}
+          moveOnMarkerPress={false}
+          loadingEnabled={true}
         >
+          {/* Universal OpenStreetMap Tiles for Full Coverage & Offline Reliability */}
+          {mapType === 'standard' && (
+            <UrlTile
+              urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              zIndex={-1}
+            />
+          )}
+
           {/* Connecting Dashed Line from Buyer to Selected Property */}
           {userLocation?.latitude != null &&
             !isNaN(userLocation.latitude) &&
@@ -451,7 +484,7 @@ export default function PropertyMapNative({
       </MapErrorBoundary>
 
       {/* ── TOP PLACES & RADIUS BAR ───────────────────────────────── */}
-      <View style={[styles.topBarContainer, { top: insets.top > 0 ? 8 : 12 }]}>
+      <View style={[styles.topBarContainer, { top: insets.top > 0 ? 8 : 12 }]} pointerEvents="box-none">
         {/* Popular Districts Scroll */}
         <ScrollView
           horizontal
@@ -522,12 +555,18 @@ export default function PropertyMapNative({
       </View>
 
       {/* ── FLOATING CONTROLS (Right Side) ────────────────────────── */}
-      <View style={styles.floatingControls}>
-        <TouchableOpacity style={styles.controlBtn} onPress={toggleMapType} activeOpacity={0.8}>
-          <Layers size={18} color="#0F172A" />
+      <View style={styles.floatingControls} pointerEvents="box-none">
+        <TouchableOpacity style={styles.controlBtn} onPress={handleZoomIn} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <Plus size={18} color="#0F172A" strokeWidth={2.4} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlBtn} onPress={handleRecenter} activeOpacity={0.8}>
-          <Navigation size={18} color="#059669" />
+        <TouchableOpacity style={styles.controlBtn} onPress={handleZoomOut} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <Minus size={18} color="#0F172A" strokeWidth={2.4} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlBtn} onPress={toggleMapType} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <Layers size={18} color="#0F172A" strokeWidth={2} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.controlBtn} onPress={handleRecenter} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+          <Navigation size={18} color="#059669" strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
 
@@ -547,8 +586,9 @@ export default function PropertyMapNative({
               ],
             },
           ]}
+          pointerEvents="box-none"
         >
-          <View style={styles.bottomCard}>
+          <View style={styles.bottomCard} pointerEvents="auto">
             {/* Close Button */}
             <TouchableOpacity
               style={styles.closeCardBtn}

@@ -1285,15 +1285,13 @@ export default function HomeScreen() {
         animationType="slide"
         onRequestClose={() => setShowLocationModal(false)}
       >
-        <TouchableOpacity
-          style={styles.locationModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowLocationModal(false)}
-        >
-          <View
-            style={[styles.locationModalContent, { paddingBottom: insets.bottom + 20 }]}
-            onStartShouldSetResponder={() => true}
-          >
+        <View style={styles.locationModalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowLocationModal(false)}
+          />
+          <View style={[styles.locationModalContent, { paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.locationModalDragIndicator} />
             <View style={styles.locationModalHeader}>
               <View>
@@ -1309,7 +1307,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {[
                 { name: '🇨🇮 Tout Abidjan', query: '', sub: 'Toutes les communes' },
                 { name: 'Cocody', query: 'Cocody', sub: 'Ambassades, Riviera, Deux Plateaux' },
@@ -1352,7 +1350,7 @@ export default function HomeScreen() {
               })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );

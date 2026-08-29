@@ -190,7 +190,7 @@ export default function PropertyDetailScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        {Platform.OS === 'web' && <WebNavbar />}
+        {isDesktop && <WebNavbar />}
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
           <View style={[styles.imageContainer, isDesktop && { alignItems: 'center' }]}>
             <View style={{ width: imageWidth }}>
@@ -221,6 +221,7 @@ export default function PropertyDetailScreen() {
                   styles.headerActions,
                   { paddingTop: insets.top + Spacing.sm },
                 ]}
+                pointerEvents="box-none"
               >
                 <TouchableOpacity
                   style={styles.headerButton}
