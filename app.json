@@ -2,7 +2,7 @@
   "expo": {
     "name": "ImmoCI",
     "slug": "immoci-mobile-ui-kit-prototype",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -32,6 +32,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "app.rork.immoci_mobile_ui_kit_prototype",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDummyKeyForOpenSourceOrFallbackGoogleMaps"
+        }
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

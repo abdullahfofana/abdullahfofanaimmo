@@ -71,18 +71,42 @@ const createFallbackClient = () => ({
   }
 } as any);
 
+const safeStorage = {
+  getItem: async (key: string): Promise<string | null> => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') return null;
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') return;
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch {}
+  },
+  removeItem: async (key: string): Promise<void> => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') return;
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch {}
+  },
+};
+
 const createSafeClient = () => {
   if (!supabaseUrl || !supabaseKey || (!supabaseUrl.startsWith('http://') && !supabaseUrl.startsWith('https://'))) {
     return createFallbackClient();
   }
 
   try {
+    const isBrowserOrNative = typeof window !== 'undefined' || Platform.OS !== 'web';
     return createClient(supabaseUrl, supabaseKey, {
       auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: Platform.OS === 'web',
+        storage: safeStorage,
+        autoRefreshToken: isBrowserOrNative,
+        persistSession: isBrowserOrNative,
+        detectSessionInUrl: typeof window !== 'undefined',
       },
     });
   } catch (error) {

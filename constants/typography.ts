@@ -1,98 +1,93 @@
 /**
- * ImmoCI Typography Scale v2
+ * ImmoCI Mobile Typography Scale
  * ─────────────────────────────────────────────────────────────────────────────
- * Scale is based on a 1.250 Major Third ratio.
- *
- * Two register axes:
- *   DISPLAY / EDITORIAL  — large serif-weight numerics (hero, price callouts)
- *   UI / FUNCTIONAL      — Inter-style sans for labels, body, captions
- *
- * Golden rule: never use more than 3 sizes on a single screen.
+ * Strict mobile-first typography hierarchy designed for 375pt–430pt displays.
+ * Follows Apple HIG & Material 3 typography guidelines.
  */
 
 const Typography = {
-  // ── Display — hero headline, landing page only ──────────────────────────
+  // ── Display Hero (Screen-level hero banners only) ─────────────────────────
   display: {
-    fontSize: 52,
+    fontSize: 28,
     fontWeight: '800' as const,
-    lineHeight: 58,
-    letterSpacing: -1.5,
+    lineHeight: 34,
+    letterSpacing: -0.8,
   },
 
   // ── Headings ─────────────────────────────────────────────────────────────
   h1: {
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: '800' as const,
-    lineHeight: 38,
-    letterSpacing: -0.8,
-  },
-  h2: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    lineHeight: 30,
+    lineHeight: 28,
     letterSpacing: -0.5,
   },
-  h3: {
-    fontSize: 20,
+  h2: {
+    fontSize: 18,
     fontWeight: '700' as const,
-    lineHeight: 26,
+    lineHeight: 24,
     letterSpacing: -0.3,
   },
-  h4: {
-    fontSize: 17,
+  h3: {
+    fontSize: 15,
     fontWeight: '600' as const,
-    lineHeight: 24,
+    lineHeight: 20,
     letterSpacing: -0.1,
+  },
+  h4: {
+    fontSize: 13.5,
+    fontWeight: '600' as const,
+    lineHeight: 18,
+    letterSpacing: 0,
   },
 
   // ── Body ─────────────────────────────────────────────────────────────────
   body: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '400' as const,
-    lineHeight: 23,
+    lineHeight: 21,
   },
   bodyMedium: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500' as const,
-    lineHeight: 23,
+    lineHeight: 21,
   },
   bodySmall: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '400' as const,
-    lineHeight: 19,
+    lineHeight: 17,
   },
 
-  // ── Price — accent display for property pricing ───────────────────────────
+  // ── Price Callouts ───────────────────────────────────────────────────────
   price: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800' as const,
-    lineHeight: 26,
-    letterSpacing: -0.6,
+    lineHeight: 24,
+    letterSpacing: -0.4,
   },
   priceSmall: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    lineHeight: 22,
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '800' as const,
+    lineHeight: 20,
+    letterSpacing: -0.2,
   },
 
-  // ── Eyebrow — section labels, category tags (ALL CAPS, spaced) ───────────
+  // ── Eyebrow / Micro-tags (All Caps, Spaced) ──────────────────────────────
   eyebrow: {
     fontSize: 10,
-    fontWeight: '700' as const,
+    fontWeight: '800' as const,
     lineHeight: 14,
-    letterSpacing: 1.8,
+    letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
   },
   eyebrowLg: {
-    fontSize: 12,
-    fontWeight: '700' as const,
+    fontSize: 11.5,
+    fontWeight: '800' as const,
     lineHeight: 16,
-    letterSpacing: 1.4,
+    letterSpacing: 0.6,
     textTransform: 'uppercase' as const,
   },
 
-  // ── Caption / label ───────────────────────────────────────────────────────
+  // ── Caption / Meta ───────────────────────────────────────────────────────
   caption: {
     fontSize: 11,
     fontWeight: '500' as const,
@@ -100,18 +95,18 @@ const Typography = {
     letterSpacing: 0.2,
   },
 
-  // ── Button text ───────────────────────────────────────────────────────────
+  // ── Button Text ──────────────────────────────────────────────────────────
   button: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    lineHeight: 22,
-    letterSpacing: 0.1,
+    fontSize: 14.5,
+    fontWeight: '700' as const,
+    lineHeight: 20,
+    letterSpacing: 0,
   },
   buttonSm: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600' as const,
-    lineHeight: 18,
-    letterSpacing: 0.1,
+    lineHeight: 17,
+    letterSpacing: 0,
   },
 };
 

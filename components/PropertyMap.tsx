@@ -9,6 +9,7 @@ import {
   ScrollView,
   Animated,
   Linking,
+  TextInput,
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -33,6 +34,8 @@ import {
   GraduationCap,
   Hospital,
   ShoppingBag,
+  ArrowLeft,
+  Search,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -42,8 +45,9 @@ import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { COTE_D_IVOIRE_SERVICES, NearbyService, ServiceCategory } from '@/constants/nearbyServices';
+import { formatPriceCompact, formatPriceFull } from '@/utils/currency';
 
-interface PropertyMapProps {
+export interface PropertyMapProps {
   properties: Property[];
   initialSelectedId?: string;
   selectedId?: string | null;
@@ -52,6 +56,10 @@ interface PropertyMapProps {
   showNearbyPOIs?: boolean;
   centerCoordinates?: { latitude: number; longitude: number; zoom?: number };
   hideBottomCard?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onFilterPress?: () => void;
+  onBackPress?: () => void;
 }
 
 // Popular locations / districts in Ivory Coast with center coordinates
@@ -107,9 +115,16 @@ export default function PropertyMap({
   showNearbyPOIs = false,
   centerCoordinates,
   hideBottomCard = false,
+  searchQuery: externalSearchQuery,
+  onSearchChange,
+  onFilterPress,
+  onBackPress,
 }: PropertyMapProps) {
   const colors = useColors();
   const { language, t } = useLanguage();
+
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const activeSearch = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('all');
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
@@ -123,6 +138,14 @@ export default function PropertyMap({
   const [isLocatingUser, setIsLocatingUser] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const cardAnim = useRef(new Animated.Value(0)).current;
+
+  const handleSearchTextChange = (text: string) => {
+    if (onSearchChange) {
+      onSearchChange(text);
+    } else {
+      setInternalSearchQuery(text);
+    }
+  };
 
   // Sync external selectedId
   useEffect(() => {
@@ -212,22 +235,37 @@ export default function PropertyMap({
     requestUserLocation();
   }, [requestUserLocation]);
 
-  // Filter by distance radius if selected
+  // Filter by search query & distance radius
   const filteredProperties = useMemo(() => {
-    const selectedRadius = RADIUS_OPTIONS.find((r) => r.id === selectedRadiusId);
-    if (!selectedRadius || selectedRadius.id === 'all' || !userLocation) {
-      return validProperties;
-    }
-    return validProperties.filter((p) => {
-      const dist = calculateDistanceKm(
-        userLocation.latitude,
-        userLocation.longitude,
-        p.location.coordinates.latitude,
-        p.location.coordinates.longitude
+    let list = validProperties;
+
+    if (activeSearch && activeSearch.trim().length > 0) {
+      const q = activeSearch.toLowerCase().trim();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.location.district.toLowerCase().includes(q) ||
+          p.location.city.toLowerCase().includes(q) ||
+          p.location.address.toLowerCase().includes(q) ||
+          p.type.toLowerCase().includes(q)
       );
-      return dist <= selectedRadius.km;
-    });
-  }, [validProperties, selectedRadiusId, userLocation]);
+    }
+
+    const selectedRadius = RADIUS_OPTIONS.find((r) => r.id === selectedRadiusId);
+    if (selectedRadius && selectedRadius.id !== 'all' && userLocation) {
+      list = list.filter((p) => {
+        const dist = calculateDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          p.location.coordinates.latitude,
+          p.location.coordinates.longitude
+        );
+        return dist <= selectedRadius.km;
+      });
+    }
+
+    return list;
+  }, [validProperties, activeSearch, selectedRadiusId, userLocation]);
 
   const selectedProperty = useMemo(() => {
     return filteredProperties.find((p) => p.id === internalSelectedId) || null;
@@ -349,7 +387,7 @@ export default function PropertyMap({
         id: p.id,
         title: p.title,
         price: formatPriceFull(p.price, p.currency),
-        priceBadge: formatPricePill(p.price, p.currency),
+        priceBadge: formatPriceCompact(p.price),
         status: p.status,
         isFeatured: p.isFeatured || p.price > 100000000,
         image: p.images[0],
@@ -387,60 +425,59 @@ export default function PropertyMap({
     * { box-sizing: border-box; }
     body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #e5e7eb; }
     
-    /* Emerald Price Bubble Marker */
+    /* White Property Price Pill Marker (Exact Match to UI Reference) */
     .price-marker-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
       cursor: pointer;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.22));
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18));
       transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .price-marker-wrap:hover, .price-marker-wrap.active {
-      transform: scale(1.18);
+      transform: scale(1.15);
       z-index: 9999 !important;
     }
     .price-bubble {
       display: flex;
       align-items: center;
-      gap: 4px;
-      background: #059669;
-      color: #ffffff;
+      gap: 3px;
+      background: #FFFFFF;
+      color: #0F172A;
       padding: 5px 9px;
-      border-radius: 12px;
-      font-size: 11.5px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
-      border: 1.5px solid #ffffff;
-      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.4);
+      border: 1.2px solid #E2E8F0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
       letter-spacing: -0.2px;
     }
     .price-bubble.featured {
-      background: #047857;
-      border-color: #FCD34D;
-      box-shadow: 0 0 10px rgba(252, 211, 77, 0.6);
+      border-color: #059669;
     }
     .price-bubble.rent {
-      background: #0d9488;
+      border-color: #0D9488;
     }
     .price-marker-wrap.active .price-bubble {
-      background: #064e3b;
-      border-color: #F59E0B;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.75);
+      background: #059669;
+      color: #FFFFFF;
+      border-color: #047857;
+      box-shadow: 0 0 12px rgba(5, 150, 105, 0.4);
     }
     .price-tail {
       width: 0;
       height: 0;
       border-left: 5px solid transparent;
       border-right: 5px solid transparent;
-      border-top: 6px solid #059669;
+      border-top: 6px solid #FFFFFF;
       margin-top: -1px;
     }
     .price-bubble.featured + .price-tail {
-      border-top-color: #047857;
+      border-top-color: #FFFFFF;
     }
     .price-marker-wrap.active .price-tail {
-      border-top-color: #064e3b;
+      border-top-color: #059669;
     }
 
     /* POI Service Markers */
@@ -635,12 +672,10 @@ export default function PropertyMap({
     properties.forEach(p => {
       const isRent = p.status === 'rent';
       const isFeatured = p.isFeatured;
-      const starIcon = isFeatured ? '⭐ ' : '';
-      const checkIcon = ' ✔️';
 
       const iconHtml = '<div class="price-marker-wrap" id="pin-' + p.id + '">' +
-        '<div class="price-bubble ' + (isFeatured ? 'featured' : isRent ? 'rent' : '') + '">' +
-          starIcon + p.priceBadge + checkIcon +
+        '<div class="price-bubble' + (isFeatured ? ' featured' : isRent ? ' rent' : '') + '">' +
+          p.priceBadge +
         '</div>' +
         '<div class="price-tail"></div>' +
       '</div>';
@@ -648,8 +683,8 @@ export default function PropertyMap({
       const icon = L.divIcon({
         className: 'custom-div-icon',
         html: iconHtml,
-        iconSize: [70, 32],
-        iconAnchor: [35, 32]
+        iconSize: [84, 34],
+        iconAnchor: [42, 34]
       });
 
       const distText = p.distanceKm ? '📍 ' + p.distanceKm + ' km de vous (~' + p.driveTimeMin + ' min)' : '📍 ' + p.district + ', ' + p.city;
@@ -720,7 +755,56 @@ export default function PropertyMap({
 
   return (
     <View style={styles.container}>
-      {/* ── TOP SEARCH & DISTANCE RADIUS BAR ───────────────────────── */}
+      {/* ── TOP SEARCH BAR (Exact Match to UI Reference) ────────────── */}
+      <View style={styles.searchBarWrapper}>
+        <View style={styles.searchBarCard}>
+          <TouchableOpacity
+            style={styles.searchLeadingBtn}
+            onPress={() => {
+              if (onBackPress) {
+                onBackPress();
+              } else if (router.canGoBack()) {
+                router.back();
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            {onBackPress ? (
+              <ArrowLeft size={19} color="#0F172A" strokeWidth={2.4} />
+            ) : (
+              <Search size={18} color="#64748B" strokeWidth={2.4} />
+            )}
+          </TouchableOpacity>
+
+          <TextInput
+            style={styles.searchTextInput}
+            placeholder="Where to buy home ?"
+            placeholderTextColor="#94A3B8"
+            value={activeSearch}
+            onChangeText={handleSearchTextChange}
+            returnKeyType="search"
+          />
+
+          {activeSearch.length > 0 && !onSearchChange && (
+            <TouchableOpacity
+              onPress={() => handleSearchTextChange('')}
+              style={styles.clearSearchBtn}
+            >
+              <X size={15} color="#94A3B8" strokeWidth={2.5} />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.filterBtnInside}
+            onPress={onFilterPress}
+            activeOpacity={0.8}
+          >
+            <SlidersHorizontal size={18} color="#0F172A" strokeWidth={2.2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── TOP DISTRICTS & DISTANCE RADIUS BAR ─────────────────────── */}
       {showFilterBar && (
         <View style={styles.topFilterBar}>
           {/* District pills */}
@@ -965,6 +1049,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
     position: 'relative',
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 6,
+    backgroundColor: '#FFFFFF',
+    zIndex: 20,
+  },
+  searchBarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    height: 48,
+    borderWidth: 1.2,
+    borderColor: 'rgba(226, 232, 240, 0.9)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchLeadingBtn: {
+    padding: 6,
+    marginRight: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchTextInput: {
+    flex: 1,
+    fontSize: 14.5,
+    fontWeight: '600',
+    color: '#0F172A',
+    paddingVertical: 8,
+    paddingRight: 8,
+  },
+  clearSearchBtn: {
+    padding: 6,
+    marginRight: 4,
+  },
+  filterBtnInside: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
   },
   topFilterBar: {
     backgroundColor: '#FFFFFF',

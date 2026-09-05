@@ -36,6 +36,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
+import { IconSizes, IconStrokes } from '@/constants/icons';
+import Button from '@/components/ui/Button';
+import IconButton from '@/components/ui/IconButton';
+import Badge from '@/components/ui/Badge';
 import { mockProperties } from '@/mocks/properties';
 import { getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -44,6 +48,7 @@ import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { useChat } from '@/providers/ChatProvider';
 import { Property } from '@/types/property';
 import WebNavbar from '@/components/WebNavbar';
+import { formatPriceFull, formatPriceCompact } from '@/utils/currency';
 import WebFooter from '@/components/WebFooter';
 import NearbyServicesSection from '@/components/NearbyServicesSection';
 import BuyerDistanceWidget from '@/components/BuyerDistanceWidget';
@@ -54,12 +59,13 @@ import { useFavorites } from '@/providers/FavoritesProvider';
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { isFavorite: isFavoriteCheck, toggleFavorite } = useFavorites();
   const { startOrGetConversation } = useChat();
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const { isDesktop } = useResponsive();
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+  const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'gallery' | 'features' | 'location'>('overview');
   const { isLoading, getApprovedSubmissions } = usePropertySubmissions();
   const [isMapVisible, setIsMapVisible] = useState(false);
 
@@ -151,11 +157,8 @@ export default function PropertyDetailScreen() {
     setIsMapVisible(true);
   };
 
-  const formatPrice = (price: number, currency: string) => {
-    if (currency === 'FCFA') {
-      return `${(price / 1000000).toFixed(1)}M FCFA`;
-    }
-    return `${price.toLocaleString()} ${currency} `;
+  const formatPrice = (price: number, currency: string = 'FCFA') => {
+    return formatPriceFull(price, currency);
   };
 
   const handleShare = async () => {
@@ -223,197 +226,270 @@ export default function PropertyDetailScreen() {
                 ]}
                 pointerEvents="box-none"
               >
-                <TouchableOpacity
-                  style={styles.headerButton}
+                <IconButton
+                  variant="translucentLight"
+                  size="md"
+                  icon={<ArrowLeft size={IconSizes.action} color={Colors.text} strokeWidth={IconStrokes.medium} />}
                   onPress={handleBack}
-                >
-                  <ArrowLeft size={24} color={Colors.text} />
-                </TouchableOpacity>
+                  accessibilityLabel="Retour"
+                />
                 <View style={styles.headerRight}>
-                  <TouchableOpacity
-                    style={styles.headerButton}
+                  <IconButton
+                    variant="translucentLight"
+                    size="md"
+                    icon={<Share2 size={IconSizes.action} color={Colors.text} strokeWidth={IconStrokes.medium} />}
                     onPress={handleShare}
-                    activeOpacity={0.8}
-                  >
-                    <Share2 size={22} color={Colors.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.headerButton}
+                    accessibilityLabel="Partager l'annonce"
+                  />
+                  <IconButton
+                    variant="translucentLight"
+                    size="md"
+                    icon={
+                      <Heart
+                        size={IconSizes.action}
+                        color={property && isFavoriteCheck(property.id) ? Colors.error : Colors.text}
+                        fill={property && isFavoriteCheck(property.id) ? Colors.error : 'transparent'}
+                        strokeWidth={IconStrokes.medium}
+                      />
+                    }
                     onPress={() => property && toggleFavorite(property.id)}
-                  >
-                    <Heart
-                      size={22}
-                      color={property && isFavoriteCheck(property.id) ? Colors.error : Colors.text}
-                      fill={property && isFavoriteCheck(property.id) ? Colors.error : 'transparent'}
-                    />
-                  </TouchableOpacity>
+                    accessibilityLabel="Ajouter aux favoris"
+                  />
                 </View>
               </View>
 
-              <View style={{ position: 'absolute', bottom: 16, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                {property.images.map((_, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      width: i === currentImageIndex ? 22 : 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: i === currentImageIndex ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
-                      ...(Platform.OS === 'web' ? { transition: 'all 0.32s cubic-bezier(0.16, 1, 0.3, 1)' } : {}),
-                    }}
-                  />
-                ))}
+              {/* ── BOTTOM THUMBNAIL PREVIEW OVERLAY (REFERENCE IMAGE STYLE) ── */}
+              <View style={styles.thumbnailStripOverlay}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
+                  {property.images.slice(0, 5).map((img, i) => {
+                    const isCurrent = i === currentImageIndex;
+                    const isLastPreview = i === 4 && property.images.length > 5;
+                    const remainingCount = property.images.length - 4;
+
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        style={[styles.thumbnailPill, isCurrent && styles.thumbnailPillActive]}
+                        onPress={() => setCurrentImageIndex(i)}
+                        activeOpacity={0.8}
+                      >
+                        <Image source={{ uri: img }} style={styles.thumbnailImg} resizeMode="cover" />
+                        {isLastPreview && (
+                          <View style={styles.thumbnailMoreOverlay}>
+                            <Text style={styles.thumbnailMoreText}>+{remainingCount}</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
             </View>
           </View>
 
+          {/* ── OVERLAPPING DETAIL SHEET (REFERENCE DESIGN) ───────────── */}
           <View style={[
             styles.content,
             isDesktop && { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%' }
           ]}>
             <View style={[styles.mainContent, isDesktop && styles.mainContentDesktop]}>
               <View style={[styles.leftColumn, isDesktop && styles.leftColumnDesktop]}>
-                <View style={styles.priceContainer}>
-                  <Text style={styles.price}>
-                    {formatPrice(property.price, property.currency)}
-                    {property.status === 'rent' && (
-                      <Text style={styles.priceUnit}>{t('property_per_month')}</Text>
-                    )}
-                  </Text>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>
-                      {property.status === 'sale' ? t('property_for_sale') : t('property_for_rent')}
+                
+                {/* Category Crown & Star Rating Header Row */}
+                <View style={styles.categoryRatingRow}>
+                  <View style={styles.categoryCrownBadge}>
+                    <Text style={styles.categoryCrownIcon}>👑</Text>
+                    <Text style={styles.categoryCrownText}>
+                      {property.type === 'villa'
+                        ? (language === 'fr' ? 'Villa de Prestige' : 'Luxury Villa')
+                        : property.type === 'apartment'
+                        ? (language === 'fr' ? 'Appartement Haut Standing' : 'Luxury Apartment')
+                        : (language === 'fr' ? 'Résidence de Prestige' : 'Luxury Residence')}
                     </Text>
+                  </View>
+
+                  <View style={styles.detailRatingBadge}>
+                    <Text style={styles.detailRatingStar}>★</Text>
+                    <Text style={styles.detailRatingScore}>4.8</Text>
+                    <Text style={styles.detailRatingCount}>({language === 'fr' ? '18 avis' : '18 Reviews'})</Text>
                   </View>
                 </View>
 
+                {/* Big Bold Property Title */}
                 <Text style={styles.title}>{property.title}</Text>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 8 }}>
-                  <TouchableOpacity
-                    style={[styles.locationPill, { flex: 1 }]}
-                    onPress={handleLocationPress}
-                    activeOpacity={0.75}
-                  >
-                    <MapPin size={16} color={Colors.primary} />
-                    <Text style={styles.locationText} numberOfLines={1}>
-                      {property.location.address}, {property.location.district},{' '}
-                      {property.location.city}
-                    </Text>
-                    <View style={styles.locationChevronWrapper}>
-                      <ChevronRight size={14} color={Colors.primary} />
-                    </View>
-                  </TouchableOpacity>
+                {/* Location Line */}
+                <TouchableOpacity
+                  style={styles.locationRowWrap}
+                  onPress={handleLocationPress}
+                  activeOpacity={0.75}
+                >
+                  <MapPin size={15} color="#059669" strokeWidth={2.4} />
+                  <Text style={styles.locationSubtitleText} numberOfLines={1}>
+                    {property.location.address ? `${property.location.address}, ` : ''}{property.location.district}, {property.location.city}
+                  </Text>
+                  <ChevronRight size={14} color="#64748B" />
+                </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: Colors.primary,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
-                    onPress={() => setIsMapVisible(true)}
-                    activeOpacity={0.85}
-                  >
-                    <MapPin size={14} color="#FFFFFF" />
-                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>
-                      {t('view_on_map') || 'Voir sur la carte'}
-                    </Text>
-                  </TouchableOpacity>
+                {/* Segmented Navigation Tabs (Overview | Gallery | Features | Location) */}
+                <View style={styles.segmentedTabsRow}>
+                  {[
+                    { id: 'overview', label: language === 'fr' ? 'Aperçu' : 'Overview' },
+                    { id: 'gallery', label: language === 'fr' ? 'Photos' : 'Gallery' },
+                    { id: 'features', label: language === 'fr' ? 'Commodités' : 'Features' },
+                    { id: 'location', label: language === 'fr' ? 'Localisation' : 'Location' },
+                  ].map((tab) => {
+                    const isActive = activeDetailTab === tab.id;
+                    return (
+                      <TouchableOpacity
+                        key={tab.id}
+                        style={[styles.segmentedTabBtn, isActive && styles.segmentedTabBtnActive]}
+                        onPress={() => setActiveDetailTab(tab.id as any)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.segmentedTabText, isActive && styles.segmentedTabTextActive]}>
+                          {tab.label}
+                        </Text>
+                        {isActive && <View style={styles.segmentedTabActiveUnderline} />}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
 
+                {/* Key Specs Row (Soft Squircle Capsule Cards) */}
                 <View style={styles.specs}>
-                  {property.bedrooms && (
+                  {property.bedrooms ? (
                     <View style={styles.spec}>
-                      <Bed size={20} color={Colors.primary} />
-                      <Text style={styles.specText}>{property.bedrooms} {t('property_bedrooms_short')}</Text>
+                      <Bed size={18} color="#059669" strokeWidth={2.2} />
+                      <Text style={styles.specText}>{property.bedrooms} {language === 'fr' ? 'Chambres' : 'Beds'}</Text>
                     </View>
-                  )}
-                  {property.bathrooms && (
+                  ) : null}
+                  {property.bathrooms ? (
                     <View style={styles.spec}>
-                      <Bath size={20} color={Colors.primary} />
-                      <Text style={styles.specText}>{property.bathrooms} {t('property_bathrooms_short')}</Text>
+                      <Bath size={18} color="#059669" strokeWidth={2.2} />
+                      <Text style={styles.specText}>{property.bathrooms} {language === 'fr' ? 'Salles de bain' : 'Baths'}</Text>
                     </View>
-                  )}
+                  ) : null}
                   <View style={styles.spec}>
-                    <Maximize size={20} color={Colors.primary} />
-                    <Text style={styles.specText}>{property.area}m²</Text>
+                    <Maximize size={18} color="#059669" strokeWidth={2.2} />
+                    <Text style={styles.specText}>{property.area} m²</Text>
                   </View>
                 </View>
 
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{t('property_description')}</Text>
-                  <Text style={styles.description}>{property.description}</Text>
-                </View>
+                {/* Tab: OVERVIEW Content */}
+                {(activeDetailTab === 'overview' || isDesktop) && (
+                  <>
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>{t('property_description') || 'Description'}</Text>
+                      <Text style={styles.description}>{property.description}</Text>
+                    </View>
 
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{t('property_features')}</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-                    {property.features.map((feature, index) => (
-                      <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: Colors.primary + '10', borderRadius: 20, borderWidth: 1, borderColor: Colors.primary + '25' }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary }} />
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.primary }}>{feature}</Text>
+                    {/* Features Snippet */}
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>{t('property_features') || 'Commodités & Équipements'}</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                        {property.features.map((feature, index) => (
+                          <View key={index} style={styles.featurePillTag}>
+                            <View style={styles.featurePillDot} />
+                            <Text style={styles.featurePillText}>{feature}</Text>
+                          </View>
+                        ))}
                       </View>
-                    ))}
-                  </View>
-                </View>
+                    </View>
 
-                {/* ── Distance Between Buyer & Seller ────────────────── */}
-                <BuyerDistanceWidget
-                  propertyLat={property.location.coordinates.latitude}
-                  propertyLng={property.location.coordinates.longitude}
-                  propertyTitle={property.title}
-                  propertyDistrict={property.location.district}
-                  propertyCity={property.location.city}
-                />
-
-                {/* ── Embedded Property Location Map ─────────────────── */}
-                <View style={{ marginTop: 14 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: Colors.text }}>
-                      📍 {t('property_location') || 'Localisation & Quartier'}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setIsMapVisible(true)}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>
-                        {t('view_on_map') || 'Plein écran'} ↗
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{ height: 260, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0' }}>
-                    <PropertyMap
-                      properties={[property]}
-                      showFilterBar={false}
-                      showNearbyPOIs={true}
-                      hideBottomCard={true}
-                      centerCoordinates={{
-                        latitude: property.location.coordinates.latitude,
-                        longitude: property.location.coordinates.longitude,
-                        zoom: 15,
-                      }}
+                    {/* Buyer to Seller Distance Widget */}
+                    <BuyerDistanceWidget
+                      propertyLat={property.location.coordinates.latitude}
+                      propertyLng={property.location.coordinates.longitude}
+                      propertyTitle={property.title}
+                      propertyDistrict={property.location.district}
+                      propertyCity={property.location.city}
                     />
+                  </>
+                )}
+
+                {/* Tab: GALLERY Content */}
+                {activeDetailTab === 'gallery' && !isDesktop && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>{language === 'fr' ? 'Galerie Photos Complète' : 'Full Photo Gallery'}</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                      {property.images.map((img, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          style={{ width: '48%', height: 120, borderRadius: 14, overflow: 'hidden' }}
+                          onPress={() => setCurrentImageIndex(i)}
+                          activeOpacity={0.88}
+                        >
+                          <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                </View>
+                )}
 
-                {/* ── Nearby Services & POIs Checklist ────────────────── */}
-                <NearbyServicesSection
-                  latitude={property.location.coordinates.latitude}
-                  longitude={property.location.coordinates.longitude}
-                  maxDistanceKm={7}
-                />
+                {/* Tab: FEATURES Content */}
+                {activeDetailTab === 'features' && !isDesktop && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>{language === 'fr' ? 'Toutes les Commodités' : 'All Features & Amenities'}</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+                      {property.features.map((feature, index) => (
+                        <View key={index} style={[styles.featurePillTag, { paddingVertical: 10, paddingHorizontal: 14 }]}>
+                          <View style={styles.featurePillDot} />
+                          <Text style={[styles.featurePillText, { fontSize: 13 }]}>{feature}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
 
-                {/* ── Area Average Market Price Stats ────────────────── */}
-                <View style={{ marginTop: 10 }}>
-                  <AreaPriceStatsCard
-                    stats={calculateAreaPriceStats(allProperties, property.location.district, property.location.city)}
-                    onExplorePress={() => router.push(`/area/${property.location.city.toLowerCase()}/${property.location.district.toLowerCase()}` as any)}
-                  />
-                </View>
+                {/* Tab: LOCATION Content */}
+                {(activeDetailTab === 'location' || isDesktop) && (
+                  <>
+                    <View style={{ marginTop: 16 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '800', color: Colors.text }}>
+                          📍 {t('property_location') || 'Localisation & Quartier'}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => setIsMapVisible(true)}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>
+                            {t('view_on_map') || 'Plein écran'} ↗
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={{ height: 260, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                        <PropertyMap
+                          properties={[property]}
+                          showFilterBar={false}
+                          showNearbyPOIs={true}
+                          hideBottomCard={true}
+                          centerCoordinates={{
+                            latitude: property.location.coordinates.latitude,
+                            longitude: property.location.coordinates.longitude,
+                            zoom: 15,
+                          }}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Nearby Services */}
+                    <NearbyServicesSection
+                      latitude={property.location.coordinates.latitude}
+                      longitude={property.location.coordinates.longitude}
+                      maxDistanceKm={7}
+                    />
+
+                    {/* Area Price Stats */}
+                    <View style={{ marginTop: 10 }}>
+                      <AreaPriceStatsCard
+                        stats={calculateAreaPriceStats(allProperties, property.location.district, property.location.city)}
+                        onExplorePress={() => router.push(`/area/${property.location.city.toLowerCase()}/${property.location.district.toLowerCase()}` as any)}
+                      />
+                    </View>
+                  </>
+                )}
               </View>
 
               <View style={[styles.rightColumn, isDesktop && styles.rightColumnDesktop]}>
@@ -508,7 +584,7 @@ export default function PropertyDetailScreen() {
                 <TouchableOpacity key={p.id} onPress={() => router.push(`/property/${p.id}`)} activeOpacity={0.9} style={{ width: 200 }}>
                   <Image source={{ uri: p.images[0] }} style={{ width: 200, height: 130, borderRadius: 12 }} resizeMode="cover" />
                   <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '700', color: Colors.text, marginTop: 8 }}>{p.title}</Text>
-                  <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '700', marginTop: 2 }}>{(p.price/1000000).toFixed(1)}M FCFA</Text>
+                  <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '700', marginTop: 2 }}>{formatPriceCompact(p.price)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -530,51 +606,49 @@ export default function PropertyDetailScreen() {
                 {formatPrice(property.price, property.currency)}
               </Text>
               <Text style={styles.mobileStickySubText}>
-                {property.status === 'rent' ? '/mois' : (property.area ? `${Math.round(property.price / property.area).toLocaleString()} F/m²` : 'Prix direct')}
+                {property.status === 'rent' ? '/mois' : (property.area ? `${Math.round(property.price / property.area).toLocaleString()} FCFA/m²` : 'Prix direct')}
               </Text>
             </View>
 
             <View style={styles.mobileStickyActionBtns}>
               {/* In-App Live Chat Button */}
-              <TouchableOpacity
-                style={styles.mobileStickyChatBtn}
+              <Button
+                variant="secondary"
+                size="sm"
+                label="Chat"
+                leftIcon={<MessageSquare size={IconSizes.actionSm} color="#059669" strokeWidth={IconStrokes.bold} />}
                 onPress={() => startOrGetConversation(property)}
-                activeOpacity={0.88}
-              >
-                <MessageSquare size={16} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.mobileStickyBtnText}>Chat</Text>
-              </TouchableOpacity>
+                style={{ flex: 1 }}
+              />
 
               {/* WhatsApp Button */}
-              <TouchableOpacity
-                style={styles.mobileStickyWhatsAppBtn}
+              <Button
+                variant="whatsapp"
+                size="sm"
+                label="WhatsApp"
+                leftIcon={<MessageCircle size={IconSizes.actionSm} color="#FFFFFF" strokeWidth={IconStrokes.bold} />}
                 onPress={() => {
                   const phone = property.agent?.phone ? property.agent.phone.replace(/\D/g, '') : '';
                   if (!phone) return;
                   const text = encodeURIComponent(`Bonjour, je vous contacte au sujet de : ${property.title} (${formatPrice(property.price, property.currency)}) sur ImmoCI.`);
                   Linking.openURL(`https://wa.me/${phone}?text=${text}`).catch((err) => console.warn('[WhatsApp Error]:', err));
                 }}
-                activeOpacity={0.88}
-              >
-                <MessageCircle size={16} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.mobileStickyBtnText}>WhatsApp</Text>
-              </TouchableOpacity>
+                style={{ flex: 1.25 }}
+              />
 
               {/* Call Button */}
-              <TouchableOpacity
-                style={styles.mobileStickyCallBtn}
+              <Button
+                variant="primary"
+                size="sm"
+                label={t('call') || 'Appeler'}
+                leftIcon={<Phone size={IconSizes.actionSm} color="#FFFFFF" strokeWidth={IconStrokes.bold} />}
                 onPress={() => {
                   const clean = property.agent?.phone ? property.agent.phone.replace(/\D/g, '') : '';
                   if (!clean) return;
                   Linking.openURL('tel:' + clean).catch((err) => console.warn('[Call Error]:', err));
                 }}
-                activeOpacity={0.88}
-              >
-                <Phone size={16} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.mobileStickyBtnText}>
-                  {t('call') || 'Appeler'}
-                </Text>
-              </TouchableOpacity>
+                style={{ flex: 1.1 }}
+              />
             </View>
           </View>
         )}
@@ -729,6 +803,159 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.lg,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -28,
+  },
+  thumbnailStripOverlay: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    zIndex: 15,
+  },
+  thumbnailPill: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: '#0F172A',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  thumbnailPillActive: {
+    borderColor: '#10B981',
+    transform: [{ scale: 1.05 }],
+  },
+  thumbnailImg: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailMoreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnailMoreText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  categoryRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  categoryCrownBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  categoryCrownIcon: {
+    fontSize: 12,
+  },
+  categoryCrownText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#059669',
+    letterSpacing: 0.2,
+  },
+  detailRatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailRatingStar: {
+    fontSize: 13,
+    color: '#F59E0B',
+    fontWeight: '800',
+  },
+  detailRatingScore: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  detailRatingCount: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  locationRowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 16,
+  },
+  locationSubtitleText: {
+    fontSize: 13.5,
+    color: '#64748B',
+    fontWeight: '500',
+    flex: 1,
+  },
+  segmentedTabsRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1EFEA',
+    marginBottom: 16,
+    gap: 4,
+  },
+  segmentedTabBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    position: 'relative',
+  },
+  segmentedTabBtnActive: {},
+  segmentedTabText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  segmentedTabTextActive: {
+    color: '#059669',
+    fontWeight: '800',
+  },
+  segmentedTabActiveUnderline: {
+    position: 'absolute',
+    bottom: -1,
+    left: 12,
+    right: 12,
+    height: 2.5,
+    borderRadius: 2,
+    backgroundColor: '#059669',
+  },
+  featurePillTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: '#F8FAF8',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E6EFE8',
+  },
+  featurePillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#059669',
+  },
+  featurePillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#166534',
   },
   mainContent: {
     flexDirection: 'column',
@@ -778,9 +1005,11 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   title: {
-    ...Typography.h2,
-    color: Colors.text,
-    marginBottom: Spacing.sm,
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: '#111827',
+    marginBottom: 6,
+    letterSpacing: -0.4,
   },
   locationPill: {
     flexDirection: 'row',
@@ -807,21 +1036,30 @@ const styles = StyleSheet.create({
   },
   specs: {
     flexDirection: 'row',
-    gap: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    gap: 10,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#F0ECE4',
+    marginBottom: 16,
   },
   spec: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAF8',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E8EFE9',
   },
   specText: {
-    ...Typography.body,
-    color: Colors.text,
-    fontWeight: '600' as const,
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: '#1E293B',
   },
   section: {
     marginTop: Spacing.lg,

@@ -46,8 +46,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
-import PropertyMap from '@/components/PropertyMap';
 import Typography from '@/constants/typography';
+import { IconSizes, IconStrokes } from '@/constants/icons';
+import Button from '@/components/ui/Button';
+import IconButton from '@/components/ui/IconButton';
+import FilterChip from '@/components/ui/FilterChip';
+import Badge from '@/components/ui/Badge';
+import PropertyMap from '@/components/PropertyMap';
 import PropertyCard from '@/components/PropertyCard';
 import FadeInView from '@/components/FadeInView';
 import { mockProperties } from '@/mocks/properties';

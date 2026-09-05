@@ -6,6 +6,9 @@ import { router } from 'expo-router';
 
 import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
+import Typography from '@/constants/typography';
+import { IconSizes, IconStrokes } from '@/constants/icons';
+import Button from '@/components/ui/Button';
 import PropertyCard from '@/components/PropertyCard';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useFavorites } from '@/providers/FavoritesProvider';
@@ -118,16 +121,14 @@ export default function FavoritesScreen() {
                   ? 'Appuyez sur le cœur d’une annonce pour l’ajouter à vos favoris et la retrouver facilement.'
                   : 'Tap the heart icon on any property to save it here for quick access.'}
               </Text>
-              <TouchableOpacity
-                style={styles.exploreButton}
+              <Button
+                variant="primary"
+                size="md"
+                label={language === 'fr' ? 'Explorer les biens' : 'Explore Properties'}
+                leftIcon={<Search size={IconSizes.action} color="#FFFFFF" strokeWidth={IconStrokes.medium} />}
                 onPress={() => router.push('/(tabs)/search')}
-                activeOpacity={0.88}
-              >
-                <Search size={18} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.exploreButtonText}>
-                  {language === 'fr' ? 'Explorer les biens' : 'Explore Properties'}
-                </Text>
-              </TouchableOpacity>
+                style={{ marginTop: 8 }}
+              />
             </View>
           </FadeInView>
         }
@@ -139,7 +140,7 @@ export default function FavoritesScreen() {
 const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F5F0',
   },
   header: {
     flexDirection: 'row',
@@ -150,12 +151,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingBottom: Spacing.md,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#EDEAE4',
   },
   title: {
     fontSize: 24,
     fontWeight: '800' as const,
-    color: '#0F172A',
+    color: '#111827',
     letterSpacing: -0.5,
     marginBottom: 2,
   },
@@ -166,15 +167,15 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   countBadge: {
     backgroundColor: '#059669',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   countBadgeText: {
-    color: '#fff',
-    fontSize: 15,
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '800' as const,
   },
   list: {
@@ -202,7 +203,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '800' as const,
-    color: '#0F172A',
+    color: '#111827',
     letterSpacing: -0.3,
     textAlign: 'center',
   },

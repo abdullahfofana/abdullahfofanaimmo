@@ -6,6 +6,7 @@ import {
   Platform,
   Image,
   TouchableOpacity,
+  TextInput,
   ScrollView,
   Dimensions,
   Animated,
@@ -24,15 +25,17 @@ import {
   Bed,
   Bath,
   Maximize2,
-  Sparkles,
-  Route,
-  Compass,
+  SlidersHorizontal,
+  ArrowLeft,
+  Search,
+  Plus,
+  Minus,
   CheckCircle2,
   MessageCircle,
   Phone,
   Eye,
-  Plus,
-  Minus,
+  Compass,
+  Route,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
@@ -42,7 +45,11 @@ import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
+import { formatPriceCompact, formatPriceFull } from '@/utils/currency';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Map Error Boundary (Guarantees zero-blank screen in APK)
+// ─────────────────────────────────────────────────────────────────────────────
 class MapErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
@@ -52,22 +59,26 @@ class MapErrorBoundary extends React.Component<{ children: React.ReactNode }, { 
     return { hasError: true };
   }
   componentDidCatch(error: any) {
-    console.warn('[MapNative] MapView error caught:', error);
+    console.warn('[PropertyMapNative] MapView error caught:', error);
   }
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9', padding: 20 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: '#475569', marginBottom: 6 }}>📍 Carte en mode simplifié</Text>
-          <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginBottom: 12 }}>
-            La vue satellite/interactive n'est pas disponible sur cet appareil.
-          </Text>
-          <TouchableOpacity
-            style={{ backgroundColor: '#059669', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 }}
-            onPress={() => this.setState({ hasError: false })}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Réessayer</Text>
-          </TouchableOpacity>
+        <View style={styles.errorFallbackContainer}>
+          <View style={styles.errorCard}>
+            <MapPin size={32} color="#059669" />
+            <Text style={styles.errorTitle}>Mode carte sécurisé</Text>
+            <Text style={styles.errorSub}>
+              Chargement des coordonnées géographiques en cours...
+            </Text>
+            <TouchableOpacity
+              style={styles.retryBtn}
+              onPress={() => this.setState({ hasError: false })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.retryBtnText}>Actualiser la carte</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -75,7 +86,7 @@ class MapErrorBoundary extends React.Component<{ children: React.ReactNode }, { 
   }
 }
 
-interface PropertyMapProps {
+export interface PropertyMapProps {
   properties: Property[];
   initialSelectedId?: string;
   selectedId?: string | null;
@@ -84,6 +95,10 @@ interface PropertyMapProps {
   showNearbyPOIs?: boolean;
   centerCoordinates?: { latitude: number; longitude: number; zoom?: number };
   hideBottomCard?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onFilterPress?: () => void;
+  onBackPress?: () => void;
 }
 
 // Popular locations / districts in Ivory Coast with center coordinates
@@ -111,7 +126,7 @@ const RADIUS_OPTIONS = [
 
 // Haversine distance formula in kilometers
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Earth's radius in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
@@ -134,14 +149,19 @@ export default function PropertyMapNative({
   selectedId,
   onPropertySelect,
   showFilterBar = true,
-  showNearbyPOIs = false,
   centerCoordinates,
   hideBottomCard = false,
+  searchQuery: externalSearchQuery,
+  onSearchChange,
+  onFilterPress,
+  onBackPress,
 }: PropertyMapProps) {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
   const mapRef = useRef<MapView>(null);
+
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const activeSearch = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('all');
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
@@ -152,6 +172,7 @@ export default function PropertyMapNative({
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState<boolean>(false);
   const [isLocatingUser, setIsLocatingUser] = useState<boolean>(false);
+  const [showDistrictsBar, setShowDistrictsBar] = useState<boolean>(true);
   const cardSlideAnim = useRef(new Animated.Value(0)).current;
 
   // Filter valid properties with coordinates
@@ -196,8 +217,8 @@ export default function PropertyMapNative({
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 3000,
-            distanceInterval: 10,
+            timeInterval: 4000,
+            distanceInterval: 15,
           },
           (loc) => {
             if (isMounted && loc?.coords) {
@@ -221,58 +242,80 @@ export default function PropertyMapNative({
     };
   }, []);
 
-  // Filter by distance radius if selected
+  // Filter properties by search query & radius
   const filteredProperties = useMemo(() => {
-    const selectedRadius = RADIUS_OPTIONS.find((r) => r.id === selectedRadiusId);
-    if (!selectedRadius || selectedRadius.id === 'all' || !userLocation) {
-      return validProperties;
-    }
-    return validProperties.filter((p) => {
-      const dist = calculateDistanceKm(
-        userLocation.latitude,
-        userLocation.longitude,
-        p.location.coordinates.latitude,
-        p.location.coordinates.longitude
+    let list = validProperties;
+
+    // Filter by text search if present
+    if (activeSearch && activeSearch.trim().length > 0) {
+      const q = activeSearch.toLowerCase().trim();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.location.district.toLowerCase().includes(q) ||
+          p.location.city.toLowerCase().includes(q) ||
+          p.location.address.toLowerCase().includes(q) ||
+          p.type.toLowerCase().includes(q)
       );
-      return dist <= selectedRadius.km;
-    });
-  }, [validProperties, selectedRadiusId, userLocation]);
+    }
+
+    // Filter by distance radius if selected
+    const selectedRadius = RADIUS_OPTIONS.find((r) => r.id === selectedRadiusId);
+    if (selectedRadius && selectedRadius.id !== 'all' && userLocation) {
+      list = list.filter((p) => {
+        const dist = calculateDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          p.location.coordinates.latitude,
+          p.location.coordinates.longitude
+        );
+        return dist <= selectedRadius.km;
+      });
+    }
+
+    return list;
+  }, [validProperties, activeSearch, selectedRadiusId, userLocation]);
 
   const selectedProperty = useMemo(() => {
     return filteredProperties.find((p) => p.id === internalSelectedId) || null;
   }, [filteredProperties, internalSelectedId]);
 
+  // Sync external selectedId
   useEffect(() => {
     if (selectedId !== undefined) {
       setInternalSelectedId(selectedId);
       if (selectedId) {
-        const found = validProperties.find(p => p.id === selectedId);
+        const found = validProperties.find((p) => p.id === selectedId);
         if (found) {
-          mapRef.current?.animateToRegion({
-            latitude: found.location.coordinates.latitude,
-            longitude: found.location.coordinates.longitude,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
-          }, 800);
+          mapRef.current?.animateToRegion(
+            {
+              latitude: found.location.coordinates.latitude - 0.005,
+              longitude: found.location.coordinates.longitude,
+              latitudeDelta: 0.025,
+              longitudeDelta: 0.025,
+            },
+            700
+          );
         }
       }
     }
   }, [selectedId, validProperties]);
 
-  // Default region: Abidjan
-  const defaultRegion: Region = {
+  // Default region: Center of Abidjan
+  const defaultRegion: Region = useMemo(() => ({
     latitude: centerCoordinates?.latitude || 5.359952,
     longitude: centerCoordinates?.longitude || -4.008256,
     latitudeDelta: 0.12,
     longitudeDelta: 0.08,
-  };
+  }), [centerCoordinates]);
 
+  // Bottom preview card slide animation
   useEffect(() => {
     if (selectedProperty && !hideBottomCard) {
       Animated.spring(cardSlideAnim, {
         toValue: 1,
         useNativeDriver: true,
-        tension: 50,
+        tension: 55,
         friction: 8,
       }).start();
     } else {
@@ -283,24 +326,6 @@ export default function PropertyMapNative({
       }).start();
     }
   }, [selectedProperty, hideBottomCard, cardSlideAnim]);
-
-  const formatPriceBadge = (price: number, currency: string) => {
-    if (currency === 'FCFA') {
-      if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1)}B`;
-      if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(0)}M`;
-      if (price >= 1_000) return `${(price / 1_000).toFixed(0)}k`;
-      return `${price}`;
-    }
-    return `${price.toLocaleString()}`;
-  };
-
-  const formatPriceFull = (price: number, currency: string) => {
-    if (currency === 'FCFA') {
-      if (price >= 1_000_000_000) return `${(price / 1_000_000_000).toFixed(1)} Mrd FCFA`;
-      return `${(price / 1_000_000).toFixed(1)}M FCFA`;
-    }
-    return `${price.toLocaleString()} ${currency}`;
-  };
 
   const selectProperty = (id: string | null) => {
     setInternalSelectedId(id);
@@ -319,7 +344,6 @@ export default function PropertyMapNative({
       700
     );
 
-    // If district is specific, focus first matching property
     if (place.id !== 'all') {
       const match = filteredProperties.find(
         (p) =>
@@ -337,10 +361,10 @@ export default function PropertyMapNative({
     selectProperty(property.id);
     mapRef.current?.animateToRegion(
       {
-        latitude: property.location.coordinates.latitude - 0.006, // offset slightly for bottom sheet
+        latitude: property.location.coordinates.latitude - 0.006, // offset so card doesn't cover marker
         longitude: property.location.coordinates.longitude,
-        latitudeDelta: 0.03,
-        longitudeDelta: 0.03,
+        latitudeDelta: 0.025,
+        longitudeDelta: 0.025,
       },
       500
     );
@@ -352,7 +376,7 @@ export default function PropertyMapNative({
       url += `&origin=${userLocation.latitude},${userLocation.longitude}`;
     }
     Linking.openURL(url).catch(() => {
-      Alert.alert('Google Maps', 'Impossible d\'ouvrir Google Maps');
+      Alert.alert('Navigation', 'Impossible d\'ouvrir Google Maps');
     });
   };
 
@@ -368,8 +392,20 @@ export default function PropertyMapNative({
   };
 
   const handleRecenter = () => {
-    setSelectedPlaceId('all');
-    mapRef.current?.animateToRegion(defaultRegion, 700);
+    if (userLocation) {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          latitudeDelta: 0.03,
+          longitudeDelta: 0.03,
+        },
+        700
+      );
+    } else {
+      setSelectedPlaceId('all');
+      mapRef.current?.animateToRegion(defaultRegion, 700);
+    }
   };
 
   const handleZoomIn = () => {
@@ -392,6 +428,14 @@ export default function PropertyMapNative({
     setMapType((prev) => (prev === 'standard' ? 'hybrid' : 'standard'));
   };
 
+  const handleSearchTextChange = (text: string) => {
+    if (onSearchChange) {
+      onSearchChange(text);
+    } else {
+      setInternalSearchQuery(text);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <MapErrorBoundary>
@@ -411,16 +455,17 @@ export default function PropertyMapNative({
           moveOnMarkerPress={false}
           loadingEnabled={true}
         >
-          {/* Universal OpenStreetMap Tiles for Full Coverage & Offline Reliability */}
+          {/* Universal Clean Light CartoDB Voyager Tiles (Matches UI Reference & 100% Reliable in APK) */}
           {mapType === 'standard' && (
             <UrlTile
-              urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
               maximumZ={19}
-              zIndex={-1}
+              shouldReplaceMapContent={true}
+              zIndex={1}
             />
           )}
 
-          {/* Connecting Dashed Line from Buyer to Selected Property */}
+          {/* Polyline from User Location to Selected Property */}
           {userLocation?.latitude != null &&
             !isNaN(userLocation.latitude) &&
             selectedProperty?.location?.coordinates?.latitude != null &&
@@ -439,36 +484,43 @@ export default function PropertyMapNative({
                 strokeColor="#059669"
                 strokeWidth={3}
                 lineDashPattern={[6, 6]}
+                zIndex={20}
               />
             )}
 
-          {/* Real-Time Live User GPS Pin with Glowing Radar */}
+          {/* Live User GPS Radar Marker */}
           {userLocation?.latitude != null && !isNaN(userLocation.latitude) && (
             <Marker
               coordinate={userLocation}
-              title="Vous êtes ici"
-              description="Position GPS en temps réel"
+              title="Votre position"
+              description="Position GPS actuelle"
               zIndex={9999}
               anchor={{ x: 0.5, y: 0.5 }}
             >
-              <View style={styles.userLivePulseWrapper}>
-                <View style={styles.userLivePulseRing} />
-                <View style={styles.userLiveCenterDot}>
-                  <Navigation size={11} color="#FFFFFF" strokeWidth={3} />
+              <View style={styles.userRadarWrapper}>
+                <View style={styles.userRadarPulse} />
+                <View style={styles.userRadarDot}>
+                  <Navigation size={10} color="#FFFFFF" strokeWidth={3} />
                 </View>
               </View>
             </Marker>
           )}
 
-          {/* Property Price Bubble Markers (Emerald Green matching screenshot) */}
+          {/* ── PROPERTY PRICE PILL MARKERS (Exact Match to UI Reference) ───────────────── */}
           {filteredProperties.map((property) => {
             const coords = property?.location?.coordinates;
-            if (!coords || coords.latitude == null || coords.longitude == null || isNaN(Number(coords.latitude)) || isNaN(Number(coords.longitude))) {
+            if (
+              !coords ||
+              coords.latitude == null ||
+              coords.longitude == null ||
+              isNaN(Number(coords.latitude)) ||
+              isNaN(Number(coords.longitude))
+            ) {
               return null;
             }
+
             const isSelected = internalSelectedId === property.id;
-            const isSale = property.status === 'sale';
-            const isFeatured = property.isFeatured || property.price > 100000000;
+            const priceText = formatPriceCompact(property.price);
 
             return (
               <Marker
@@ -479,31 +531,18 @@ export default function PropertyMapNative({
                 }}
                 tracksViewChanges={false}
                 onPress={() => handleMarkerPress(property)}
-                zIndex={isSelected ? 99 : 10}
+                zIndex={isSelected ? 999 : 10}
+                anchor={{ x: 0.5, y: 1.0 }} // Pin the bottom arrow tip directly to coordinates
               >
-                <View style={[styles.markerAnchor, isSelected && styles.markerAnchorActive]}>
-                  <View
-                    style={[
-                      styles.priceBubble,
-                      isFeatured && styles.priceBubbleFeatured,
-                      !isSale && styles.priceBubbleRent,
-                      isSelected && styles.priceBubbleActive,
-                    ]}
-                  >
-                    {isFeatured && <Text style={styles.bubbleStar}>⭐</Text>}
-                    <Text style={styles.priceBubbleText}>
-                      {formatPriceBadge(property.price, property.currency)}
+                <View style={[styles.markerWrapper, isSelected && styles.markerWrapperActive]}>
+                  {/* White Pill Badge */}
+                  <View style={[styles.pricePill, isSelected && styles.pricePillActive]}>
+                    <Text style={[styles.pricePillText, isSelected && styles.pricePillTextActive]}>
+                      {priceText}
                     </Text>
-                    <Text style={styles.bubbleCheck}>✔️</Text>
                   </View>
-                  <View
-                    style={[
-                      styles.priceTail,
-                      isFeatured && styles.priceTailFeatured,
-                      !isSale && styles.priceTailRent,
-                      isSelected && styles.priceTailActive,
-                    ]}
-                  />
+                  {/* Bottom Triangle Arrow Pointer */}
+                  <View style={[styles.markerPointer, isSelected && styles.markerPointerActive]} />
                 </View>
               </Marker>
             );
@@ -511,104 +550,143 @@ export default function PropertyMapNative({
         </MapView>
       </MapErrorBoundary>
 
-      {/* ── TOP PLACES & RADIUS BAR ───────────────────────────────── */}
-      <View style={[styles.topBarContainer, { top: insets.top > 0 ? 8 : 12 }]} pointerEvents="box-none">
-        {/* Popular Districts Scroll */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.placeChipsScroll}
-        >
-          {/* GPS Radar Pill */}
+      {/* ── FLOATING TOP SEARCH CARD (Exact Match to UI Reference: "Where to buy home ?") ── */}
+      <View
+        style={[
+          styles.topFloatingHeader,
+          { top: insets.top > 0 ? insets.top + 6 : 14 },
+        ]}
+        pointerEvents="box-none"
+      >
+        <View style={styles.searchBarCard}>
+          {/* Back / Search Leading Button */}
           <TouchableOpacity
-            style={[
-              styles.placeChip,
-              styles.gpsPlaceChip,
-              userLocation && styles.gpsPlaceChipActive,
-            ]}
+            style={styles.searchLeadingBtn}
             onPress={() => {
-              if (userLocation) {
-                mapRef.current?.animateToRegion({
-                  latitude: userLocation.latitude,
-                  longitude: userLocation.longitude,
-                  latitudeDelta: 0.03,
-                  longitudeDelta: 0.03,
-                }, 700);
+              if (onBackPress) {
+                onBackPress();
+              } else if (router.canGoBack()) {
+                router.back();
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            {onBackPress ? (
+              <ArrowLeft size={19} color="#0F172A" strokeWidth={2.4} />
+            ) : (
+              <Search size={18} color="#64748B" strokeWidth={2.4} />
+            )}
+          </TouchableOpacity>
+
+          {/* Search Input */}
+          <TextInput
+            style={styles.searchTextInput}
+            placeholder={language === 'fr' ? 'Where to buy home ?' : 'Where to buy home ?'}
+            placeholderTextColor="#94A3B8"
+            value={activeSearch}
+            onChangeText={handleSearchTextChange}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+
+          {activeSearch.length > 0 && !onSearchChange && (
+            <TouchableOpacity
+              onPress={() => handleSearchTextChange('')}
+              style={styles.clearSearchBtn}
+            >
+              <X size={15} color="#94A3B8" strokeWidth={2.5} />
+            </TouchableOpacity>
+          )}
+
+          {/* Integrated Filter Button */}
+          <TouchableOpacity
+            style={styles.filterBtnInside}
+            onPress={() => {
+              if (onFilterPress) {
+                onFilterPress();
+              } else {
+                setShowDistrictsBar(!showDistrictsBar);
               }
             }}
             activeOpacity={0.8}
           >
-            {isLocatingUser ? (
-              <ActivityIndicator size="small" color="#059669" />
-            ) : (
-              <Crosshair size={14} color={userLocation ? '#059669' : '#64748B'} strokeWidth={2.4} />
-            )}
-            <Text style={[styles.placeChipText, userLocation && { color: '#059669', fontWeight: '800' }]}>
-              {userLocation ? '📍 Ma Position' : 'Localiser (GPS)'}
-            </Text>
+            <SlidersHorizontal size={18} color="#0F172A" strokeWidth={2.2} />
           </TouchableOpacity>
+        </View>
 
-          {POPULAR_PLACES.map((place) => {
-            const isActive = selectedPlaceId === place.id;
-            const placeLabel = language === 'fr' ? place.nameFr : place.name;
-            return (
+        {/* Optional Quick District Chips Row */}
+        {showFilterBar && showDistrictsBar && (
+          <View style={styles.subBarContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.placeChipsScroll}
+            >
+              {/* GPS Radar Pill */}
               <TouchableOpacity
-                key={place.id}
-                style={[styles.placeChip, isActive && styles.placeChipActive]}
-                onPress={() => handlePlaceSelect(place)}
-                activeOpacity={0.75}
+                style={[
+                  styles.placeChip,
+                  styles.gpsPlaceChip,
+                  userLocation && styles.gpsPlaceChipActive,
+                ]}
+                onPress={handleRecenter}
+                activeOpacity={0.8}
               >
-                <Text style={[styles.placeChipText, isActive && styles.placeChipTextActive]}>
-                  {placeLabel}
+                {isLocatingUser ? (
+                  <ActivityIndicator size="small" color="#059669" />
+                ) : (
+                  <Crosshair size={13} color={userLocation ? '#059669' : '#64748B'} strokeWidth={2.4} />
+                )}
+                <Text style={[styles.placeChipText, userLocation && { color: '#059669', fontWeight: '800' }]}>
+                  {userLocation ? '📍 Ma Position' : 'GPS'}
                 </Text>
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
 
-        {/* Distance Radius Filter Row */}
-        <View style={styles.radiusRow}>
-          <Text style={styles.radiusLabel}>
-            {language === 'fr' ? 'Rayon :' : 'Radius:'}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.radiusScroll}>
-            {RADIUS_OPTIONS.map((radius) => {
-              const isSelected = selectedRadiusId === radius.id;
-              return (
-                <TouchableOpacity
-                  key={radius.id}
-                  style={[styles.radiusPill, isSelected && styles.radiusPillActive]}
-                  onPress={() => setSelectedRadiusId(radius.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.radiusPillText, isSelected && styles.radiusPillTextActive]}>
-                    {language === 'fr' ? radius.labelFr : radius.labelEn}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+              {POPULAR_PLACES.map((place) => {
+                const isActive = selectedPlaceId === place.id;
+                const placeLabel = language === 'fr' ? place.nameFr : place.name;
+                return (
+                  <TouchableOpacity
+                    key={place.id}
+                    style={[styles.placeChip, isActive && styles.placeChipActive]}
+                    onPress={() => handlePlaceSelect(place)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.placeChipText, isActive && styles.placeChipTextActive]}>
+                      {placeLabel}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
       </View>
 
-      {/* ── FLOATING CONTROLS (Right Side) ────────────────────────── */}
-      <View style={styles.floatingControls} pointerEvents="box-none">
-        <TouchableOpacity style={styles.controlBtn} onPress={handleZoomIn} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+      {/* ── FLOATING MAP CONTROLS (Right Side) ────────────────────────── */}
+      <View
+        style={[
+          styles.floatingControls,
+          { top: (insets.top > 0 ? insets.top + 70 : 80) + (showDistrictsBar ? 48 : 0) },
+        ]}
+        pointerEvents="box-none"
+      >
+        <TouchableOpacity style={styles.controlBtn} onPress={handleZoomIn} activeOpacity={0.8}>
           <Plus size={18} color="#0F172A" strokeWidth={2.4} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlBtn} onPress={handleZoomOut} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+        <TouchableOpacity style={styles.controlBtn} onPress={handleZoomOut} activeOpacity={0.8}>
           <Minus size={18} color="#0F172A" strokeWidth={2.4} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlBtn} onPress={toggleMapType} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-          <Layers size={18} color="#0F172A" strokeWidth={2} />
+        <TouchableOpacity style={styles.controlBtn} onPress={toggleMapType} activeOpacity={0.8}>
+          <Layers size={17} color="#0F172A" strokeWidth={2} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlBtn} onPress={handleRecenter} activeOpacity={0.8} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-          <Navigation size={18} color="#059669" strokeWidth={2.2} />
+        <TouchableOpacity style={styles.controlBtn} onPress={handleRecenter} activeOpacity={0.8}>
+          <Navigation size={17} color="#059669" strokeWidth={2.4} />
         </TouchableOpacity>
       </View>
 
-      {/* ── BOTTOM PREVIEW CARD (Selected Property) ───────────────── */}
-      {selectedProperty && (
+      {/* ── BOTTOM PREVIEW CARD (Selected Property) ───────────────────── */}
+      {selectedProperty && !hideBottomCard && (
         <Animated.View
           style={[
             styles.bottomCardWrapper,
@@ -641,7 +719,10 @@ export default function PropertyMapNative({
                 activeOpacity={0.9}
                 style={styles.cardImageContainer}
               >
-                <Image source={{ uri: selectedProperty.images[0] }} style={styles.cardThumb} />
+                <Image
+                  source={{ uri: selectedProperty.images[0] || 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600' }}
+                  style={styles.cardThumb}
+                />
                 <View style={styles.cardStatusBadge}>
                   <Text style={styles.cardStatusBadgeText}>
                     {selectedProperty.status === 'sale' ? 'VENTE' : 'LOCATION'}
@@ -652,7 +733,7 @@ export default function PropertyMapNative({
               <View style={styles.cardDetails}>
                 <View style={styles.cardPriceRow}>
                   <Text style={styles.cardPrice}>
-                    {formatPriceFull(selectedProperty.price, selectedProperty.currency)}
+                    {formatPriceFull(selectedProperty.price, 'FCFA')}
                   </Text>
                   <View style={styles.cardAcdBadge}>
                     <CheckCircle2 size={11} color="#059669" />
@@ -666,7 +747,7 @@ export default function PropertyMapNative({
 
                 <View style={styles.cardLocRow}>
                   <MapPin size={12} color="#64748B" />
-                  <Text style={styles.cardLocText}>
+                  <Text style={styles.cardLocText} numberOfLines={1}>
                     {selectedProperty.location.district}, {selectedProperty.location.city}
                   </Text>
                 </View>
@@ -674,9 +755,9 @@ export default function PropertyMapNative({
                 {/* Distance Badge */}
                 {userLocation && (
                   <View style={styles.distanceBadgeRow}>
-                    <Route size={12} color="#059669" />
+                    <Route size={11} color="#059669" />
                     <Text style={styles.distanceBadgeText}>
-                      À {calculateDistanceKm(userLocation.latitude, userLocation.longitude, selectedProperty.location.coordinates.latitude, selectedProperty.location.coordinates.longitude)} km de vous (~{estimateDriveTimeMin(calculateDistanceKm(userLocation.latitude, userLocation.longitude, selectedProperty.location.coordinates.latitude, selectedProperty.location.coordinates.longitude))} min)
+                      À {calculateDistanceKm(userLocation.latitude, userLocation.longitude, selectedProperty.location.coordinates.latitude, selectedProperty.location.coordinates.longitude)} km (~{estimateDriveTimeMin(calculateDistanceKm(userLocation.latitude, userLocation.longitude, selectedProperty.location.coordinates.latitude, selectedProperty.location.coordinates.longitude))} min)
                     </Text>
                   </View>
                 )}
@@ -694,15 +775,15 @@ export default function PropertyMapNative({
               </View>
             </View>
 
-            {/* Action Buttons: Google Maps Navigation + WhatsApp + Voir */}
+            {/* Action Buttons: Itinéraire + WhatsApp + Voir l'annonce */}
             <View style={styles.cardActionGrid}>
               <TouchableOpacity
                 style={styles.gmapsNavBtn}
                 onPress={() => openGoogleMapsDirection(selectedProperty.location.coordinates.latitude, selectedProperty.location.coordinates.longitude)}
                 activeOpacity={0.85}
               >
-                <Compass size={15} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.gmapsNavBtnText}>Google Maps</Text>
+                <Compass size={14} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.gmapsNavBtnText}>Itinéraire</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -720,7 +801,7 @@ export default function PropertyMapNative({
                 }}
                 activeOpacity={0.85}
               >
-                <MessageCircle size={15} color="#FFFFFF" strokeWidth={2.4} />
+                <MessageCircle size={14} color="#FFFFFF" strokeWidth={2.4} />
                 <Text style={styles.whatsAppBtnText}>WhatsApp</Text>
               </TouchableOpacity>
 
@@ -729,8 +810,8 @@ export default function PropertyMapNative({
                 onPress={() => router.push(`/property/${selectedProperty.id}`)}
                 activeOpacity={0.85}
               >
-                <Eye size={15} color="#059669" strokeWidth={2.4} />
-                <Text style={styles.viewDetailBtnText}>Voir</Text>
+                <Eye size={14} color="#059669" strokeWidth={2.4} />
+                <Text style={styles.viewDetailBtnText}>Voir l'annonce</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -752,86 +833,128 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
 
-  // ── Real-Time Live User GPS Pin ────────────────────────────────
-  userLivePulseWrapper: {
-    width: 44,
-    height: 44,
+  // ── Error Fallback ──────────────────────────────────────────
+  errorFallbackContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    padding: 24,
+  },
+  errorCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    maxWidth: 320,
+    width: '100%',
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  errorSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  // ── Live User GPS Radar ───────────────────────────────────────
+  userRadarWrapper: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userLivePulseRing: {
+  userRadarPulse: {
     position: 'absolute',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(5, 150, 105, 0.22)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(37, 99, 235, 0.25)',
     borderWidth: 1.5,
-    borderColor: 'rgba(5, 150, 105, 0.45)',
+    borderColor: 'rgba(37, 99, 235, 0.5)',
   },
-  userLiveCenterDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#059669',
+  userRadarDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
-    shadowColor: '#059669',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
     elevation: 4,
   },
 
-  // ── Emerald Price Bubble Marker ────────────────────────────────
-  markerAnchor: {
+  // ── White Property Price Pill Marker (Exact Match to UI Reference) ───────────
+  markerWrapper: {
     alignItems: 'center',
+    justifyContent: 'center',
+    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.18))',
   },
-  markerAnchorActive: {
-    transform: [{ scale: 1.18 }],
-    zIndex: 999,
+  markerWrapperActive: {
+    transform: [{ scale: 1.15 }],
+    zIndex: 9999,
   },
-  priceBubble: {
-    flexDirection: 'row',
+  pricePill: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 4,
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
+  },
+  pricePillActive: {
     backgroundColor: '#059669',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: '#047857',
     shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.35,
     shadowRadius: 6,
-    elevation: 5,
+    elevation: 6,
   },
-  priceBubbleFeatured: {
-    backgroundColor: '#047857',
-    borderColor: '#FCD34D',
-  },
-  priceBubbleRent: {
-    backgroundColor: '#0D9488',
-  },
-  priceBubbleActive: {
-    backgroundColor: '#064E3B',
-    borderColor: '#F59E0B',
-  },
-  priceBubbleText: {
-    fontSize: 11.5,
+  pricePillText: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0F172A',
     letterSpacing: -0.2,
   },
-  bubbleStar: {
-    fontSize: 10,
+  pricePillTextActive: {
+    color: '#FFFFFF',
   },
-  bubbleCheck: {
-    fontSize: 9,
-  },
-  priceTail: {
+  markerPointer: {
     width: 0,
     height: 0,
     borderLeftWidth: 5,
@@ -839,53 +962,92 @@ const styles = StyleSheet.create({
     borderTopWidth: 6,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#059669',
+    borderTopColor: '#FFFFFF',
+    alignSelf: 'center',
     marginTop: -1,
   },
-  priceTailFeatured: {
-    borderTopColor: '#047857',
-  },
-  priceTailRent: {
-    borderTopColor: '#0D9488',
-  },
-  priceTailActive: {
-    borderTopColor: '#064E3B',
+  markerPointerActive: {
+    borderTopColor: '#059669',
   },
 
-  // ── Top Bar Container ──────────────────────────────────────────
-  topBarContainer: {
+  // ── Floating Top Search Card (Exact Match to Screenshot) ───────
+  topFloatingHeader: {
     position: 'absolute',
-    left: 12,
-    right: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 18,
-    paddingVertical: 10,
+    left: 14,
+    right: 14,
+    zIndex: 100,
+    gap: 8,
+  },
+  searchBarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingHorizontal: 12,
-    shadowColor: '#0F172A',
+    height: 52,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 6,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  placeChipsScroll: {
-    gap: 8,
+  searchLeadingBtn: {
+    padding: 6,
+    marginRight: 4,
     alignItems: 'center',
-    paddingBottom: 4,
+    justifyContent: 'center',
   },
-  placeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  searchTextInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+    paddingVertical: 8,
+    paddingRight: 8,
+  },
+  clearSearchBtn: {
+    padding: 6,
+    marginRight: 4,
+  },
+  filterBtnInside: {
+    width: 36,
+    height: 36,
     borderRadius: 10,
     backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+
+  // ── Quick District Chips Row ─────────────────────────────────
+  subBarContainer: {
+    flexDirection: 'row',
+  },
+  placeChipsScroll: {
+    gap: 7,
+    paddingVertical: 2,
+  },
+  placeChip: {
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   placeChipActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   placeChipText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     color: '#475569',
   },
@@ -895,97 +1057,56 @@ const styles = StyleSheet.create({
   gpsPlaceChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
-  },
-  gpsPlaceChipActive: {
-    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderColor: '#059669',
   },
-
-  // Radius row
-  radiusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  radiusLabel: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  radiusScroll: {
-    gap: 6,
-  },
-  radiusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  radiusPillActive: {
+  gpsPlaceChipActive: {
     backgroundColor: 'rgba(5, 150, 105, 0.12)',
     borderColor: '#059669',
   },
-  radiusPillText: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  radiusPillTextActive: {
-    color: '#059669',
-    fontWeight: '800',
-  },
 
-  // ── Floating Controls ──────────────────────────────────────────
+  // ── Floating Controls (Right Side) ───────────────────────────
   floatingControls: {
     position: 'absolute',
-    right: 16,
-    top: 140,
-    gap: 10,
+    right: 14,
+    gap: 8,
+    zIndex: 90,
   },
   controlBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
 
-  // ── Bottom Preview Card ────────────────────────────────────────
+  // ── Bottom Preview Card ──────────────────────────────────────
   bottomCardWrapper: {
     position: 'absolute',
-    bottom: 24,
     left: 14,
     right: 14,
-    maxWidth: 580,
-    alignSelf: 'center',
+    bottom: 24,
+    zIndex: 99,
   },
   bottomCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 20,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.95)',
+    borderColor: 'rgba(226, 232, 240, 0.9)',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
     elevation: 8,
   },
   closeCardBtn: {
@@ -1003,13 +1124,14 @@ const styles = StyleSheet.create({
   cardMainRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
   cardImageContainer: {
-    width: 95,
-    height: 95,
+    width: 104,
+    height: 104,
     borderRadius: 14,
     overflow: 'hidden',
-    position: 'relative',
+    backgroundColor: '#E2E8F0',
   },
   cardThumb: {
     width: '100%',
@@ -1017,32 +1139,34 @@ const styles = StyleSheet.create({
   },
   cardStatusBadge: {
     position: 'absolute',
-    bottom: 5,
-    left: 5,
-    backgroundColor: '#059669',
-    paddingHorizontal: 5,
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   cardStatusBadgeText: {
-    fontSize: 8.5,
-    fontWeight: '800',
     color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   cardDetails: {
     flex: 1,
+    justifyContent: 'center',
+    paddingRight: 16,
   },
   cardPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingRight: 24,
+    gap: 6,
     marginBottom: 2,
   },
   cardPrice: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#059669',
   },
   cardAcdBadge: {
     flexDirection: 'row',
@@ -1050,48 +1174,45 @@ const styles = StyleSheet.create({
     gap: 3,
     backgroundColor: 'rgba(5, 150, 105, 0.08)',
     paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 1.5,
+    borderRadius: 5,
   },
   cardAcdBadgeText: {
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#059669',
   },
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: '#0F172A',
     marginBottom: 3,
   },
   cardLocRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 3,
+    marginBottom: 4,
   },
   cardLocText: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#64748B',
+    fontWeight: '500',
   },
   distanceBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(5, 150, 105, 0.08)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
-    alignSelf: 'flex-start',
+    gap: 3,
     marginBottom: 4,
   },
   distanceBadgeText: {
     fontSize: 10.5,
-    fontWeight: '700',
     color: '#059669',
+    fontWeight: '600',
   },
   cardSpecsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   cardSpecText: {
@@ -1100,29 +1221,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Action buttons
+  // ── Action Grid ──────────────────────────────────────────────
   cardActionGrid: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
   },
   gmapsNavBtn: {
-    flex: 1.2,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
     backgroundColor: '#0F172A',
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingVertical: 9,
+    borderRadius: 11,
   },
   gmapsNavBtnText: {
+    color: '#FFFFFF',
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   whatsAppBtn: {
     flex: 1,
@@ -1130,30 +1247,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    backgroundColor: '#059669',
-    paddingVertical: 8,
-    borderRadius: 10,
+    backgroundColor: '#25D366',
+    paddingVertical: 9,
+    borderRadius: 11,
   },
   whatsAppBtnText: {
+    color: '#FFFFFF',
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   viewDetailBtn: {
+    flex: 1.2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    gap: 5,
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(5, 150, 105, 0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
+    borderColor: '#059669',
+    paddingVertical: 9,
+    borderRadius: 11,
   },
   viewDetailBtnText: {
+    color: '#059669',
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#059669',
   },
 });

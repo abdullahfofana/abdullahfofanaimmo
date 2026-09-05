@@ -24,6 +24,11 @@ import { trpc } from '@/lib/trpc';
 import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
+import { IconSizes, IconStrokes } from '@/constants/icons';
+import Button from '@/components/ui/Button';
+import IconButton from '@/components/ui/IconButton';
+import FilterChip from '@/components/ui/FilterChip';
+import Badge from '@/components/ui/Badge';
 import PropertyCard from '@/components/PropertyCard';
 import FadeInView from '@/components/FadeInView';
 import PropertyMap from '@/components/PropertyMap';
@@ -1034,70 +1039,16 @@ export default function SearchScreen() {
             />
           ) : (
             <View style={{ flex: 1 }}>
-              {/* Compact Floating Search Bar on Mobile Map View */}
-              <View style={{
-                position: 'absolute',
-                top: 12,
-                left: 16,
-                right: 16,
-                zIndex: 30,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-              }}>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 22,
-                    paddingHorizontal: 14,
-                    paddingVertical: 11,
-                    shadowColor: '#0F172A',
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.12,
-                    shadowRadius: 10,
-                    elevation: 5,
-                    borderWidth: 1,
-                    borderColor: '#E2E8F0',
-                  }}
-                  onPress={() => setShowLocationPicker(true)}
-                  activeOpacity={0.9}
-                >
-                  <SearchIcon size={18} color="#059669" style={{ marginRight: 8 }} />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: searchQuery ? '#0F172A' : '#64748B', flex: 1 }} numberOfLines={1}>
-                    {searchQuery || (language === 'fr' ? 'Rechercher un quartier...' : 'Search location...')}
-                  </Text>
-                  {searchQuery ? (
-                    <TouchableOpacity onPress={() => { setSearchQuery(''); handleSearch(''); }}>
-                      <X size={16} color="#64748B" />
-                    </TouchableOpacity>
-                  ) : null}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: '#0F172A',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    shadowColor: '#0F172A',
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 8,
-                    elevation: 4,
-                  }}
-                  onPress={() => setShowFilters(true)}
-                  activeOpacity={0.88}
-                >
-                  <SlidersHorizontal size={18} color="#FFFFFF" strokeWidth={2.2} />
-                </TouchableOpacity>
-              </View>
-
-              <PropertyMap properties={sortedProperties} />
+              <PropertyMap
+                properties={sortedProperties}
+                searchQuery={searchQuery}
+                onSearchChange={(text) => {
+                  setSearchQuery(text);
+                  handleSearch(text);
+                }}
+                onFilterPress={() => setShowFilters(true)}
+                onBackPress={() => setViewMode('list')}
+              />
             </View>
           )}
 
@@ -1414,18 +1365,20 @@ export default function SearchScreen() {
             </ScrollView>
 
             <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={[styles.resetButton, { backgroundColor: colors.backgroundSecondary }]}
+              <Button
+                variant="outline"
+                size="md"
+                label={t('search_reset') || 'Réinitialiser'}
                 onPress={handleResetFilters}
-              >
-                <Text style={[styles.resetButtonText, { color: colors.text }]}>{t('search_reset')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.applyButton, { backgroundColor: colors.primary }]}
+                style={{ flex: 1 }}
+              />
+              <Button
+                variant="primary"
+                size="md"
+                label={t('search_apply') || 'Appliquer'}
                 onPress={handleApplyFilters}
-              >
-                <Text style={[styles.applyButtonText, { color: colors.white }]}>{t('search_apply')}</Text>
-              </TouchableOpacity>
+                style={{ flex: 1.4 }}
+              />
             </View>
           </View>
         </View>
