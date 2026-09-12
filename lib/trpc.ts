@@ -28,7 +28,7 @@ export const getBaseUrl = () => {
   }
 
   // Standalone APK / production build — use the deployed backend URL
-  return 'https://rork-immoci-mobile-ui-kit-prototype.vercel.app';
+  return 'https://abdullahfofanaimmo.vercel.app';
 };
 
 const createHttpLink = () => {

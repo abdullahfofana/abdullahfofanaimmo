@@ -473,7 +473,7 @@ class AdminErrorBoundary extends React.Component<
 }
 
 function MobileAdminRestrictionScreen() {
-  const webUrl = 'https://rork-immoci-mobile-ui-kit-prototype.vercel.app/admin';
+  const webUrl = 'https://abdullahfofanaimmo.vercel.app/admin';
 
   return (
     <View style={mobileRestrictedStyles.container}>

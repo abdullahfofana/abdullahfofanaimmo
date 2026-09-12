@@ -49,7 +49,7 @@ function rateLimit(windowMs: number, maxRequests: number) {
 
 // Lock CORS to known origins only — prevents cross-origin abuse
 const ALLOWED_ORIGINS = [
-  'https://rork-immoci-mobile-ui-kit-prototype.vercel.app',
+  'https://abdullahfofanaimmo.vercel.app',
   'http://localhost:8081', // Expo web dev
   'http://localhost:3000',
   'http://localhost:19006',

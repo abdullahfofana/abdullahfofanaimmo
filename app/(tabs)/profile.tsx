@@ -193,7 +193,7 @@ export default function ProfileScreen() {
           value: 'Web',
           label: language === 'fr' ? 'Portail' : 'Portal',
           icon: <Monitor size={16} color="#D97706" strokeWidth={2} />,
-          onPress: () => Linking.openURL('https://rork-immoci-mobile-ui-kit-prototype.vercel.app/admin').catch(() => {}),
+          onPress: () => Linking.openURL('https://abdullahfofanaimmo.vercel.app/admin').catch(() => {}),
         },
         {
           value: '0',
@@ -366,7 +366,7 @@ export default function ProfileScreen() {
             </View>
             <TouchableOpacity
               style={styles.adminWebBtn}
-              onPress={() => Linking.openURL('https://rork-immoci-mobile-ui-kit-prototype.vercel.app/admin').catch(() => {})}
+              onPress={() => Linking.openURL('https://abdullahfofanaimmo.vercel.app/admin').catch(() => {})}
               activeOpacity={0.85}
             >
               <ExternalLink size={15} color="#FFFFFF" strokeWidth={2.2} />

@@ -55,7 +55,7 @@
       [
         "expo-router",
         {
-          "origin": "https://rork-immoci-mobile-ui-kit-prototype.vercel.app/"
+          "origin": "https://abdullahfofanaimmo.vercel.app/"
         }
       ],
       [
@@ -93,7 +93,7 @@
     },
     "extra": {
       "router": {
-        "origin": "https://rork-immoci-mobile-ui-kit-prototype.vercel.app/"
+        "origin": "https://abdullahfofanaimmo.vercel.app/"
       },
       "eas": {
         "projectId": "cc6b04b6-895f-48f9-9099-51ead4131a4d"
