@@ -74,9 +74,16 @@ CREATE TABLE IF NOT EXISTS conversations (
   unread_count_buyer INTEGER DEFAULT 0,
   unread_count_agent INTEGER DEFAULT 0,
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+  case_status TEXT DEFAULT 'Open',
+  department TEXT DEFAULT 'Customer Care',
+  status_history JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS case_status TEXT DEFAULT 'Open';
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS department TEXT DEFAULT 'Customer Care';
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS status_history JSONB DEFAULT '[]'::jsonb;
 
 -- ─── 5. MESSAGES TABLE ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS messages (
@@ -87,9 +94,13 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_avatar TEXT,
   sender_role TEXT NOT NULL CHECK (sender_role IN ('buyer', 'agent', 'admin', 'support')),
   message TEXT NOT NULL,
+  attachments JSONB DEFAULT '[]'::jsonb,
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
+
 
 -- ─── 6. USER FAVORITES TABLE ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS user_favorites (
@@ -298,35 +309,40 @@ CREATE POLICY activities_auth_insert
   WITH CHECK (true);
 
 -- ─── 10. POLICIES: CONVERSATIONS & MESSAGES ────────────────────────────────────
--- Conversations: only conversation participants (buyer/agent) or admins
+-- Conversations: participants (buyer/agent), company staff, or anonymous inquiries
+DROP POLICY IF EXISTS conversations_participant_access ON conversations;
 CREATE POLICY conversations_participant_access
   ON conversations
   FOR ALL
-  TO authenticated
+  TO authenticated, anon
   USING (
-    auth.uid()::text = buyer_id
+    auth.uid() IS NULL
+    OR auth.uid()::text = buyer_id
     OR auth.uid()::text = agent_id
     OR EXISTS (
       SELECT 1 FROM users u
-      WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin')
+      WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin', 'agent', 'landlord', 'support')
     )
   )
   WITH CHECK (
-    auth.uid()::text = buyer_id
+    auth.uid() IS NULL
+    OR auth.uid()::text = buyer_id
     OR auth.uid()::text = agent_id
     OR EXISTS (
       SELECT 1 FROM users u
-      WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin')
+      WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin', 'agent', 'landlord', 'support')
     )
   );
 
--- Messages: only conversation participants (buyer/agent) or admins
+-- Messages: participants or company staff, allowing guest leads to submit inquiries
+DROP POLICY IF EXISTS messages_participant_access ON messages;
 CREATE POLICY messages_participant_access
   ON messages
   FOR ALL
-  TO authenticated
+  TO authenticated, anon
   USING (
-    EXISTS (
+    auth.uid() IS NULL
+    OR EXISTS (
       SELECT 1 FROM conversations c
       WHERE c.id = messages.conversation_id
         AND (
@@ -334,17 +350,27 @@ CREATE POLICY messages_participant_access
           OR auth.uid()::text = c.agent_id
           OR EXISTS (
             SELECT 1 FROM users u
-            WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin')
+            WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin', 'agent', 'landlord', 'support')
           )
         )
     )
   )
   WITH CHECK (
-    auth.uid()::text = sender_id
-    AND EXISTS (
-      SELECT 1 FROM conversations c
-      WHERE c.id = messages.conversation_id
-        AND (auth.uid()::text = c.buyer_id OR auth.uid()::text = c.agent_id)
+    auth.uid() IS NULL
+    OR (
+      auth.uid()::text = sender_id
+      AND EXISTS (
+        SELECT 1 FROM conversations c
+        WHERE c.id = messages.conversation_id
+          AND (
+            auth.uid()::text = c.buyer_id
+            OR auth.uid()::text = c.agent_id
+            OR EXISTS (
+              SELECT 1 FROM users u
+              WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin', 'agent', 'landlord', 'support')
+            )
+          )
+      )
     )
   );
 
@@ -356,4 +382,27 @@ CREATE POLICY user_favorites_own_access
   TO authenticated
   USING (auth.uid()::text = user_id)
   WITH CHECK (auth.uid()::text = user_id);
+
+-- ─── 12. SUPABASE REALTIME REPLICATION SETUP ──────────────────────────────────
+-- Enable full replica identity so updates (read receipts, unread counts) emit complete row data
+ALTER TABLE messages REPLICA IDENTITY FULL;
+ALTER TABLE conversations REPLICA IDENTITY FULL;
+
+-- Add tables to the supabase_realtime publication
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'conversations'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+  END IF;
+END $$;
 

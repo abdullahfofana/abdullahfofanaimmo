@@ -1,6 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
+import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/backend/supabase';
 import { useAuth } from '@/providers/AuthProvider';
@@ -16,193 +17,8 @@ import type {
   CaseStatusChange,
 } from '@/types/chat';
 
-const STORAGE_CONVERSATIONS_KEY = '@immoci_chat_conversations_v3';
-const STORAGE_MESSAGES_KEY = '@immoci_chat_messages_v3';
-
-const INITIAL_CONVERSATIONS: ChatConversation[] = [
-  {
-    id: 'conv-sample-1',
-    propertyId: '1',
-    property: {
-      id: '1',
-      title: 'Villa Moderne avec Piscine',
-      price: 185000000,
-      currency: 'XOF',
-      location: 'Cocody Riviera Golf, Abidjan',
-      image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&auto=format&fit=crop',
-      status: 'sale',
-    },
-    buyer: {
-      id: 'buyer-demo-1',
-      name: 'Amadou Koné',
-      role: 'buyer',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop',
-      phone: '+225 07 48 92 11 30',
-    },
-    agent: {
-      id: 'agent-1',
-      name: 'Jean-Marc Kouassi',
-      role: 'agent',
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&auto=format&fit=crop',
-      phone: '+225 07 08 09 10 11',
-    },
-    lastMessage: 'Bonjour, la villa est-elle toujours disponible pour une visite ce samedi matin ?',
-    lastMessageAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    unreadCountBuyer: 0,
-    unreadCountAgent: 1,
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-  },
-  {
-    id: 'conv-sample-2',
-    propertyId: '2',
-    property: {
-      id: '2',
-      title: 'Appartement Haut Standing 4 Pièces',
-      price: 1200000,
-      currency: 'XOF',
-      location: 'Marcory Zone 4, Abidjan',
-      image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop',
-      status: 'rent',
-    },
-    buyer: {
-      id: 'buyer-demo-2',
-      name: 'Sarah Touré',
-      role: 'buyer',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
-      phone: '+225 05 12 34 56 78',
-    },
-    agent: {
-      id: 'agent-2',
-      name: 'Awa Diop',
-      role: 'agent',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
-      phone: '+225 01 02 03 04 05',
-    },
-    lastMessage: 'Parfait, les charges et le gardiennage 24/7 sont bien inclus dans le loyer.',
-    lastMessageAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    unreadCountBuyer: 0,
-    unreadCountAgent: 0,
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-  },
-  {
-    id: 'conv-support-1',
-    propertyId: 'support',
-    department: 'Customer Care',
-    caseStatus: 'In Progress',
-    property: undefined,
-    buyer: {
-      id: 'buyer-current',
-      name: 'Acheteur',
-      role: 'buyer',
-    },
-    agent: {
-      id: 'support-agent-fatou',
-      name: 'Fatou Diallo (Customer Care)',
-      role: 'support',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
-      phone: '+225 07 00 00 00 00',
-      department: 'Customer Care',
-    },
-    assignedAgent: {
-      id: 'support-agent-fatou',
-      name: 'Fatou Diallo',
-      role: 'support',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
-      department: 'Customer Care',
-    },
-    statusHistory: [
-      {
-        status: 'Open',
-        changedBy: 'System',
-        changedByRole: 'system',
-        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        note: 'Demande créée via le widget support client',
-      },
-      {
-        status: 'In Progress',
-        changedBy: 'Fatou Diallo',
-        changedByRole: 'support',
-        changedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        note: 'Dossier assigné au support client dédié',
-      },
-    ],
-    lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
-    lastMessageAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    unreadCountBuyer: 1,
-    unreadCountAgent: 0,
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-  },
-];
-
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-  'conv-sample-1': [
-    {
-      id: 'msg-101',
-      conversationId: 'conv-sample-1',
-      senderId: 'agent-1',
-      senderName: 'Jean-Marc Kouassi',
-      senderRole: 'agent',
-      message: 'Bonjour et bienvenue sur l\'annonce de la Villa Moderne à Riviera Golf. Avez-vous des questions particulières ?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      isRead: true,
-      status: 'delivered',
-    },
-    {
-      id: 'msg-102',
-      conversationId: 'conv-sample-1',
-      senderId: 'buyer-demo-1',
-      senderName: 'Amadou Koné',
-      senderRole: 'buyer',
-      message: 'Bonjour, la villa est-elle toujours disponible pour une visite ce samedi matin ?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      isRead: false,
-      status: 'delivered',
-    },
-  ],
-  'conv-sample-2': [
-    {
-      id: 'msg-201',
-      conversationId: 'conv-sample-2',
-      senderId: 'buyer-demo-2',
-      senderName: 'Sarah Touré',
-      senderRole: 'buyer',
-      message: 'Bonjour Madame Diop, est-ce que les charges d\'immeuble sont comprises dans le loyer de 1.2M ?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-      isRead: true,
-      status: 'delivered',
-    },
-    {
-      id: 'msg-202',
-      conversationId: 'conv-sample-2',
-      senderId: 'agent-2',
-      senderName: 'Awa Diop',
-      senderRole: 'agent',
-      message: 'Parfait, les charges et le gardiennage 24/7 sont bien inclus dans le loyer.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-      isRead: true,
-      status: 'delivered',
-    },
-  ],
-  'conv-support-1': [
-    {
-      id: 'msg-sup-1',
-      conversationId: 'conv-support-1',
-      senderId: 'support-team',
-      senderName: 'Support Client ImmoCI',
-      senderRole: 'support',
-      message: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-      isRead: false,
-      status: 'delivered',
-    },
-  ],
-};
+const STORAGE_CONVERSATIONS_KEY = '@immoci_chat_conversations_v4';
+const STORAGE_MESSAGES_KEY = '@immoci_chat_messages_v4';
 
 // Helper: sort conversations by newest message first
 const sortConversations = (convs: ChatConversation[]) => {
@@ -211,21 +27,100 @@ const sortConversations = (convs: ChatConversation[]) => {
   );
 };
 
+// Map database row to ChatConversation type
+function mapRowToConversation(row: any): ChatConversation {
+  return {
+    id: row.id,
+    propertyId: row.property_id,
+    property: row.property_data || undefined,
+    buyer: row.buyer_data || { id: row.buyer_id, name: 'Client', role: 'buyer' },
+    agent: row.agent_data || { id: row.agent_id, name: 'Agent', role: 'agent' },
+    lastMessage: row.last_message || '',
+    lastMessageAt: row.last_message_at || row.updated_at || new Date().toISOString(),
+    unreadCountBuyer: row.unread_count_buyer || 0,
+    unreadCountAgent: row.unread_count_agent || 0,
+    status: row.status || 'active',
+    caseStatus: (row.case_status as CaseStatus) || 'Open',
+    department: row.department || 'Customer Care',
+    statusHistory: row.status_history || [],
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+  };
+}
+
+// Map database row to ChatMessage type
+function mapRowToMessage(row: any): ChatMessage {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    senderId: row.sender_id,
+    senderName: row.sender_name || 'Utilisateur',
+    senderAvatar: row.sender_avatar || undefined,
+    senderRole: (row.sender_role as MessageRole) || 'buyer',
+    message: row.message || '',
+    attachments: Array.isArray(row.attachments) && row.attachments.length > 0 ? row.attachments : undefined,
+    timestamp: row.created_at || new Date().toISOString(),
+    isRead: row.is_read || false,
+    status: 'delivered',
+  };
+}
+
+// Resilient Supabase insert helpers with schema-fallback
+async function safeInsertConversation(data: Record<string, any>) {
+  try {
+    const res = await supabase.from('conversations').insert(data as any);
+    if (res.error && res.error.message?.toLowerCase().includes('column')) {
+      const fallbackData = { ...data };
+      delete fallbackData.case_status;
+      delete fallbackData.department;
+      delete fallbackData.status_history;
+      return await supabase.from('conversations').insert(fallbackData as any);
+    }
+    return res;
+  } catch (err) {
+    console.warn('[Chat] Resilient conv insert error:', err);
+    return { data: null, error: err };
+  }
+}
+
+async function safeInsertMessage(data: Record<string, any>) {
+  try {
+    const res = await supabase.from('messages').insert(data as any);
+    if (res.error && res.error.message?.toLowerCase().includes('column')) {
+      const fallbackData = { ...data };
+      delete fallbackData.attachments;
+      return await supabase.from('messages').insert(fallbackData as any);
+    }
+    return res;
+  } catch (err) {
+    console.warn('[Chat] Resilient msg insert error:', err);
+    return { data: null, error: err };
+  }
+}
+
 export const [ChatProvider, useChat] = createContextHook(() => {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<ChatConversation[]>(INITIAL_CONVERSATIONS);
-  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
 
   const broadcastChannelRef = useRef<any>(null);
+  const activeConversationRef = useRef<ChatConversation | null>(null);
+  const userRef = useRef(user);
 
-  // 1. Initialize local cache and Cross-Tab BroadcastChannel
   useEffect(() => {
-    loadLocalChatData();
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
 
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  // 1. Cross-Tab BroadcastChannel for instantaneous Web synchronization
+  useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
         const bc = new BroadcastChannel('immoci_live_chat_sync');
@@ -236,36 +131,8 @@ export const [ChatProvider, useChat] = createContextHook(() => {
           if (!data) return;
 
           if (data.type === 'NEW_MESSAGE') {
-            const { message, conversation } = data;
-            applyIncomingMessage(message, conversation);
-          } else if (data.type === 'CONVERSATION_UPDATED') {
-            const { conversation } = data;
-            setConversations((prev) => {
-              const existingIdx = prev.findIndex((c) => c.id === conversation.id);
-              let next: ChatConversation[];
-              if (existingIdx >= 0) {
-                next = prev.map((c) => (c.id === conversation.id ? { ...c, ...conversation } : c));
-              } else {
-                next = [conversation, ...prev];
-              }
-              return sortConversations(next);
-            });
-          } else if (data.type === 'CASE_STATUS_UPDATED') {
-            const { conversationId, newStatus, changeRecord } = data;
-            setConversations((prev) =>
-              prev.map((c) => {
-                if (c.id === conversationId) {
-                  const history = c.statusHistory || [];
-                  return {
-                    ...c,
-                    caseStatus: newStatus,
-                    statusHistory: changeRecord ? [...history, changeRecord] : history,
-                    updatedAt: changeRecord?.changedAt || new Date().toISOString(),
-                  };
-                }
-                return c;
-              })
-            );
+            const { message } = data;
+            handleIncomingMessage(message);
           } else if (data.type === 'MARK_READ') {
             const { conversationId, role } = data;
             setConversations((prev) =>
@@ -292,121 +159,6 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     }
   }, []);
 
-  // 2. Storage event listener for Web cross-tab sync fallback
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_CONVERSATIONS_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed)) {
-            setConversations(sortConversations(parsed));
-          }
-        } catch {}
-      }
-      if (e.key === STORAGE_MESSAGES_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (parsed && typeof parsed === 'object') {
-            setMessages(parsed);
-          }
-        } catch {}
-      }
-    };
-
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-
-  // 3. Supabase Realtime fallback
-  useEffect(() => {
-    try {
-      // @ts-ignore
-      if (!supabase || typeof supabase.channel !== 'function') return;
-
-      const channel = supabase
-        .channel('immoci-chat-realtime')
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages' },
-          (payload: any) => {
-            const newRow = payload.new;
-            if (!newRow) return;
-
-            const receivedMsg: ChatMessage = {
-              id: newRow.id,
-              conversationId: newRow.conversation_id,
-              senderId: newRow.sender_id,
-              senderName: newRow.sender_name,
-              senderAvatar: newRow.sender_avatar,
-              senderRole: newRow.sender_role,
-              message: newRow.message,
-              timestamp: newRow.created_at,
-              isRead: newRow.is_read || false,
-              status: 'delivered',
-            };
-
-            applyIncomingMessage(receivedMsg);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } catch (e) {
-      console.warn('[Chat] Supabase realtime channel unavailable:', e);
-    }
-  }, []);
-
-  const loadLocalChatData = async () => {
-    try {
-      const [storedConvs, storedMsgs] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_CONVERSATIONS_KEY),
-        AsyncStorage.getItem(STORAGE_MESSAGES_KEY),
-      ]);
-
-      if (storedConvs) {
-        try {
-          const parsedConvs: ChatConversation[] = JSON.parse(storedConvs);
-          if (Array.isArray(parsedConvs) && parsedConvs.length > 0) {
-            setConversations(sortConversations(parsedConvs));
-          }
-        } catch (err) {
-          console.warn('[Chat] Corrupt conversation storage:', err);
-        }
-      }
-      if (storedMsgs) {
-        try {
-          const parsedMsgs: Record<string, ChatMessage[]> = JSON.parse(storedMsgs);
-          if (parsedMsgs && typeof parsedMsgs === 'object') {
-            setMessages(parsedMsgs);
-          }
-        } catch (err) {
-          console.warn('[Chat] Corrupt messages storage:', err);
-        }
-      }
-    } catch (e) {
-      console.error('[Chat] Failed to load local chat data:', e);
-    }
-  };
-
-  const persistChatData = async (
-    updatedConvs: ChatConversation[],
-    updatedMsgs: Record<string, ChatMessage[]>
-  ) => {
-    try {
-      const sorted = sortConversations(updatedConvs);
-      await Promise.all([
-        AsyncStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(sorted)),
-        AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(updatedMsgs)),
-      ]);
-    } catch (e) {
-      console.error('[Chat] Failed to persist chat data:', e);
-    }
-  };
-
   const broadcastEvent = (payload: any) => {
     try {
       if (broadcastChannelRef.current) {
@@ -417,86 +169,238 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     }
   };
 
-  const applyIncomingMessage = useCallback(
-    (newMsg: ChatMessage, extraConv?: ChatConversation) => {
-      setMessages((prevMsgs) => {
-        const convId = newMsg.conversationId;
-        const currentList = prevMsgs[convId] || [];
-        if (currentList.some((m) => m.id === newMsg.id)) {
-          return prevMsgs;
-        }
-
-        const nextList = [...currentList, newMsg];
-        const nextMap = { ...prevMsgs, [convId]: nextList };
-
-        setConversations((prevConvs) => {
-          let found = false;
-          let nextConvs = prevConvs.map((c) => {
-            if (c.id === convId) {
-              found = true;
-              const isBuyerMsg = newMsg.senderRole === 'buyer';
-              const shouldReopen = isBuyerMsg && (c.caseStatus === 'Solved' || c.caseStatus === 'Resolved');
-              const nextCaseStatus = shouldReopen ? ('Reopen' as CaseStatus) : c.caseStatus;
-              const nextHistory = shouldReopen
-                ? [
-                    ...(c.statusHistory || []),
-                    {
-                      status: 'Reopen' as CaseStatus,
-                      changedBy: newMsg.senderName || 'Client',
-                      changedByRole: 'buyer',
-                      changedAt: newMsg.timestamp,
-                      note: 'Dossier réouvert automatiquement suite au message du client',
-                    },
-                  ]
-                : c.statusHistory;
-
-              return {
-                ...c,
-                lastMessage: newMsg.message,
-                lastMessageAt: newMsg.timestamp,
-                caseStatus: nextCaseStatus,
-                statusHistory: nextHistory,
-                unreadCountAgent:
-                  newMsg.senderRole === 'buyer' ? c.unreadCountAgent + 1 : c.unreadCountAgent,
-                unreadCountBuyer:
-                  newMsg.senderRole !== 'buyer' ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
-                updatedAt: newMsg.timestamp,
-              };
-            }
-            return c;
-          });
-
-          if (!found && extraConv) {
-            nextConvs = [extraConv, ...nextConvs];
-          } else if (!found) {
-            // Generate placeholder conversation card so dashboard sees it immediately
-            const fallbackConv: ChatConversation = {
-              id: convId,
-              propertyId: 'general',
-              buyer: { id: newMsg.senderId, name: newMsg.senderName, role: 'buyer' },
-              agent: { id: 'agent-general', name: 'Agent ImmoCI', role: 'agent' },
-              lastMessage: newMsg.message,
-              lastMessageAt: newMsg.timestamp,
-              unreadCountBuyer: 0,
-              unreadCountAgent: 1,
-              status: 'active',
-              createdAt: newMsg.timestamp,
-              updatedAt: newMsg.timestamp,
-            };
-            nextConvs = [fallbackConv, ...nextConvs];
+  // 2. Fetch conversations from Supabase (with offline AsyncStorage fallback)
+  const loadConversations = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // First load cached data for instant initial UI response
+      const cachedConvs = await AsyncStorage.getItem(STORAGE_CONVERSATIONS_KEY);
+      if (cachedConvs) {
+        try {
+          const parsed = JSON.parse(cachedConvs);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setConversations(sortConversations(parsed));
           }
+        } catch {}
+      }
 
-          const sorted = sortConversations(nextConvs);
-          persistChatData(sorted, nextMap);
-          return sorted;
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      const isStaff =
+        user.role === 'admin' ||
+        user.role === 'super_admin' ||
+        user.role === 'agent' ||
+        user.role === 'landlord' ||
+        user.role === 'support';
+
+      let query = supabase.from('conversations').select('*');
+      if (!isStaff) {
+        // Customers only query their own conversations
+        query = query.eq('buyer_id', user.id);
+      }
+
+      const { data, error } = await query.order('last_message_at', { ascending: false });
+
+      if (error) {
+        console.warn('[Chat] Supabase fetch conversations error:', error.message);
+      } else if (data) {
+        const liveConvs = data.map(mapRowToConversation);
+        const sorted = sortConversations(liveConvs);
+        setConversations(sorted);
+        AsyncStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(sorted)).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('[Chat] loadConversations exception:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // 3. Fetch messages for a conversation from Supabase
+  const loadMessagesForConversation = useCallback(async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.warn('[Chat] Fetch messages error:', error.message);
+        return;
+      }
+
+      if (data) {
+        const loadedMsgs = data.map(mapRowToMessage);
+        setMessages((prev) => {
+          const next = { ...prev, [conversationId]: loadedMsgs };
+          AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(next)).catch(() => {});
+          return next;
         });
+      }
+    } catch (err) {
+      console.warn('[Chat] loadMessagesForConversation exception:', err);
+    }
+  }, []);
 
-        return nextMap;
+  // When active conversation changes, load its messages
+  useEffect(() => {
+    if (activeConversation?.id) {
+      loadMessagesForConversation(activeConversation.id);
+    }
+  }, [activeConversation?.id, loadMessagesForConversation]);
+
+  // 4. Handle incoming message from Supabase Realtime or Broadcast
+  const handleIncomingMessage = useCallback((msg: ChatMessage) => {
+    setMessages((prev) => {
+      const currentList = prev[msg.conversationId] || [];
+      const existsIndex = currentList.findIndex((m) => m.id === msg.id);
+
+      let nextList: ChatMessage[];
+      if (existsIndex >= 0) {
+        // Reconcile optimistic message with confirmed server message
+        nextList = currentList.map((m, i) => (i === existsIndex ? { ...msg, status: 'delivered' } : m));
+      } else {
+        nextList = [...currentList, msg];
+      }
+
+      const nextMap = { ...prev, [msg.conversationId]: nextList };
+      AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(nextMap)).catch(() => {});
+      return nextMap;
+    });
+
+    setConversations((prev) => {
+      const isCurrentActive = activeConversationRef.current?.id === msg.conversationId;
+      const isSender = msg.senderId === userRef.current?.id;
+
+      // If active conversation is open on screen, auto mark as read in Supabase
+      if (isCurrentActive && !isSender) {
+        supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('id', msg.id)
+          .then(() => {})
+          .catch(() => {});
+      }
+
+      const idx = prev.findIndex((c) => c.id === msg.conversationId);
+      const isBuyerMsg = msg.senderRole === 'buyer';
+
+      if (idx >= 0) {
+        const c = prev[idx];
+        const updatedConv: ChatConversation = {
+          ...c,
+          lastMessage: msg.message || (msg.attachments?.length ? '📎 Pièce jointe' : ''),
+          lastMessageAt: msg.timestamp,
+          unreadCountBuyer: !isBuyerMsg && !isCurrentActive ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
+          unreadCountAgent: isBuyerMsg && !isCurrentActive ? c.unreadCountAgent + 1 : c.unreadCountAgent,
+          updatedAt: msg.timestamp,
+        };
+        const next = prev.map((item, i) => (i === idx ? updatedConv : item));
+        const sorted = sortConversations(next);
+        AsyncStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(sorted)).catch(() => {});
+        return sorted;
+      } else {
+        // New conversation arrived: fetch from Supabase
+        supabase
+          .from('conversations')
+          .select('*')
+          .eq('id', msg.conversationId)
+          .maybeSingle()
+          .then(({ data }: { data: any }) => {
+            if (data) {
+              const newConv = mapRowToConversation(data);
+              setConversations((curr) => {
+                const updated = sortConversations([newConv, ...curr.filter((c) => c.id !== newConv.id)]);
+                AsyncStorage.setItem(STORAGE_CONVERSATIONS_KEY, JSON.stringify(updated)).catch(() => {});
+                return updated;
+              });
+            }
+          });
+        return prev;
+      }
+    });
+  }, []);
+
+  // 5. Supabase Realtime Channels (PostgreSQL Replication Listeners)
+  useEffect(() => {
+    if (!supabase || typeof supabase.channel !== 'function') return;
+
+    const channelId = `immoci_realtime_chat_${Date.now()}`;
+    const channel = supabase
+      .channel(channelId)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload: any) => {
+          const newRow = payload.new;
+          if (!newRow) return;
+          const msg = mapRowToMessage(newRow);
+          handleIncomingMessage(msg);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        (payload: any) => {
+          const updatedRow = payload.new;
+          if (!updatedRow) return;
+          const updatedMsg = mapRowToMessage(updatedRow);
+
+          setMessages((prev) => {
+            const list = prev[updatedMsg.conversationId] || [];
+            const nextList = list.map((m) => (m.id === updatedMsg.id ? updatedMsg : m));
+            return { ...prev, [updatedMsg.conversationId]: nextList };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'conversations' },
+        (payload: any) => {
+          const newRow = payload.new;
+          if (!newRow) return;
+          const conv = mapRowToConversation(newRow);
+          setConversations((prev) => {
+            if (prev.some((c) => c.id === conv.id)) return prev;
+            return sortConversations([conv, ...prev]);
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'conversations' },
+        (payload: any) => {
+          const updatedRow = payload.new;
+          if (!updatedRow) return;
+          const conv = mapRowToConversation(updatedRow);
+          setConversations((prev) => {
+            const next = prev.map((c) => (c.id === conv.id ? { ...c, ...conv } : c));
+            return sortConversations(next);
+          });
+        }
+      )
+      .subscribe((status: string, err?: Error) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Chat] Realtime channel connected successfully');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('[Chat] Realtime channel error:', err?.message);
+        }
       });
-    },
-    []
-  );
 
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, handleIncomingMessage]);
+
+  // 6. Open Chat Modal
   const openChat = (conv: ChatConversation) => {
     setActiveConversation(conv);
     setIsChatOpen(true);
@@ -507,38 +411,75 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setIsChatOpen(false);
   };
 
+  // 7. Start or Get Existing Conversation (Duplicate Prevention)
   const startOrGetConversation = async (
     property: Property,
     agentOverride?: any
-  ): Promise<ChatConversation> => {
-    const currentBuyerId = user?.id || 'buyer-live';
+  ): Promise<ChatConversation | null> => {
+    const currentBuyerId = user?.id;
+    if (!currentBuyerId) {
+      Alert.alert(
+        'Connexion requise',
+        'Veuillez vous connecter pour contacter l\'agence par chat.',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Se connecter', onPress: () => router.push('/auth') },
+        ]
+      );
+      return null;
+    }
+
     const currentBuyerName = user?.name || 'Acheteur Intéressé';
     const currentBuyerRole: MessageRole = 'buyer';
 
-    const targetAgentId = agentOverride?.phone || property.agent?.phone || 'agent-1';
+    const targetAgentId = agentOverride?.phone || property.agent?.phone || property.agent?.id || 'agent-1';
     const targetAgentName = agentOverride?.name || property.agent?.name || 'Agent Responsable';
     const targetAgentAvatar = agentOverride?.avatar || property.agent?.avatar || '';
+    const targetAgentPhone = agentOverride?.phone || property.agent?.phone || '';
 
-    // Check if an existing conversation exists for this buyer and this property
-    const existing = conversations.find(
+    // Check 1: Local state for existing conversation
+    const existingLocal = conversations.find(
       (c) => c.propertyId === property.id && c.buyer.id === currentBuyerId
     );
-
-    if (existing) {
-      setActiveConversation(existing);
+    if (existingLocal) {
+      setActiveConversation(existingLocal);
       setIsChatOpen(true);
-      markAsRead(existing.id);
-      return existing;
+      markAsRead(existingLocal.id);
+      loadMessagesForConversation(existingLocal.id);
+      return existingLocal;
     }
 
-    // Create new conversation
+    // Check 2: Supabase database for existing conversation
+    try {
+      const { data: existingDb } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('property_id', property.id)
+        .eq('buyer_id', currentBuyerId)
+        .maybeSingle();
+
+      if (existingDb) {
+        const conv = mapRowToConversation(existingDb);
+        setConversations((prev) => sortConversations([conv, ...prev.filter((c) => c.id !== conv.id)]));
+        setActiveConversation(conv);
+        setIsChatOpen(true);
+        markAsRead(conv.id);
+        loadMessagesForConversation(conv.id);
+        return conv;
+      }
+    } catch (e) {
+      console.warn('[Chat] Check existing conversation DB error:', e);
+    }
+
+    // Create New Conversation in Supabase
     const newConvId = `conv-${property.id}-${Date.now()}`;
+    const now = new Date().toISOString();
     const propertyContext: ConversationPropertyContext = {
       id: property.id,
       title: property.title,
       price: property.price,
       currency: property.currency || 'XOF',
-      location: `${property.location.district}, ${property.location.city}`,
+      location: `${property.location?.district || ''}, ${property.location?.city || 'Abidjan'}`,
       image: property.images?.[0] || '',
       status: property.status,
     };
@@ -561,73 +502,139 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         name: targetAgentName,
         role: 'agent',
         avatar: targetAgentAvatar,
-        phone: agentOverride?.phone || property.agent?.phone,
+        phone: targetAgentPhone,
       },
       lastMessage: initialText,
-      lastMessageAt: new Date().toISOString(),
+      lastMessageAt: now,
       unreadCountBuyer: 0,
       unreadCountAgent: 1,
       status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      caseStatus: 'Open',
+      department: 'Ventes & Locations',
+      createdAt: now,
+      updatedAt: now,
     };
 
     const initialGreeting: ChatMessage = {
-      id: `msg-init-${Date.now()}`,
+      id: `msg-init-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       conversationId: newConvId,
       senderId: currentBuyerId,
       senderName: currentBuyerName,
       senderRole: currentBuyerRole,
       message: initialText,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       isRead: false,
       status: 'delivered',
     };
 
+    // Optimistic UI updates
     const nextConvs = sortConversations([newConversation, ...conversations]);
     const nextMsgs = { ...messages, [newConvId]: [initialGreeting] };
-
     setConversations(nextConvs);
     setMessages(nextMsgs);
     setActiveConversation(newConversation);
     setIsChatOpen(true);
-    persistChatData(nextConvs, nextMsgs);
 
-    // Broadcast creation to all other tabs (Agent Dashboard)
+    // Insert into Supabase
+    try {
+      await safeInsertConversation({
+        id: newConvId,
+        property_id: property.id,
+        property_data: propertyContext,
+        buyer_id: currentBuyerId,
+        buyer_data: newConversation.buyer,
+        agent_id: targetAgentId,
+        agent_data: newConversation.agent,
+        last_message: initialText,
+        last_message_at: now,
+        unread_count_buyer: 0,
+        unread_count_agent: 1,
+        status: 'active',
+        case_status: 'Open',
+        department: 'Ventes & Locations',
+        created_at: now,
+        updated_at: now,
+      });
+
+      await safeInsertMessage({
+        id: initialGreeting.id,
+        conversation_id: newConvId,
+        sender_id: currentBuyerId,
+        sender_name: currentBuyerName,
+        sender_role: currentBuyerRole,
+        message: initialText,
+        is_read: false,
+        created_at: now,
+      });
+    } catch (err) {
+      console.warn('[Chat] Supabase insert conversation error:', err);
+    }
+
     broadcastEvent({
       type: 'NEW_MESSAGE',
       message: initialGreeting,
-      conversation: newConversation,
     });
 
     return newConversation;
   };
 
-  const startSupportConversation = async (): Promise<ChatConversation> => {
-    // Always reuse existing support conversation (check any support propertyId)
-    const existing = conversations.find((c) => c.propertyId === 'support');
+  // 8. Start Support Conversation
+  const startSupportConversation = async (): Promise<ChatConversation | null> => {
+    const currentBuyerId = user?.id;
+    if (!currentBuyerId) {
+      Alert.alert(
+        'Connexion requise',
+        'Veuillez vous connecter pour contacter le support client.',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Se connecter', onPress: () => router.push('/auth') },
+        ]
+      );
+      return null;
+    }
+
+    const existing = conversations.find(
+      (c) => c.propertyId === 'support' && c.buyer.id === currentBuyerId
+    );
     if (existing) {
       setActiveConversation(existing);
       setIsChatOpen(true);
-      // Do NOT call markAsRead here so unread badge stays for agent
+      loadMessagesForConversation(existing.id);
       return existing;
     }
 
-    const currentBuyerId = user?.id || 'buyer-live';
-    const currentBuyerName = user?.name || 'Acheteur';
+    try {
+      const { data: existingDb } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('property_id', 'support')
+        .eq('buyer_id', currentBuyerId)
+        .maybeSingle();
 
-    // Use stable ID so dashboard and chat modal always sync on the same conversation
-    const supportConvId = 'conv-support-1';
+      if (existingDb) {
+        const conv = mapRowToConversation(existingDb);
+        setConversations((prev) => sortConversations([conv, ...prev.filter((c) => c.id !== conv.id)]));
+        setActiveConversation(conv);
+        setIsChatOpen(true);
+        loadMessagesForConversation(conv.id);
+        return conv;
+      }
+    } catch (e) {
+      console.warn('[Chat] Check support DB error:', e);
+    }
+
+    const supportConvId = `conv-support-${currentBuyerId}`;
+    const now = new Date().toISOString();
     const newSupportConv: ChatConversation = {
       id: supportConvId,
       propertyId: 'support',
       department: 'Customer Care',
       caseStatus: 'Open',
-      property: undefined,
       buyer: {
         id: currentBuyerId,
-        name: currentBuyerName,
+        name: user?.name || 'Acheteur',
         role: 'buyer',
+        phone: user?.phone,
       },
       agent: {
         id: 'support-agent-fatou',
@@ -637,29 +644,13 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         phone: '+225 07 00 00 00 00',
         department: 'Customer Care',
       },
-      assignedAgent: {
-        id: 'support-agent-fatou',
-        name: 'Fatou Diallo',
-        role: 'support',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
-        department: 'Customer Care',
-      },
-      statusHistory: [
-        {
-          status: 'Open',
-          changedBy: 'System',
-          changedByRole: 'system',
-          changedAt: new Date().toISOString(),
-          note: 'Dossier créé via le support client',
-        },
-      ],
-      lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd\u2019hui dans votre recherche immobili\u00e8re ?',
-      lastMessageAt: new Date().toISOString(),
+      lastMessage: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
+      lastMessageAt: now,
       unreadCountBuyer: 0,
       unreadCountAgent: 0,
       status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     const initialSupportMsg: ChatMessage = {
@@ -668,54 +659,82 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       senderId: 'support-agent-fatou',
       senderName: 'Fatou Diallo (Customer Care)',
       senderRole: 'support',
-      message: 'Bonjour ! Comment pouvons-nous vous aider aujourd\u2019hui dans votre recherche immobili\u00e8re ?',
-      timestamp: new Date().toISOString(),
+      message: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
+      timestamp: now,
       isRead: true,
       status: 'delivered',
     };
 
-    const nextConvs = sortConversations([newSupportConv, ...conversations.filter(c => c.propertyId !== 'support')]);
-    const nextMsgs = { ...messages, [supportConvId]: [initialSupportMsg] };
-
-    setConversations(nextConvs);
-    setMessages(nextMsgs);
+    setConversations((prev) => sortConversations([newSupportConv, ...prev]));
+    setMessages((prev) => ({ ...prev, [supportConvId]: [initialSupportMsg] }));
     setActiveConversation(newSupportConv);
     setIsChatOpen(true);
-    persistChatData(nextConvs, nextMsgs);
 
-    broadcastEvent({
-      type: 'NEW_MESSAGE',
-      message: initialSupportMsg,
-      conversation: newSupportConv,
-    });
+    try {
+      await safeInsertConversation({
+        id: supportConvId,
+        property_id: 'support',
+        buyer_id: currentBuyerId,
+        buyer_data: newSupportConv.buyer,
+        agent_id: newSupportConv.agent.id,
+        agent_data: newSupportConv.agent,
+        last_message: newSupportConv.lastMessage,
+        last_message_at: now,
+        unread_count_buyer: 0,
+        unread_count_agent: 0,
+        status: 'active',
+        case_status: 'Open',
+        department: 'Customer Care',
+        created_at: now,
+        updated_at: now,
+      });
+
+      await safeInsertMessage({
+        id: initialSupportMsg.id,
+        conversation_id: supportConvId,
+        sender_id: initialSupportMsg.senderId,
+        sender_name: initialSupportMsg.senderName,
+        sender_role: initialSupportMsg.senderRole,
+        message: initialSupportMsg.message,
+        is_read: true,
+        created_at: now,
+      });
+    } catch (e) {
+      console.warn('[Chat] Supabase insert support error:', e);
+    }
 
     return newSupportConv;
   };
 
+  // 9. Send Message (Optimistic UI + Realtime Insertion)
   const sendMessage = async (
     conversationId: string,
     text: string,
     attachments?: ChatAttachment[]
   ): Promise<ChatMessage | null> => {
     const hasAttachments = attachments && attachments.length > 0;
-    if ((!text || !text.trim()) && !hasAttachments) return null;
-
     const trimmed = (text || '').trim();
-    const displaySummary = trimmed || (
-      hasAttachments
-        ? (attachments![0].type === 'image' ? '📷 Photo' : `📄 ${attachments![0].name || 'Document'}`)
-        : ''
-    );
+    if (!trimmed && !hasAttachments) return null;
 
     setIsSending(true);
 
-    const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
-    const senderRole: MessageRole = isAgentUser ? (user?.role === 'support' ? 'support' : 'agent') : 'buyer';
-    const senderId = user?.id || (isAgentUser ? 'agent-current' : 'buyer-current');
-    const senderName = user?.name || (isAgentUser ? 'Agent ImmoCI' : 'Acheteur');
+    const isStaff =
+      user?.role === 'agent' ||
+      user?.role === 'admin' ||
+      user?.role === 'support' ||
+      user?.role === 'super_admin' ||
+      user?.role === 'landlord';
+
+    const senderRole: MessageRole = isStaff ? (user?.role === 'support' ? 'support' : 'agent') : 'buyer';
+    const senderId = user?.id || (isStaff ? 'agent-active' : 'buyer-active');
+    const senderName = user?.name || (isStaff ? 'Agent ImmoCI' : 'Client');
+    const now = new Date().toISOString();
+
+    const tempId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const displaySummary = trimmed || (hasAttachments ? (attachments![0].type === 'image' ? '📷 Photo' : '📄 Document') : '');
 
     const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: tempId,
       conversationId,
       senderId,
       senderName,
@@ -723,74 +742,176 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       senderRole,
       message: trimmed,
       attachments: hasAttachments ? attachments : undefined,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       isRead: false,
-      status: 'delivered',
+      status: 'sending', // Optimistic state
     };
 
-    // 1. Optimistic local update
-    const currentConvMsgs = messages[conversationId] || [];
-    const updatedConvMsgs = [...currentConvMsgs, newMsg];
-    const updatedMessagesMap = { ...messages, [conversationId]: updatedConvMsgs };
+    // 1. Optimistic Local State Update
+    setMessages((prev) => {
+      const list = prev[conversationId] || [];
+      return { ...prev, [conversationId]: [...list, newMsg] };
+    });
 
-    let activeUpdatedConv: ChatConversation | undefined;
+    setConversations((prev) => {
+      const isBuyer = senderRole === 'buyer';
+      return sortConversations(
+        prev.map((c) => {
+          if (c.id === conversationId) {
+            return {
+              ...c,
+              lastMessage: displaySummary,
+              lastMessageAt: now,
+              unreadCountAgent: isBuyer ? c.unreadCountAgent + 1 : c.unreadCountAgent,
+              unreadCountBuyer: !isBuyer ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
+              updatedAt: now,
+            };
+          }
+          return c;
+        })
+      );
+    });
 
-    const updatedConvs = conversations.map((c) => {
-      if (c.id === conversationId) {
-        const isBuyerMsg = senderRole === 'buyer';
-        const shouldReopen = isBuyerMsg && (c.caseStatus === 'Solved' || c.caseStatus === 'Resolved');
-        const nextCaseStatus = shouldReopen ? ('Reopen' as CaseStatus) : c.caseStatus;
-        const nextHistory = shouldReopen
-          ? [
-              ...(c.statusHistory || []),
-              {
-                status: 'Reopen' as CaseStatus,
-                changedBy: senderName,
-                changedByRole: 'buyer',
-                changedAt: newMsg.timestamp,
-                note: 'Dossier réouvert automatiquement suite au message du client',
-              },
-            ]
-          : c.statusHistory;
+    // 2. Insert into Supabase
+    try {
+      const { error: msgErr } = await safeInsertMessage({
+        id: tempId,
+        conversation_id: conversationId,
+        sender_id: senderId,
+        sender_name: senderName,
+        sender_avatar: user?.avatar,
+        sender_role: senderRole,
+        message: trimmed,
+        attachments: hasAttachments ? attachments : [],
+        is_read: false,
+        created_at: now,
+      });
 
-        activeUpdatedConv = {
-          ...c,
-          lastMessage: displaySummary,
-          lastMessageAt: newMsg.timestamp,
-          caseStatus: nextCaseStatus,
-          statusHistory: nextHistory,
-          unreadCountAgent: isBuyerMsg ? c.unreadCountAgent + 1 : c.unreadCountAgent,
-          unreadCountBuyer: !isBuyerMsg ? c.unreadCountBuyer + 1 : c.unreadCountBuyer,
-          updatedAt: newMsg.timestamp,
-        };
-        return activeUpdatedConv;
+      if (msgErr) {
+        console.warn('[Chat] Supabase insert message error:', msgErr.message);
+        // Mark as failed
+        setMessages((prev) => {
+          const list = prev[conversationId] || [];
+          return {
+            ...prev,
+            [conversationId]: list.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)),
+          };
+        });
+        setIsSending(false);
+        return null;
       }
-      return c;
-    });
 
-    const sortedConvs = sortConversations(updatedConvs);
+      // 3. Update Conversation metadata in Supabase
+      const isBuyer = senderRole === 'buyer';
+      const targetConv = conversations.find((c) => c.id === conversationId);
+      await supabase
+        .from('conversations')
+        .update({
+          last_message: displaySummary,
+          last_message_at: now,
+          unread_count_agent: isBuyer ? (targetConv?.unreadCountAgent || 0) + 1 : targetConv?.unreadCountAgent || 0,
+          unread_count_buyer: !isBuyer ? (targetConv?.unreadCountBuyer || 0) + 1 : targetConv?.unreadCountBuyer || 0,
+          updated_at: now,
+        })
+        .eq('id', conversationId);
 
-    setMessages(updatedMessagesMap);
-    setConversations(sortedConvs);
-    persistChatData(sortedConvs, updatedMessagesMap);
+      // 4. Update status to delivered
+      setMessages((prev) => {
+        const list = prev[conversationId] || [];
+        return {
+          ...prev,
+          [conversationId]: list.map((m) => (m.id === tempId ? { ...m, status: 'delivered' } : m)),
+        };
+      });
 
-    // 2. Broadcast immediately to all open tabs / windows
-    broadcastEvent({
-      type: 'NEW_MESSAGE',
-      message: newMsg,
-      conversation: activeUpdatedConv,
-    });
+      broadcastEvent({
+        type: 'NEW_MESSAGE',
+        message: { ...newMsg, status: 'delivered' },
+      });
 
-    setIsSending(false);
-    return newMsg;
+      setIsSending(false);
+      return newMsg;
+    } catch (err) {
+      console.error('[Chat] Send message exception:', err);
+      setMessages((prev) => {
+        const list = prev[conversationId] || [];
+        return {
+          ...prev,
+          [conversationId]: list.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m)),
+        };
+      });
+      setIsSending(false);
+      return null;
+    }
   };
 
+  // 10. Mark Conversation as Read
+  const markAsRead = async (conversationId: string) => {
+    const isStaff =
+      user?.role === 'agent' ||
+      user?.role === 'admin' ||
+      user?.role === 'support' ||
+      user?.role === 'super_admin' ||
+      user?.role === 'landlord';
+
+    const roleToClear = isStaff ? 'agent' : 'buyer';
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === conversationId) {
+          return {
+            ...c,
+            unreadCountAgent: isStaff ? 0 : c.unreadCountAgent,
+            unreadCountBuyer: isStaff ? c.unreadCountBuyer : 0,
+          };
+        }
+        return c;
+      })
+    );
+
+    setMessages((prev) => {
+      const list = prev[conversationId] || [];
+      return {
+        ...prev,
+        [conversationId]: list.map((m) => ({ ...m, isRead: true })),
+      };
+    });
+
+    try {
+      if (user?.id) {
+        await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', user.id);
+
+        await supabase
+          .from('conversations')
+          .update(
+            isStaff
+              ? { unread_count_agent: 0 }
+              : { unread_count_buyer: 0 }
+          )
+          .eq('id', conversationId);
+      }
+    } catch (e) {
+      console.warn('[Chat] markAsRead Supabase error:', e);
+    }
+
+    broadcastEvent({
+      type: 'MARK_READ',
+      conversationId,
+      role: roleToClear,
+    });
+  };
+
+  // 11. Update Case Status (Support tickets)
   const updateCaseStatus = async (
     conversationId: string,
     newStatus: CaseStatus,
     note?: string
   ): Promise<void> => {
-    const changerName = user?.name || 'Fatou Diallo';
+    const changerName = user?.name || 'Support ImmoCI';
     const changerRole = user?.role || 'support';
     const timestamp = new Date().toISOString();
 
@@ -802,73 +923,53 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       note: note || `Statut mis à jour : ${newStatus}`,
     };
 
-    let updatedConv: ChatConversation | undefined;
+    setConversations((prev) =>
+      sortConversations(
+        prev.map((c) => {
+          if (c.id === conversationId) {
+            const history = c.statusHistory || [];
+            return {
+              ...c,
+              caseStatus: newStatus,
+              statusHistory: [...history, changeRecord],
+              updatedAt: timestamp,
+            };
+          }
+          return c;
+        })
+      )
+    );
 
-    const updatedConvs = conversations.map((c) => {
-      if (c.id === conversationId) {
-        const history = c.statusHistory || [];
-        updatedConv = {
-          ...c,
-          caseStatus: newStatus,
-          statusHistory: [...history, changeRecord],
-          updatedAt: timestamp,
-        };
-        return updatedConv;
-      }
-      return c;
-    });
-
-    const sortedConvs = sortConversations(updatedConvs);
-    setConversations(sortedConvs);
-    persistChatData(sortedConvs, messages);
-
-    broadcastEvent({
-      type: 'CASE_STATUS_UPDATED',
-      conversationId,
-      newStatus,
-      changeRecord,
-      conversation: updatedConv,
-    });
-  };
-
-  const markAsRead = async (conversationId: string) => {
-    const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
-    const roleToClear = isAgentUser ? 'agent' : 'buyer';
-
-    const updatedConvs = conversations.map((c) => {
-      if (c.id === conversationId) {
-        return {
-          ...c,
-          unreadCountBuyer: isAgentUser ? c.unreadCountBuyer : 0,
-          unreadCountAgent: isAgentUser ? 0 : c.unreadCountAgent,
-        };
-      }
-      return c;
-    });
-
-    const currentMsgs = messages[conversationId] || [];
-    const updatedMsgs = currentMsgs.map((m) => ({ ...m, isRead: true }));
-    const nextMsgMap = { ...messages, [conversationId]: updatedMsgs };
-
-    setConversations(updatedConvs);
-    setMessages(nextMsgMap);
-    persistChatData(updatedConvs, nextMsgMap);
-
-    broadcastEvent({
-      type: 'MARK_READ',
-      conversationId,
-      role: roleToClear,
-    });
+    try {
+      const target = conversations.find((c) => c.id === conversationId);
+      const nextHistory = [...(target?.statusHistory || []), changeRecord];
+      await supabase
+        .from('conversations')
+        .update({
+          case_status: newStatus,
+          status_history: nextHistory,
+          updated_at: timestamp,
+        })
+        .eq('id', conversationId);
+    } catch (e) {
+      console.warn('[Chat] updateCaseStatus error:', e);
+    }
   };
 
   const retryMessage = async (failedMsg: ChatMessage) => {
-    await sendMessage(failedMsg.conversationId, failedMsg.message);
+    await sendMessage(failedMsg.conversationId, failedMsg.message, failedMsg.attachments);
   };
 
   // Compute total unread counter
-  const isAgentUser = user?.role === 'agent' || user?.role === 'admin' || user?.role === 'support' || user?.role === 'super_admin';
+  const isStaff =
+    user?.role === 'agent' ||
+    user?.role === 'admin' ||
+    user?.role === 'support' ||
+    user?.role === 'super_admin' ||
+    user?.role === 'landlord';
+
   const totalUnreadCount = conversations.reduce((sum, c) => {
-    return sum + (isAgentUser ? c.unreadCountAgent : c.unreadCountBuyer);
+    return sum + (isStaff ? c.unreadCountAgent : c.unreadCountBuyer);
   }, 0);
 
   return {
@@ -888,5 +989,6 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     updateCaseStatus,
     markAsRead,
     retryMessage,
+    loadConversations,
   };
 });
