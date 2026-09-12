@@ -41,7 +41,7 @@ import {
   Trees,
   Briefcase,
   Layers,
-  DollarSign,
+  Banknote,
   Bed,
   Bath,
   Maximize2,
@@ -191,7 +191,7 @@ export default function AddPropertyScreen() {
   const [showMapPinPicker, setShowMapPinPicker] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
-  const [bypassAuth, setBypassAuth] = useState(false);
+  const [bypassAuth] = useState(false); // SECURITY: bypass is permanently disabled
 
   // Safety auth timeout
   const [authTimedOut, setAuthTimedOut] = useState(false);
@@ -773,7 +773,49 @@ export default function AddPropertyScreen() {
     );
   }
 
-  // Pro Auth Gate
+  // Role check — only agents, landlords, and admins may submit properties
+  const userRole = user?.role;
+  const isStaffOrAdmin = userRole === 'agent' || userRole === 'landlord' || userRole === 'admin' || userRole === 'super_admin';
+  const isCustomerRole = user && !isStaffOrAdmin;
+
+  // Customer role gate — logged in but not a business account
+  if (authReady && user && isCustomerRole) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', padding: 24 }]}>
+        <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: '#ECFDF5', borderWidth: 1.5, borderColor: '#059669', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <Building size={34} color="#059669" strokeWidth={2} />
+        </View>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: '#0F172A', textAlign: 'center', marginBottom: 8 }}>
+          {language === 'fr' ? 'Compte Professionnel Requis' : 'Business Account Required'}
+        </Text>
+        <Text style={{ fontSize: 13.5, color: '#64748B', textAlign: 'center', lineHeight: 20, marginBottom: 28, paddingHorizontal: 8 }}>
+          {language === 'fr'
+            ? 'La publication d\'annonces immobilières est réservée aux agents et agences immobilières professionnels.'
+            : 'Listing properties is reserved for professional real estate agents and agencies.'}
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: '#059669', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, marginBottom: 12, width: '100%', alignItems: 'center' }}
+          onPress={() => router.push('/(tabs)/home')}
+          activeOpacity={0.85}
+        >
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>
+            {language === 'fr' ? 'Retour à l\'accueil' : 'Back to Home'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ paddingVertical: 12, width: '100%', alignItems: 'center' }}
+          onPress={() => router.push('/(tabs)/search')}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: '#059669', fontWeight: '600', fontSize: 13 }}>
+            {language === 'fr' ? 'Rechercher des biens disponibles' : 'Search available properties'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Pro Auth Gate — not logged in
   if (authReady && !session && !user && !bypassAuth) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#F8FAFC' }]}>
@@ -805,27 +847,8 @@ export default function AddPropertyScreen() {
               {t('auth_gate_subtitle') || 'Pour garantir la sécurité et l\'authenticité des offres sur ImmoCI, vous devez vous connecter ou créer un compte vérifié avant de soumettre un bien.'}
             </Text>
 
-            {/* 1-Click Instant Skip Button (Like Admin Page) */}
-            <TouchableOpacity
-              style={styles.instantAccessBtn}
-              onPress={() => setBypassAuth(true)}
-              activeOpacity={0.88}
-            >
-              <LinearGradient
-                colors={['#059669', '#10B981']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.instantAccessGradient}
-              >
-                <Zap size={20} color="#FFFFFF" fill="#FFFFFF" />
-                <Text style={styles.instantAccessText}>
-                  {language === 'fr' ? '⚡ Accès Direct — Publier sans Compte (1-Clic)' : '⚡ Direct Access — Post Without Login (1-Click)'}
-                </Text>
-                <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.5} />
-              </LinearGradient>
-            </TouchableOpacity>
 
-            <View style={styles.authBenefitsList}>
+            <View style={styles.authGateActions}>
               <View style={styles.authBenefitItem}>
                 <View style={styles.authBenefitIconCircle}>
                   <CheckCircle2 size={16} color="#059669" strokeWidth={2.5} />
@@ -870,15 +893,6 @@ export default function AddPropertyScreen() {
             </View>
 
             <View style={styles.authGateActions}>
-              <TouchableOpacity
-                style={styles.guestAccessBtn}
-                onPress={() => setBypassAuth(true)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.guestAccessBtnText}>
-                  {language === 'fr' ? '⚡ Accéder directement au formulaire d\'annonce' : '⚡ Go directly to property submission form'}
-                </Text>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.authPrimaryBtn}
@@ -1208,7 +1222,7 @@ export default function AddPropertyScreen() {
                   )}
                 </View>
                 <View style={styles.inputContainer}>
-                  <DollarSign size={18} color="#D97706" style={styles.inputLeadingIcon} />
+                  <Banknote size={18} color="#D97706" style={styles.inputLeadingIcon} />
                   <TextInput
                     style={styles.textInputField}
                     placeholder="ex: 85000000"

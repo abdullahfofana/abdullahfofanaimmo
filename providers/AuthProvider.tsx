@@ -212,7 +212,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         email,
         name,
         phone,
-        role,
+        // SECURITY: Block self-assignment of privileged roles.
+        // Users can only self-register as renter, agent, or landlord.
+        // Admin/super_admin accounts must be provisioned directly in the DB.
+        role: ['renter', 'agent', 'landlord'].includes(role) ? role : 'renter',
       };
 
       const { error: insertError } = await supabase

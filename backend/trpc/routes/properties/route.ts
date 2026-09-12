@@ -51,8 +51,8 @@ export const propertiesRouter = createTRPCRouter({
       return { data: paginated, total: all.length, offset, limit };
     }),
 
-  // Public: any user (logged-in or guest) may submit a property listing
-  create: publicProcedure
+  // Requires auth: only authenticated users (agents/landlords) may submit a property listing
+  create: authedProcedure
     .input(
       z.object({
         title: z.string(),
@@ -102,7 +102,7 @@ export const propertiesRouter = createTRPCRouter({
             if (existing && existing.length > 0) {
               const matched = existing[0] as any;
               if (matched.agent?.phone === input.agent.phone) {
-                console.warn('[Properties] Duplicate property submission detected:', input.title);
+                throw new Error(`Un bien avec ce titre existe déjà pour cet agent: "${input.title}". Veuillez modifier le titre ou vérifier vos annonces existantes.`);
               }
             }
           } catch {
@@ -194,8 +194,22 @@ export const propertiesRouter = createTRPCRouter({
         rejectionReason: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const isSoldOrRented = input.status === 'sold' || input.status === 'rented';
+
+      // ── Role Authorization: verify caller is admin or agent ──────────────
+      if (USE_SUPABASE) {
+        const { data: callerData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', ctx.user.id)
+          .single();
+        const allowedRoles = ['admin', 'super_admin', 'agent', 'landlord'];
+        if (!callerData || !allowedRoles.includes(callerData.role)) {
+          const { TRPCError } = await import('@trpc/server');
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Insufficient permissions to update property status' });
+        }
+      }
 
       if (USE_SUPABASE) {
         const { data: submission, error: fetchError } = await supabase

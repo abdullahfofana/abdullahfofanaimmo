@@ -41,3 +41,18 @@ android/
 .rork
 .env
 rork-eslint.config.js
+
+# Debug / build artifact files (not for version control)
+build_error.txt
+tsc-errors.txt
+sb_ascii.txt
+sb_check.txt
+sb_clean.txt
+sb_diag.txt
+sb_diag2.txt
+supabase_out*.txt
+web.err
+web.log
+web.pid
+*.err
+*.pid

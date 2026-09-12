@@ -771,7 +771,42 @@ function AIPanel({ theme, t }: { theme: DashboardTheme; t: (key: any) => string 
 // Main Screen
 // ─────────────────────────────────────────────────────────────────────────────
 
+function MobileDashboardRestriction() {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0B0F19', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <View style={{ width: 68, height: 68, borderRadius: 20, backgroundColor: 'rgba(5,150,105,0.15)', borderWidth: 1.5, borderColor: 'rgba(5,150,105,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+        <Shield size={32} color="#059669" strokeWidth={2} />
+      </View>
+      <Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '800', marginBottom: 8, textAlign: 'center' }}>
+        Portail Web Exclusif
+      </Text>
+      <Text style={{ color: '#94A3B8', fontSize: 13, textAlign: 'center', lineHeight: 20, marginBottom: 24, paddingHorizontal: 12 }}>
+        Le tableau de bord Business Pro est réservé à l'application web.{'\n'}
+        Utilisez votre navigateur pour accéder à votre espace professionnel.
+      </Text>
+      <TouchableOpacity
+        style={{ backgroundColor: '#059669', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+        onPress={() => router.replace('/(tabs)/home')}
+        activeOpacity={0.85}
+      >
+        <Home size={17} color="#FFFFFF" strokeWidth={2.5} />
+        <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Retour à l'accueil</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ── Platform & Role Guard Wrapper ──────────────────────────────────────────────
 export default function DashboardScreen() {
+  // SECURITY: Company Staff Dashboard is exclusively a Web feature.
+  // Mobile (Android/iOS) users must not access this screen.
+  if (Platform.OS !== 'web') {
+    return <MobileDashboardRestriction />;
+  }
+  return <DashboardScreenContent />;
+}
+
+function DashboardScreenContent() {
   const insets = useSafeAreaInsets();
   const { t, language, setLanguage, toggleLanguage } = useLanguage();
   const { isDesktop, isMobile } = useResponsive();
@@ -1244,14 +1279,6 @@ export default function DashboardScreen() {
               ))}
             </View>
           ),
-        },
-        {
-          icon: <Shield size={16} color={theme.amber} />,
-          bg: theme.amberBg,
-          title: t('dashboard_admin_panel'),
-          sub: language === 'en' ? 'Manage users, content, settings' : 'Gérer utilisateurs, contenu',
-          onPress: () => router.push('/admin'),
-          right: <ChevronRight size={16} color={theme.textMuted} />,
         },
         {
           icon: <LogOut size={16} color={theme.red} />,

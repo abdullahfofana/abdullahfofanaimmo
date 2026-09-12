@@ -134,8 +134,8 @@ const FloatingIcon = ({
 };
 
 export default function AdminLogin({ onLogin }: AdminLoginProps) {
-  const [email, setEmail] = useState('admin@immoci.ci');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -151,20 +151,37 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     setError('');
 
     try {
-      if (signIn) {
-        await signIn(email, password).catch(() => {
-          console.log('[AdminLogin] Local prototype fallback');
-        });
+      // Step 1: Authenticate with Supabase
+      const userData = await signIn(email, password);
+
+      // Step 2: Verify the user has admin role
+      const adminRoles = ['admin', 'super_admin'];
+      if (!userData || !adminRoles.includes(userData.role)) {
+        setError('Accès refusé. Ce compte n\'a pas les droits d\'administration requis.');
+        // Sign out the non-admin user immediately
+        try {
+          const { supabase } = await import('@/backend/supabase');
+          await supabase.auth.signOut();
+        } catch {}
+        setIsLoading(false);
+        return;
       }
+
+      // Step 3: Admin verified — grant access
       onLogin();
     } catch (err: any) {
-      console.warn('[AdminLogin] Sign in warning:', err);
-      onLogin();
+      const msg = err?.message || '';
+      if (msg.includes('Invalid') || msg.includes('incorrect')) {
+        setError('Email ou mot de passe incorrect');
+      } else if (msg.includes('not found') || msg.includes('trouvé')) {
+        setError('Aucun compte trouvé avec cet email');
+      } else {
+        setError('Erreur de connexion. Vérifiez vos identifiants.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
 
 
   return (
@@ -222,23 +239,6 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
               Accès sécurisé au centre de contrôle, modération IA et conformité légale.
             </Text>
           </View>
-
-          {/* 1-Click Instant Demo Button */}
-          <TouchableOpacity
-            style={styles.instantAccessBtn}
-            onPress={onLogin}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={['#059669', '#10B981']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.instantAccessGradient}
-            >
-              <Zap size={18} color="#FFFFFF" fill="#FFFFFF" />
-              <Text style={styles.instantAccessText}>⚡ Accès Direct Super Admin (1-Clic)</Text>
-            </LinearGradient>
-          </TouchableOpacity>
 
 
 

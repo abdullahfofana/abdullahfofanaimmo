@@ -29,8 +29,13 @@ import {
   Edit3,
   CheckCircle2,
   X,
-  Sparkles,
+  MessageSquare,
+  Calendar,
+  ExternalLink,
+  Briefcase,
+  Monitor,
 } from 'lucide-react-native';
+import { Linking } from 'react-native';
 
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
@@ -41,6 +46,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useFavorites } from '@/providers/FavoritesProvider';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import { useResponsive } from '@/constants/breakpoints';
+import { useChat } from '@/providers/ChatProvider';
 
 // ── Row menu item ─────────────────────────────────────────────────────────────
 interface MenuItemProps {
@@ -142,34 +148,90 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { favoriteIds } = useFavorites();
   const { submissions } = usePropertySubmissions();
+  const { conversations } = useChat();
 
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
 
   const userName = user?.name || (language === 'fr' ? 'Jean Kouassi' : 'Jean Kouassi');
   const userEmail = user?.email || 'jean.kouassi@example.com';
   const userRole = user?.role || 'agent';
 
-  const stats = [
-    {
-      value: `${submissions?.length || 0}`,
-      label: language === 'fr' ? 'Annonces' : 'Listings',
-      icon: <Building2 size={16} color={colors.primary} strokeWidth={2} />,
-      onPress: () => router.push('/my-listings'),
-    },
-    {
-      value: `${favoriteIds?.length || 0}`,
-      label: language === 'fr' ? 'Favoris' : 'Saved',
-      icon: <Heart size={16} color="#EF4444" strokeWidth={2} fill="#EF4444" />,
-      onPress: () => router.push('/(tabs)/favorites'),
-    },
-    {
-      value: '4.9 ★',
-      label: language === 'fr' ? 'Confiance' : 'Rating',
-      icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
-      onPress: () => setShowRatingModal(true),
-    },
-  ];
+  const isBusiness = userRole === 'agent' || userRole === 'landlord';
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isCustomer = !isBusiness && !isAdmin;
+
+
+  const stats = useMemo(() => {
+    if (isBusiness) {
+      return [
+        {
+          value: `${submissions?.length || 0}`,
+          label: language === 'fr' ? 'Mes Biens' : 'Listings',
+          icon: <Building2 size={16} color={colors.primary} strokeWidth={2} />,
+          onPress: () => router.push('/my-listings'),
+        },
+        {
+          value: `${conversations?.length || 0}`,
+          label: language === 'fr' ? 'Demandes' : 'Inquiries',
+          icon: <MessageSquare size={16} color="#3B82F6" strokeWidth={2} />,
+          onPress: () => router.push('/dashboard'),
+        },
+        {
+          value: '4.9 ★',
+          label: language === 'fr' ? 'Note Pro' : 'Rating',
+          icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
+          onPress: () => setShowRatingModal(true),
+        },
+      ];
+    }
+
+    if (isAdmin) {
+      return [
+        {
+          value: 'Web',
+          label: language === 'fr' ? 'Portail' : 'Portal',
+          icon: <Monitor size={16} color="#D97706" strokeWidth={2} />,
+          onPress: () => Linking.openURL('https://rork-immoci-mobile-ui-kit-prototype.vercel.app/admin').catch(() => {}),
+        },
+        {
+          value: '0',
+          label: language === 'fr' ? 'Admin Mobile' : 'Mobile Admin',
+          icon: <Shield size={16} color="#EF4444" strokeWidth={2} />,
+          onPress: () => {},
+        },
+        {
+          value: 'Admin',
+          label: language === 'fr' ? 'Rôle Système' : 'System Role',
+          icon: <Shield size={16} color={colors.primary} strokeWidth={2} />,
+          onPress: () => {},
+        },
+      ];
+    }
+
+    // Default: Customer
+    return [
+      {
+        value: `${favoriteIds?.length || 0}`,
+        label: language === 'fr' ? 'Favoris' : 'Saved',
+        icon: <Heart size={16} color="#EF4444" strokeWidth={2} fill="#EF4444" />,
+        onPress: () => router.push('/(tabs)/favorites'),
+      },
+      {
+        value: `${conversations?.length || 0}`,
+        label: language === 'fr' ? 'Messages' : 'Messages',
+        icon: <MessageSquare size={16} color="#10B981" strokeWidth={2} />,
+        onPress: () => setShowRequestsModal(true),
+      },
+      {
+        value: '4.9 ★',
+        label: language === 'fr' ? 'Confiance' : 'Trust Score',
+        icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
+        onPress: () => setShowRatingModal(true),
+      },
+    ];
+  }, [isBusiness, isAdmin, submissions, conversations, favoriteIds, language, colors]);
 
   const handleLogout = () => {
     const title = language === 'fr' ? 'Déconnexion' : 'Log Out';
@@ -241,16 +303,32 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{userName}</Text>
           <Text style={styles.emailText}>{userEmail}</Text>
 
-          {/* Verified badge */}
-          <View style={styles.verifiedBadge}>
-            <Shield size={12} color="#FFFFFF" strokeWidth={2.5} />
+          {/* Role badge */}
+          <View
+            style={[
+              styles.verifiedBadge,
+              isBusiness && { backgroundColor: '#059669' },
+              isAdmin && { backgroundColor: '#D97706' },
+              isCustomer && { backgroundColor: '#0284C7' },
+            ]}
+          >
+            {isBusiness ? (
+              <Building2 size={12} color="#FFFFFF" strokeWidth={2.5} />
+            ) : isAdmin ? (
+              <Shield size={12} color="#FFFFFF" strokeWidth={2.5} />
+            ) : (
+              <User size={12} color="#FFFFFF" strokeWidth={2.5} />
+            )}
             <Text style={styles.verifiedText}>
-              {userRole === 'agent'
-                ? (language === 'fr' ? 'Agent Certifié ImmoCI' : 'Verified Agent')
-                : (language === 'fr' ? 'Compte Acheteur Vérifié' : 'Verified Buyer')}
+              {isBusiness
+                ? (language === 'fr' ? 'Compte Pro • Agent / Agence' : 'Business Account • Agent')
+                : isAdmin
+                ? (language === 'fr' ? 'Compte Administrateur (Web Exclusif)' : 'Admin Account (Web Only)')
+                : (language === 'fr' ? 'Compte Client • Acheteur / Locataire' : 'Customer Account • Buyer / Renter')}
             </Text>
           </View>
         </View>
+
 
         {/* ── STATS CARD ─────────────────────────────────────────── */}
         <View style={styles.statsCard}>
@@ -270,81 +348,155 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* ── ADD PROPERTY CTA ────────────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.addCta}
-          onPress={() => router.push('/add-property')}
-          activeOpacity={0.9}
-        >
-          <View style={styles.addCtaIcon}>
-            <Plus size={20} color={colors.primary} strokeWidth={2.5} />
+        {/* ── ADMIN ON MOBILE NOTICE ─────────────────────────────── */}
+        {isAdmin && (
+          <View style={styles.adminNoticeCard}>
+            <View style={styles.adminNoticeIconRow}>
+              <View style={styles.adminNoticeIconBox}>
+                <Shield size={22} color="#D97706" strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.adminNoticeTitle}>
+                  Tableau de bord Admin réservé au Web
+                </Text>
+                <Text style={styles.adminNoticeSubtitle}>
+                  L'administration générale, la modération globale et la gestion des utilisateurs ne sont pas disponibles sur mobile. Veuillez utiliser votre ordinateur sur immoci.ci/admin.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.adminWebBtn}
+              onPress={() => Linking.openURL('https://rork-immoci-mobile-ui-kit-prototype.vercel.app/admin').catch(() => {})}
+              activeOpacity={0.85}
+            >
+              <ExternalLink size={15} color="#FFFFFF" strokeWidth={2.2} />
+              <Text style={styles.adminWebBtnText}>Ouvrir le portail web (immoci.ci/admin)</Text>
+            </TouchableOpacity>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.addCtaTitle}>{t('nav_add_property') || 'Publier une annonce'}</Text>
-            <Text style={styles.addCtaSub}>
-              {language === 'fr'
-                ? 'Vendez ou louez votre bien en quelques clics'
-                : 'Sell or rent your property in a few taps'}
-            </Text>
-          </View>
-          <ChevronRight size={18} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        )}
 
-        {/* ── MY ACCOUNT ─────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('profile_my_account') || 'Mon Compte'}</Text>
-          <View style={styles.menuCard}>
-            <MenuItem
-              icon={<Heart size={17} color="#EF4444" strokeWidth={2} />}
-              iconBg="rgba(239,68,68,0.10)"
-              title={t('profile_my_favorites') || 'Mes Favoris'}
-              subtitle={`${favoriteIds?.length || 0} ${language === 'fr' ? 'biens enregistrés' : 'saved properties'}`}
-              onPress={() => router.push('/(tabs)/favorites')}
-              colors={colors}
-            />
-            <MenuItem
-              icon={<Building2 size={17} color={colors.primary} strokeWidth={2} />}
-              iconBg={colors.surfaceGreen}
-              title={t('profile_my_listings') || 'Mes Annonces'}
-              subtitle={`${submissions?.length || 0} ${language === 'fr' ? 'annonces publiées' : 'active listings'}`}
-              onPress={() => router.push('/my-listings')}
-              colors={colors}
-            />
-            <MenuItem
-              icon={<Bell size={17} color={colors.accent} strokeWidth={2} />}
-              iconBg={colors.accentMuted}
-              title={language === 'fr' ? 'Notifications & Alertes' : 'Notifications & Alerts'}
-              subtitle={language === 'fr' ? 'Alertes de recherche & mises à jour' : 'Search alerts & updates'}
-              onPress={() => setShowNotificationsModal(true)}
-              colors={colors}
-            />
-            <MenuItem
-              icon={<LayoutDashboard size={17} color={colors.primary} strokeWidth={2} />}
-              iconBg={colors.surfaceGreen}
-              title="Dashboard Pro"
-              subtitle={language === 'fr' ? 'Statistiques & performance marché' : 'Analytics & market insights'}
-              onPress={() => router.push('/dashboard')}
-              colors={colors}
-              isLast
-            />
-          </View>
-        </View>
+        {/* ── BUSINESS OWNER / STAFF EXPERIENCE ──────────────────── */}
+        {isBusiness && (
+          <>
+            {/* Add Property CTA */}
+            <TouchableOpacity
+              style={styles.addCta}
+              onPress={() => router.push('/add-property')}
+              activeOpacity={0.9}
+            >
+              <View style={styles.addCtaIcon}>
+                <Plus size={20} color={colors.primary} strokeWidth={2.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.addCtaTitle}>Publier un nouveau bien</Text>
+                <Text style={styles.addCtaSub}>
+                  Ajouter une villa, appartement ou terrain avec géolocalisation
+                </Text>
+              </View>
+              <ChevronRight size={18} color={colors.primary} strokeWidth={2} />
+            </TouchableOpacity>
 
-        {/* ── ADMIN ──────────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ADMINISTRATION</Text>
-          <View style={styles.menuCard}>
-            <MenuItem
-              icon={<Shield size={17} color={colors.primary} strokeWidth={2} />}
-              iconBg={colors.surfaceGreen}
-              title="Admin & Modération"
-              subtitle={language === 'fr' ? 'Gérer les annonces & utilisateurs' : 'Manage listings & users'}
-              onPress={() => router.push('/admin')}
-              colors={colors}
-              isLast
-            />
-          </View>
-        </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>GESTION BUSINESS & PRO</Text>
+              <View style={styles.menuCard}>
+                <MenuItem
+                  icon={<LayoutDashboard size={17} color={colors.primary} strokeWidth={2} />}
+                  iconBg={colors.surfaceGreen}
+                  title="Dashboard Business Pro"
+                  subtitle="Statistiques, leads & performance marché"
+                  onPress={() => router.push('/dashboard')}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<Building2 size={17} color={colors.primary} strokeWidth={2} />}
+                  iconBg={colors.surfaceGreen}
+                  title="Mes Annonces & Mandats"
+                  subtitle={`${submissions?.length || 0} biens sous gestion`}
+                  onPress={() => router.push('/my-listings')}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<MessageSquare size={17} color="#3B82F6" strokeWidth={2} />}
+                  iconBg="rgba(59,130,246,0.10)"
+                  title="Demandes & Messages Clients"
+                  subtitle={`${conversations?.length || 0} discussions actives`}
+                  onPress={() => setShowRequestsModal(true)}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<Bell size={17} color={colors.accent} strokeWidth={2} />}
+                  iconBg={colors.accentMuted}
+                  title="Notifications Business"
+                  subtitle="Alertes nouveaux prospects & mandats"
+                  onPress={() => setShowNotificationsModal(true)}
+                  colors={colors}
+                  isLast
+                />
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* ── CUSTOMER EXPERIENCE ─────────────────────────────────── */}
+        {isCustomer && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>MON ESPACE CLIENT</Text>
+              <View style={styles.menuCard}>
+                <MenuItem
+                  icon={<Heart size={17} color="#EF4444" strokeWidth={2} />}
+                  iconBg="rgba(239,68,68,0.10)"
+                  title="Mes Favoris"
+                  subtitle={`${favoriteIds?.length || 0} biens enregistrés`}
+                  onPress={() => router.push('/(tabs)/favorites')}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<Calendar size={17} color="#3B82F6" strokeWidth={2} />}
+                  iconBg="rgba(59,130,246,0.10)"
+                  title="Mes Demandes & Visites"
+                  subtitle="Suivi des visites planifiées & demandes"
+                  onPress={() => setShowRequestsModal(true)}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<MessageSquare size={17} color="#10B981" strokeWidth={2} />}
+                  iconBg="rgba(16,185,129,0.10)"
+                  title="Messages & Contacts Agences"
+                  subtitle={`${conversations?.length || 0} échanges en cours`}
+                  onPress={() => setShowRequestsModal(true)}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<Bell size={17} color={colors.accent} strokeWidth={2} />}
+                  iconBg={colors.accentMuted}
+                  title="Alertes de Recherche"
+                  subtitle="Notifications sur les baisses de prix"
+                  onPress={() => setShowNotificationsModal(true)}
+                  colors={colors}
+                  isLast
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.customerUpgradeCard}
+              onPress={() => router.push('/add-property')}
+              activeOpacity={0.9}
+            >
+              <View style={styles.customerUpgradeIcon}>
+                <Building2 size={22} color="#059669" strokeWidth={2.2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.customerUpgradeTitle}>Vous vendez ou louez un bien ?</Text>
+                <Text style={styles.customerUpgradeSub}>
+                  Publiez votre bien sur ImmoCI ou passez en compte Business pour gérer vos mandats.
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#059669" strokeWidth={2} />
+            </TouchableOpacity>
+          </>
+        )}
 
         {/* ── SETTINGS ───────────────────────────────────────────── */}
         <View style={styles.section}>
@@ -454,6 +606,74 @@ export default function ProfileScreen() {
               <Text style={styles.modalPrimaryBtnText}>
                 {language === 'fr' ? 'Fermer' : 'Close'}
               </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── REQUESTS & INQUIRIES MODAL ────────────────────────────── */}
+      <Modal
+        visible={showRequestsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRequestsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MessageSquare size={20} color="#059669" />
+                <Text style={styles.modalTitle}>
+                  {isBusiness ? 'Demandes & Messages Clients' : 'Mes Demandes & Visites'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowRequestsModal(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginVertical: 10 }}>
+              {conversations && conversations.length > 0 ? (
+                conversations.map((c) => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={styles.requestItemCard}
+                    onPress={() => {
+                      setShowRequestsModal(false);
+                      if (c.propertyId) router.push(`/property/${c.propertyId}`);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.requestIcon}>
+                      <Calendar size={18} color="#059669" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.requestTitle} numberOfLines={1}>
+                        {c.property?.title || 'Demande de visite'}
+                      </Text>
+                      <Text style={styles.requestSubtitle} numberOfLines={1}>
+                        {c.lastMessage || 'Demande d\'information reçue'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center' }}>
+                    {isBusiness
+                      ? 'Aucune demande client en attente pour le moment.'
+                      : 'Vous n’avez aucune visite planifiée pour le moment.'}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.modalPrimaryBtn}
+              onPress={() => setShowRequestsModal(false)}
+            >
+              <Text style={styles.modalPrimaryBtnText}>Fermer</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -702,5 +922,124 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 14,
+  },
+
+  // ── Admin Web Notice Card ────────────────────────────────────────────────
+  adminNoticeCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.2,
+    borderColor: 'rgba(217, 119, 6, 0.28)',
+  },
+  adminNoticeIconRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  adminNoticeIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(217, 119, 6, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminNoticeTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: '#92400E',
+    marginBottom: 3,
+  },
+  adminNoticeSubtitle: {
+    fontSize: 12,
+    color: '#B45309',
+    lineHeight: 17,
+  },
+  adminWebBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    backgroundColor: '#D97706',
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  adminWebBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // ── Customer Upgrade / Become Seller Card ────────────────────────────────
+  customerUpgradeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.2,
+    borderColor: 'rgba(5, 150, 105, 0.22)',
+  },
+  customerUpgradeIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  customerUpgradeTitle: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#065F46',
+    marginBottom: 2,
+  },
+  customerUpgradeSub: {
+    fontSize: 11.5,
+    color: '#047857',
+    lineHeight: 16,
+  },
+
+  // ── Requests & Inquiries Modal ───────────────────────────────────────────
+  requestItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  requestIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requestTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  requestSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
   },
 });

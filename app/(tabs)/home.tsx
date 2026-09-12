@@ -1255,12 +1255,6 @@ export default function HomeScreen() {
                   >
                     <Text style={styles.footerLink}>{t('nav_rent')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => router.push('/admin')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLink}>{t('home_footer_admin')}</Text>
-                  </TouchableOpacity>
                 </View>
                 <View style={styles.footerSection}>
                   <Text style={styles.footerTitle}>{t('home_footer_support')}</Text>

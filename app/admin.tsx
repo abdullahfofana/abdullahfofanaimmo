@@ -19,6 +19,8 @@ import {
   Sparkles,
   MessageCircle,
   ChevronLeft,
+  ArrowLeft,
+  Monitor,
   Home,
   LayoutDashboard,
   Settings,
@@ -470,7 +472,201 @@ class AdminErrorBoundary extends React.Component<
   }
 }
 
+function MobileAdminRestrictionScreen() {
+  const webUrl = 'https://rork-immoci-mobile-ui-kit-prototype.vercel.app/admin';
+
+  return (
+    <View style={mobileRestrictedStyles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={mobileRestrictedStyles.card}>
+        <View style={mobileRestrictedStyles.iconBox}>
+          <Shield size={38} color="#059669" strokeWidth={2.2} />
+        </View>
+
+        <View style={mobileRestrictedStyles.badge}>
+          <Text style={mobileRestrictedStyles.badgeText}>PORTAIL WEB EXCLUSIF</Text>
+        </View>
+
+        <Text style={mobileRestrictedStyles.title}>
+          Tableau de Bord Administrateur
+        </Text>
+
+        <Text style={mobileRestrictedStyles.description}>
+          Les fonctions d'administration générale, de modération globale, de gestion des utilisateurs et les paramètres système sont accessibles exclusivement depuis notre application web sur ordinateur.
+        </Text>
+
+        <View style={mobileRestrictedStyles.infoBox}>
+          <View style={mobileRestrictedStyles.infoRow}>
+            <Monitor size={18} color="#059669" strokeWidth={2.2} />
+            <Text style={mobileRestrictedStyles.infoTitle}>Accès réservé sur ordinateur</Text>
+          </View>
+          <Text style={mobileRestrictedStyles.infoText}>
+            Pour des raisons de sécurité renforcée et d'ergonomie avancée (gestion multi-colonnes, graphiques financiers et modération IA), veuillez vous connecter depuis votre navigateur web.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={mobileRestrictedStyles.primaryBtn}
+          onPress={() => Linking.openURL(webUrl).catch(() => {})}
+          activeOpacity={0.85}
+        >
+          <ExternalLink size={18} color="#FFFFFF" strokeWidth={2.4} />
+          <Text style={mobileRestrictedStyles.primaryBtnText}>Ouvrir sur le Web (immoci.ci/admin)</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={mobileRestrictedStyles.secondaryBtn}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/home');
+            }
+          }}
+          activeOpacity={0.85}
+        >
+          <ArrowLeft size={17} color="#0F172A" strokeWidth={2.2} />
+          <Text style={mobileRestrictedStyles.secondaryBtnText}>Retour à l'application</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const mobileRestrictedStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0B0F19',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: '#161F30',
+    borderRadius: 24,
+    padding: 26,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  iconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: 'rgba(5, 150, 105, 0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(5, 150, 105, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.35)',
+    marginBottom: 14,
+  },
+  badgeText: {
+    color: '#F59E0B',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    textAlign: 'center',
+    marginBottom: 10,
+    letterSpacing: -0.4,
+  },
+  description: {
+    fontSize: 13.5,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  infoBox: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 22,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  infoTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E2E8F0',
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 18,
+  },
+  primaryBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    backgroundColor: '#059669',
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14.5,
+    fontWeight: '700',
+  },
+  secondaryBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 13,
+    borderRadius: 14,
+  },
+  secondaryBtnText: {
+    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+});
+
 export default function AdminDashboardWrapper() {
+  // Mobile check: Admin Dashboard is completely restricted from the mobile application
+  if (Platform.OS !== 'web') {
+    return <MobileAdminRestrictionScreen />;
+  }
+
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
