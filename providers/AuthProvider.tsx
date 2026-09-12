@@ -268,11 +268,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       return userData as User;
     } catch (err: any) {
       console.error('[Auth] Sign in error:', err);
-      const errorMessage = err.message?.includes('Invalid')
+      const rawMsg = (err?.message || '').toLowerCase();
+      const errorMessage = rawMsg.includes('not confirmed')
+        ? 'Votre adresse email n\'est pas encore confirmée dans Supabase. Veuillez valider votre email dans Supabase ou utiliser DEV Skip.'
+        : rawMsg.includes('invalid') || rawMsg.includes('credentials')
         ? 'Email ou mot de passe incorrect'
-        : err.message?.includes('email')
+        : rawMsg.includes('email')
         ? 'Email invalide'
-        : 'Erreur lors de la connexion';
+        : err?.message || 'Erreur lors de la connexion';
       setError(errorMessage);
       throw new Error(errorMessage);
     }

@@ -171,10 +171,15 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       onLogin();
     } catch (err: any) {
       const msg = err?.message || '';
-      if (msg.includes('Invalid') || msg.includes('incorrect')) {
+      const lower = msg.toLowerCase();
+      if (lower.includes('not confirmed') || lower.includes('non confirmé')) {
+        setError("Votre adresse email n'est pas encore confirmée dans Supabase. Veuillez valider votre email dans Supabase ou cliquer sur DEV Skip ci-dessous.");
+      } else if (lower.includes('invalid') || lower.includes('incorrect') || lower.includes('credentials')) {
         setError('Email ou mot de passe incorrect');
-      } else if (msg.includes('not found') || msg.includes('trouvé')) {
+      } else if (lower.includes('not found') || lower.includes('trouvé')) {
         setError('Aucun compte trouvé avec cet email');
+      } else if (msg) {
+        setError(msg);
       } else {
         setError('Erreur de connexion. Vérifiez vos identifiants.');
       }
