@@ -35,6 +35,8 @@ import {
   Camera,
   Download,
   Maximize2,
+  Shield,
+  User,
 } from 'lucide-react-native';
 import { useChat } from '@/providers/ChatProvider';
 import { useResponsive } from '@/constants/breakpoints';
@@ -371,6 +373,8 @@ export default function ChatModal() {
 
             {currentMessages.map((msg) => {
               const isOutgoing = msg.senderRole === 'buyer';
+              const isSupportSender = msg.senderRole === 'support' || (isSupportChat && !isOutgoing);
+              const isAgentSender = msg.senderRole === 'agent' || msg.senderRole === 'admin';
 
               return (
                 <View
@@ -380,20 +384,66 @@ export default function ChatModal() {
                     isOutgoing ? styles.msgRowOutgoing : styles.msgRowIncoming,
                   ]}
                 >
-                  {!isOutgoing && !isSupportChat && (
-                    <View style={styles.msgAvatarPlaceholder}>
-                      <Text style={styles.msgAvatarInitial}>
-                        {msg.senderName?.charAt(0) || 'A'}
-                      </Text>
+                  {/* Left Avatar for Support / Agent */}
+                  {!isOutgoing && (
+                    <View style={[
+                      styles.senderAvatarContainer,
+                      isSupportSender ? styles.supportAvatarBg : styles.agentAvatarBg
+                    ]}>
+                      {isSupportSender ? (
+                        <Headphones size={15} color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.senderAvatarInitial}>
+                          {msg.senderName?.charAt(0) || 'A'}
+                        </Text>
+                      )}
                     </View>
                   )}
 
-                  <View
-                    style={[
-                      styles.bubble,
-                      isOutgoing ? styles.bubbleOutgoing : styles.bubbleIncoming,
-                    ]}
-                  >
+                  <View style={{ maxWidth: '82%' }}>
+                    {/* Header above bubble */}
+                    <View style={[
+                      styles.senderHeaderRow,
+                      isOutgoing ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }
+                    ]}>
+                      {isOutgoing ? (
+                        <View style={styles.userLabelBadge}>
+                          <User size={10} color="#64748B" />
+                          <Text style={styles.userLabelText}>
+                            {language === 'fr' ? 'Vous (Client)' : 'You (Client)'}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <Text style={styles.incomingSenderName} numberOfLines={1}>
+                            {msg.senderName || (isSupportSender ? 'Fatou Diallo (Support)' : 'Agent ImmoCI')}
+                          </Text>
+                          <View style={[
+                            styles.roleBadgePill,
+                            isSupportSender ? styles.roleBadgeSupport : styles.roleBadgeAgent
+                          ]}>
+                            {isSupportSender ? (
+                              <Shield size={9} color="#059669" />
+                            ) : (
+                              <Building2 size={9} color="#2563EB" />
+                            )}
+                            <Text style={[
+                              styles.roleBadgeText,
+                              { color: isSupportSender ? '#059669' : '#2563EB' }
+                            ]}>
+                              {isSupportSender ? 'Support Officiel' : 'Agent ImmoCI'}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+
+                    <View
+                      style={[
+                        styles.bubble,
+                        isOutgoing ? styles.bubbleOutgoing : styles.bubbleIncoming,
+                      ]}
+                    >
                     {/* Attachments rendering */}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <View style={{ gap: 6, marginBottom: msg.message ? 6 : 2 }}>
@@ -495,7 +545,8 @@ export default function ChatModal() {
                     </View>
                   </View>
                 </View>
-              );
+              </View>
+            );
             })}
 
             {isSending && (
@@ -902,21 +953,79 @@ const styles = StyleSheet.create({
   msgRowOutgoing: {
     justifyContent: 'flex-end',
   },
-  msgAvatarPlaceholder: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#CBD5E1',
+  senderAvatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
   },
-  msgAvatarInitial: {
-    fontSize: 12,
+  supportAvatarBg: {
+    backgroundColor: '#059669',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  agentAvatarBg: {
+    backgroundColor: '#2563EB',
+  },
+  senderAvatarInitial: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  senderHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 3,
+    paddingHorizontal: 2,
+  },
+  userLabelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(100, 116, 139, 0.08)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  userLabelText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  incomingSenderName: {
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#475569',
+    color: '#1E293B',
+  },
+  roleBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+  },
+  roleBadgeSupport: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 0.5,
+    borderColor: '#A7F3D0',
+  },
+  roleBadgeAgent: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 0.5,
+    borderColor: '#BFDBFE',
+  },
+  roleBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   bubble: {
-    maxWidth: '78%',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 18,

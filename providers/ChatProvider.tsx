@@ -260,7 +260,25 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       }
 
       if (data) {
-        const loadedMsgs = data.map(mapRowToMessage);
+        const rawMsgs = data.map(mapRowToMessage);
+        // Deduplicate messages by ID and sequential identical welcome greetings
+        const seenIds = new Set<string>();
+        const loadedMsgs: ChatMessage[] = [];
+        for (const m of rawMsgs) {
+          if (seenIds.has(m.id)) continue;
+          seenIds.add(m.id);
+          const last = loadedMsgs[loadedMsgs.length - 1];
+          if (
+            last &&
+            last.senderRole === m.senderRole &&
+            last.message === m.message &&
+            m.senderRole === 'support'
+          ) {
+            continue; // Skip duplicate identical welcome greeting
+          }
+          loadedMsgs.push(m);
+        }
+
         setMessages((prev) => {
           const next = { ...prev, [conversationId]: loadedMsgs };
           AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(next)).catch(() => {});
@@ -654,8 +672,9 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       updatedAt: now,
     };
 
+    const welcomeMsgId = `msg-sup-welcome-${currentBuyerId}`;
     const initialSupportMsg: ChatMessage = {
-      id: `msg-sup-${Date.now()}`,
+      id: welcomeMsgId,
       conversationId: supportConvId,
       senderId: 'support-agent-fatou',
       senderName: 'Fatou Diallo (Customer Care)',
@@ -666,8 +685,12 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       status: 'delivered',
     };
 
-    setConversations((prev) => sortConversations([newSupportConv, ...prev]));
-    setMessages((prev) => ({ ...prev, [supportConvId]: [initialSupportMsg] }));
+    setConversations((prev) => sortConversations([newSupportConv, ...prev.filter((c) => c.id !== supportConvId)]));
+    setMessages((prev) => {
+      const existing = prev[supportConvId] || [];
+      if (existing.length > 0) return prev;
+      return { ...prev, [supportConvId]: [initialSupportMsg] };
+    });
     setActiveConversation(newSupportConv);
     setIsChatOpen(true);
 
@@ -690,16 +713,26 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         updated_at: now,
       });
 
-      await safeInsertMessage({
-        id: initialSupportMsg.id,
-        conversation_id: supportConvId,
-        sender_id: initialSupportMsg.senderId,
-        sender_name: initialSupportMsg.senderName,
-        sender_role: initialSupportMsg.senderRole,
-        message: initialSupportMsg.message,
-        is_read: true,
-        created_at: now,
-      });
+      // Avoid duplicate welcome insert in Supabase
+      const { data: existingDbMsgs } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('conversation_id', supportConvId)
+        .limit(1);
+
+      if (!existingDbMsgs || existingDbMsgs.length === 0) {
+        await safeInsertMessage({
+          id: welcomeMsgId,
+          conversation_id: supportConvId,
+          sender_id: initialSupportMsg.senderId,
+          sender_name: initialSupportMsg.senderName,
+          sender_role: initialSupportMsg.senderRole,
+          message: initialSupportMsg.message,
+          attachments: [],
+          is_read: true,
+          created_at: now,
+        });
+      }
     } catch (e) {
       console.warn('[Chat] Supabase insert support error:', e);
     }
@@ -711,7 +744,13 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   const sendMessage = async (
     conversationId: string,
     text: string,
-    attachments?: ChatAttachment[]
+    attachments?: ChatAttachment[],
+    senderOverride?: {
+      role?: MessageRole;
+      name?: string;
+      id?: string;
+      avatar?: string;
+    }
   ): Promise<ChatMessage | null> => {
     const hasAttachments = attachments && attachments.length > 0;
     const trimmed = (text || '').trim();
@@ -720,15 +759,31 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setIsSending(true);
 
     const isStaff =
+      Boolean(senderOverride?.role && senderOverride.role !== 'buyer') ||
       user?.role === 'agent' ||
       user?.role === 'admin' ||
       user?.role === 'support' ||
       user?.role === 'super_admin' ||
       user?.role === 'landlord';
 
-    const senderRole: MessageRole = isStaff ? (user?.role === 'support' ? 'support' : 'agent') : 'buyer';
-    const senderId = user?.id || (isStaff ? 'agent-active' : 'buyer-active');
-    const senderName = user?.name || (isStaff ? 'Agent ImmoCI' : 'Client');
+    const senderRole: MessageRole = senderOverride?.role
+      ? senderOverride.role
+      : isStaff
+      ? (user?.role === 'support' ? 'support' : 'agent')
+      : 'buyer';
+
+    const senderId =
+      senderOverride?.id ||
+      user?.id ||
+      (isStaff ? 'support-agent-fatou' : getGuestId());
+
+    const senderName =
+      senderOverride?.name ||
+      user?.name ||
+      (isStaff
+        ? (senderRole === 'support' ? 'Fatou Diallo (Customer Care)' : 'Agent ImmoCI')
+        : 'Client');
+
     const now = new Date().toISOString();
 
     const tempId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -739,7 +794,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       conversationId,
       senderId,
       senderName,
-      senderAvatar: user?.avatar,
+      senderAvatar: senderOverride?.avatar || user?.avatar,
       senderRole,
       message: trimmed,
       attachments: hasAttachments ? attachments : undefined,

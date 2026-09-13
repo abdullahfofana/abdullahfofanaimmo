@@ -70,7 +70,7 @@ import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
 import type { PropertySubmission } from '@/types/property';
-import type { CaseStatus, CaseStatusChange, ChatAttachment } from '@/types/chat';
+import type { CaseStatus, CaseStatusChange, ChatAttachment, MessageRole } from '@/types/chat';
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/providers/AuthProvider';
@@ -354,7 +354,14 @@ interface SupportTicket {
   conversationId?: string;
   assignedAgent?: string;
   statusHistory?: CaseStatusChange[];
-  messages: { sender: 'user' | 'admin' | 'ai'; text: string; time: string; attachments?: ChatAttachment[] }[];
+  messages: {
+    sender: 'user' | 'admin' | 'ai';
+    senderName?: string;
+    senderRole?: MessageRole;
+    text: string;
+    time: string;
+    attachments?: ChatAttachment[];
+  }[];
 }
 
 const mockTickets: SupportTicket[] = [
@@ -795,6 +802,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         const isAdmin = m.senderRole === 'agent' || m.senderRole === 'admin' || m.senderRole === 'support';
         return {
           sender: isAdmin ? ('admin' as const) : ('user' as const),
+          senderName: m.senderName,
+          senderRole: m.senderRole,
           text: m.message,
           attachments: m.attachments,
           time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1006,7 +1015,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const activeT = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
     if (activeT?.conversationId) {
       // Live ChatProvider message — broadcasts across tabs in real-time
-      await sendChatMessage(activeT.conversationId, textToSend);
+      await sendChatMessage(activeT.conversationId, textToSend, undefined, {
+        role: 'support',
+        name: user?.name || activeRole || 'Fatou Diallo (Customer Care)',
+      });
     } else if (activeT) {
       // Mock ticket fallback
       setMockTicketsState((prev) =>
@@ -2027,6 +2039,35 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         { alignSelf: isAdmin ? 'flex-end' : 'flex-start' },
                       ]}
                     >
+                      {/* Sender identification header */}
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginBottom: 3,
+                        alignSelf: isAdmin ? 'flex-end' : 'flex-start',
+                      }}>
+                        {isAdmin ? (
+                          <>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#10B981' }}>
+                              {msg.senderName || 'Fatou Diallo (Customer Care)'}
+                            </Text>
+                            <View style={{ backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3 }}>
+                              <Text style={{ fontSize: 9, fontWeight: '800', color: '#10B981' }}>SUPPORT</Text>
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <View style={{ backgroundColor: 'rgba(59,130,246,0.15)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3 }}>
+                              <Text style={{ fontSize: 9, fontWeight: '800', color: '#3B82F6' }}>CLIENT</Text>
+                            </View>
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: stitchTheme.textSecondary }}>
+                              {msg.senderName || activeTicket.user || 'Client'}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+
                       <View
                         style={[
                           styles.chatBubble,

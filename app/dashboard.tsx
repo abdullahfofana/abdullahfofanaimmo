@@ -31,6 +31,8 @@ import {
   Send,
   FileText,
   Download,
+  CheckCheck,
+  User,
 } from 'lucide-react-native';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
@@ -62,6 +64,7 @@ import RecentTransactionsList, {
 } from '@/components/dashboard/RecentTransactionsList';
 import FadeInView from '@/components/FadeInView';
 import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/providers/AuthProvider';
 import { useChat } from '@/providers/ChatProvider';
 import { useNotifications } from '@/providers/NotificationProvider';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -820,7 +823,8 @@ function DashboardScreenContent() {
   const [activeTab, setActiveTab] = useState<DashTab>('overview');
   const [period, setPeriod] = useState<'today' | '7d' | '30d' | '90d'>('30d');
 
-  // ── Live Chat & Inquiries ──────────────────────────────────────────────
+  // ── Auth & Live Chat & Inquiries ──────────────────────────────────────────────
+  const { user } = useAuth();
   const {
     conversations,
     messages,
@@ -1478,7 +1482,11 @@ function DashboardScreenContent() {
       if (!dashReplyText.trim() || !activeConv) return;
       const text = dashReplyText.trim();
       setDashReplyText('');
-      await sendMessage(activeConv.id, text);
+      const isSupportConv = activeConv.propertyId === 'support';
+      await sendMessage(activeConv.id, text, undefined, {
+        role: isSupportConv ? 'support' : 'agent',
+        name: user?.name || (isSupportConv ? 'Fatou Diallo (Support ImmoCI)' : 'Agent ImmoCI'),
+      });
       setTimeout(() => {
         dashScrollRef.current?.scrollToEnd({ animated: true });
       }, 80);
@@ -1770,79 +1778,159 @@ function DashboardScreenContent() {
               >
                 {activeMsgs.map(msg => {
                   const isAgentSender = msg.senderRole === 'agent' || msg.senderRole === 'admin' || msg.senderRole === 'support';
+                  const isSupport = msg.senderRole === 'support' || activeConv.propertyId === 'support';
                   return (
                     <View
                       key={msg.id}
                       style={{
                         flexDirection: 'row',
                         justifyContent: isAgentSender ? 'flex-end' : 'flex-start',
+                        alignItems: 'flex-start',
+                        gap: 8,
                       }}
                     >
-                      <View style={{
-                        maxWidth: '78%',
-                        paddingHorizontal: 14,
-                        paddingVertical: 9,
-                        borderRadius: 14,
-                        backgroundColor: isAgentSender ? theme.purple : (isDark ? '#1E2430' : '#F1F5F9'),
-                        borderBottomRightRadius: isAgentSender ? 2 : 14,
-                        borderBottomLeftRadius: !isAgentSender ? 2 : 14,
-                      }}>
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <View style={{ gap: 6, marginBottom: msg.message ? 6 : 2 }}>
-                            {msg.attachments.map((att) => {
-                              if (att.type === 'image') {
-                                return (
-                                  <Image
-                                    key={att.id}
-                                    source={{ uri: att.url }}
-                                    style={{ width: 220, height: 140, borderRadius: 8, backgroundColor: '#000000' }}
-                                    resizeMode="cover"
-                                  />
-                                );
-                              }
-                              return (
-                                <TouchableOpacity
-                                  key={att.id}
-                                  onPress={() => { if (att.url) Linking.openURL(att.url).catch(() => {}); }}
-                                  style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    padding: 8,
-                                    borderRadius: 8,
-                                    backgroundColor: isAgentSender ? 'rgba(255,255,255,0.18)' : (isDark ? '#0F172A' : '#FFFFFF'),
-                                    gap: 8,
-                                    maxWidth: 220,
-                                  }}
-                                >
-                                  <FileText size={16} color={isAgentSender ? '#FFFFFF' : '#059669'} />
-                                  <Text style={{ fontSize: 12, fontWeight: '600', color: isAgentSender ? '#FFFFFF' : theme.text, flex: 1 }} numberOfLines={1}>
-                                    {att.name || 'Document'}
-                                  </Text>
-                                  <Download size={14} color={isAgentSender ? '#FFFFFF' : '#64748B'} />
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        )}
-
-                        {!!msg.message && (
-                          <Text style={{
-                            fontSize: 13,
-                            lineHeight: 18,
-                            color: isAgentSender ? '#FFFFFF' : theme.text,
-                          }}>
-                            {msg.message}
-                          </Text>
-                        )}
-
-                        <Text style={{
-                          fontSize: 10,
-                          color: isAgentSender ? 'rgba(255,255,255,0.7)' : theme.textMuted,
-                          alignSelf: 'flex-end',
-                          marginTop: 3,
+                      {/* Avatar on left for Client */}
+                      {!isAgentSender && (
+                        <View style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 16,
+                          backgroundColor: '#3B82F6',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginTop: 4,
                         }}>
-                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </Text>
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>
+                            {msg.senderName?.charAt(0) || activeConv.buyer?.name?.charAt(0) || 'C'}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={{ maxWidth: '78%' }}>
+                        {/* Header above message bubble */}
+                        <View style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          marginBottom: 3,
+                          justifyContent: isAgentSender ? 'flex-end' : 'flex-start',
+                        }}>
+                          {isAgentSender ? (
+                            <>
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: theme.purpleLight }}>
+                                {msg.senderName || (isSupport ? 'Fatou Diallo (Support)' : 'Vous (Agent)')}
+                              </Text>
+                              <View style={{
+                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                paddingHorizontal: 6,
+                                paddingVertical: 1.5,
+                                borderRadius: 4,
+                                borderWidth: 0.5,
+                                borderColor: '#10B981',
+                              }}>
+                                <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#10B981' }}>
+                                  {isSupport ? 'SUPPORT' : 'AGENT'}
+                                </Text>
+                              </View>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={{ fontSize: 11.5, fontWeight: '700', color: theme.text }}>
+                                {msg.senderName || activeConv.buyer?.name || 'Client ImmoCI'}
+                              </Text>
+                              <View style={{
+                                backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                                paddingHorizontal: 6,
+                                paddingVertical: 1.5,
+                                borderRadius: 4,
+                                borderWidth: 0.5,
+                                borderColor: 'rgba(59, 130, 246, 0.3)',
+                              }}>
+                                <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#3B82F6' }}>
+                                  CLIENT
+                                </Text>
+                              </View>
+                            </>
+                          )}
+                        </View>
+
+                        {/* Bubble */}
+                        <View style={{
+                          paddingHorizontal: 14,
+                          paddingVertical: 9,
+                          borderRadius: 14,
+                          backgroundColor: isAgentSender ? theme.purple : (isDark ? '#1E2430' : '#F1F5F9'),
+                          borderBottomRightRadius: isAgentSender ? 2 : 14,
+                          borderBottomLeftRadius: !isAgentSender ? 2 : 14,
+                          borderWidth: isAgentSender ? 0 : 1,
+                          borderColor: isDark ? '#334155' : '#E2E8F0',
+                        }}>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <View style={{ gap: 6, marginBottom: msg.message ? 6 : 2 }}>
+                              {msg.attachments.map((att) => {
+                                if (att.type === 'image') {
+                                  return (
+                                    <Image
+                                      key={att.id}
+                                      source={{ uri: att.url }}
+                                      style={{ width: 220, height: 140, borderRadius: 8, backgroundColor: '#000000' }}
+                                      resizeMode="cover"
+                                    />
+                                  );
+                                }
+                                return (
+                                  <TouchableOpacity
+                                    key={att.id}
+                                    onPress={() => { if (att.url) Linking.openURL(att.url).catch(() => {}); }}
+                                    style={{
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      padding: 8,
+                                      borderRadius: 8,
+                                      backgroundColor: isAgentSender ? 'rgba(255,255,255,0.18)' : (isDark ? '#0F172A' : '#FFFFFF'),
+                                      gap: 8,
+                                      maxWidth: 220,
+                                    }}
+                                  >
+                                    <FileText size={16} color={isAgentSender ? '#FFFFFF' : '#059669'} />
+                                    <Text style={{ fontSize: 12, fontWeight: '600', color: isAgentSender ? '#FFFFFF' : theme.text, flex: 1 }} numberOfLines={1}>
+                                      {att.name || 'Document'}
+                                    </Text>
+                                    <Download size={14} color={isAgentSender ? '#FFFFFF' : '#64748B'} />
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
+                          )}
+
+                          {!!msg.message && (
+                            <Text style={{
+                              fontSize: 13,
+                              lineHeight: 18,
+                              color: isAgentSender ? '#FFFFFF' : theme.text,
+                            }}>
+                              {msg.message}
+                            </Text>
+                          )}
+
+                          <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: 4,
+                            marginTop: 3,
+                          }}>
+                            <Text style={{
+                              fontSize: 10,
+                              color: isAgentSender ? 'rgba(255,255,255,0.7)' : theme.textMuted,
+                            }}>
+                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                            {isAgentSender && (
+                              <CheckCheck size={12} color="#FFFFFF" strokeWidth={2.2} />
+                            )}
+                          </View>
+                        </View>
                       </View>
                     </View>
                   );
