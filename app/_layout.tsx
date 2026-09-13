@@ -11,6 +11,7 @@ import { FavoritesProvider } from "@/providers/FavoritesProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ChatProvider } from "@/providers/ChatProvider";
+import { NotificationProvider } from "@/providers/NotificationProvider";
 import ChatModal from "@/components/chat/ChatModal";
 import { View, Platform, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { trpc, getBaseUrl } from "@/lib/trpc";
@@ -414,12 +415,14 @@ export default function RootLayout() {
                   <FavoritesProvider>
                     <LanguageProvider>
                       <ChatProvider>
-                        <GestureHandlerRootView style={{ flex: 1 }}>
-                          <View style={{ flex: 1 }}>
-                            <RootLayoutNav />
-                            <ChatModal />
-                          </View>
-                        </GestureHandlerRootView>
+                        <NotificationProvider>
+                          <GestureHandlerRootView style={{ flex: 1 }}>
+                            <View style={{ flex: 1 }}>
+                              <RootLayoutNav />
+                              <ChatModal />
+                            </View>
+                          </GestureHandlerRootView>
+                        </NotificationProvider>
                       </ChatProvider>
                     </LanguageProvider>
                   </FavoritesProvider>

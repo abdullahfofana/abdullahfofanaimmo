@@ -110,6 +110,24 @@ CREATE TABLE IF NOT EXISTS user_favorites (
   PRIMARY KEY (user_id, property_id)
 );
 
+-- ─── 7. NOTIFICATIONS TABLE ───────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  recipient_user_id TEXT NOT NULL,
+  sender_user_id TEXT,
+  sender_name TEXT,
+  conversation_id TEXT REFERENCES conversations(id) ON DELETE CASCADE,
+  message_id TEXT UNIQUE,
+  property_id TEXT,
+  property_title TEXT,
+  notification_type TEXT DEFAULT 'chat_message' CHECK (notification_type IN ('chat_message', 'system', 'lead', 'status_update')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  read_at TIMESTAMP WITH TIME ZONE
+);
+
 -- ─── INDEXES ───────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
 CREATE INDEX IF NOT EXISTS idx_properties_submission_status ON properties("submissionStatus");
@@ -120,6 +138,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_favorites_property ON user_favorites(property_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user_id, is_read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_message_id ON notifications(message_id);
 
 -- ─── AUTOMATIC UPDATED_AT TRIGGER ──────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION set_updated_at()
@@ -383,10 +403,34 @@ CREATE POLICY user_favorites_own_access
   USING (auth.uid()::text = user_id)
   WITH CHECK (auth.uid()::text = user_id);
 
--- ─── 12. SUPABASE REALTIME REPLICATION SETUP ──────────────────────────────────
+-- ─── 12. POLICIES: NOTIFICATIONS ───────────────────────────────────────────────
+DROP POLICY IF EXISTS notifications_recipient_access ON notifications;
+CREATE POLICY notifications_recipient_access
+  ON notifications
+  FOR ALL
+  TO authenticated, anon
+  USING (
+    auth.uid() IS NULL
+    OR auth.uid()::text = recipient_user_id
+    OR EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin', 'agent', 'support')
+    )
+  )
+  WITH CHECK (
+    auth.uid() IS NULL
+    OR auth.uid()::text = recipient_user_id
+    OR EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = auth.uid()::text AND u.role IN ('admin', 'super_admin', 'agent', 'support')
+    )
+  );
+
+-- ─── 13. SUPABASE REALTIME REPLICATION SETUP ──────────────────────────────────
 -- Enable full replica identity so updates (read receipts, unread counts) emit complete row data
 ALTER TABLE messages REPLICA IDENTITY FULL;
 ALTER TABLE conversations REPLICA IDENTITY FULL;
+ALTER TABLE notifications REPLICA IDENTITY FULL;
 
 -- Add tables to the supabase_realtime publication
 DO $$
@@ -403,6 +447,13 @@ BEGIN
     WHERE pubname = 'supabase_realtime' AND tablename = 'conversations'
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
   END IF;
 END $$;
 

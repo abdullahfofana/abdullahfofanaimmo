@@ -75,6 +75,10 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useChat } from '@/providers/ChatProvider';
+import { useNotifications } from '@/providers/NotificationProvider';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import NotificationPanel from '@/components/notifications/NotificationPanel';
+import NotificationToast from '@/components/notifications/NotificationToast';
 
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminIntegrations from '@/components/admin/AdminIntegrations';
@@ -858,6 +862,24 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       }
     }
   }, [chatConversations, activeSection]);
+
+  // ── Real-time Notification System for Admin ──
+  const { setActiveConversationId } = useNotifications();
+  const [isAdminNotifOpen, setIsAdminNotifOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeSection === 'support' && selectedTicketId) {
+      setActiveConversationId(selectedTicketId);
+    } else {
+      setActiveConversationId(null);
+    }
+  }, [activeSection, selectedTicketId, setActiveConversationId]);
+
+  const handleSelectConversationFromNotif = (convId: string) => {
+    setActiveSection('support');
+    setSelectedTicketId(convId);
+    setIsAdminNotifOpen(false);
+  };
 
   const currentRoleDef = useMemo(() => {
     return ROLES.find((r) => r.id === activeRole) || ROLES[0];
@@ -2585,6 +2607,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* ── Main Layout: Sidebar + Content ─────────────────────────────────── */}
       <View style={styles.layoutWrapper}>
+        <NotificationToast
+          onSelectConversation={handleSelectConversationFromNotif}
+          isDark={isDark}
+        />
         {/* Stitch Navigation Rail */}
         <View style={[
           styles.sidebar,
@@ -2726,18 +2752,20 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </Text>
               </TouchableOpacity>
 
-              {/* Notifications Pill */}
-              <View
-                style={[
-                  styles.iconPillBtn,
-                  {
-                    backgroundColor: isDark ? '#1E293B' : '#F1F5F9',
-                    borderColor: stitchTheme.cardBorder,
-                  },
-                ]}
-              >
-                <Bell size={17} color={stitchTheme.textSecondary} />
-                {pendingSubmissions.length > 0 && <View style={styles.bellDot} />}
+              {/* Real-time Notifications Bell & Panel */}
+              <View style={{ position: 'relative', zIndex: 9999 }}>
+                <NotificationBell
+                  isOpen={isAdminNotifOpen}
+                  onPress={() => setIsAdminNotifOpen((prev) => !prev)}
+                  color={stitchTheme.textSecondary}
+                  backgroundColor={isDark ? '#1E293B' : '#F1F5F9'}
+                />
+                <NotificationPanel
+                  isOpen={isAdminNotifOpen}
+                  onClose={() => setIsAdminNotifOpen(false)}
+                  onSelectConversation={handleSelectConversationFromNotif}
+                  isDark={isDark}
+                />
               </View>
             </View>
           </View>

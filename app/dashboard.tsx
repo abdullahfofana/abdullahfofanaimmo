@@ -63,6 +63,10 @@ import RecentTransactionsList, {
 import FadeInView from '@/components/FadeInView';
 import { trpc } from '@/lib/trpc';
 import { useChat } from '@/providers/ChatProvider';
+import { useNotifications } from '@/providers/NotificationProvider';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import NotificationPanel from '@/components/notifications/NotificationPanel';
+import NotificationToast from '@/components/notifications/NotificationToast';
 import type { ChatConversation, ChatMessage } from '@/types/chat';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -829,6 +833,25 @@ function DashboardScreenContent() {
   const [dashReplyText, setDashReplyText] = useState<string>('');
   const [searchConvQuery, setSearchConvQuery] = useState<string>('');
 
+  // ── Real-time Chat Notifications for Customer Care / Staff ──
+  const { setActiveConversationId } = useNotifications();
+  const [isNotifPanelOpen, setIsNotifPanelOpen] = useState<boolean>(false);
+
+  // Synchronize actively viewed conversation to suppress intrusive notifications
+  useEffect(() => {
+    if (activeTab === 'messages' && selectedConvId) {
+      setActiveConversationId(selectedConvId);
+    } else {
+      setActiveConversationId(null);
+    }
+  }, [activeTab, selectedConvId, setActiveConversationId]);
+
+  const handleSelectConversationFromNotif = (convId: string) => {
+    setActiveTab('messages');
+    setSelectedConvId(convId);
+    setIsNotifPanelOpen(false);
+  };
+
   // ── Real data from tRPC backend ──────────────────────────────────────────
   const { data: propertiesData } = trpc.properties.list.useQuery({ limit: 100, offset: 0 });
   const { data: activitiesData } = trpc.activities.getRecent.useQuery();
@@ -1003,11 +1026,21 @@ function DashboardScreenContent() {
         {/* Animated Dark/Light Toggle in Header */}
         <ThemeTogglePill isDark={isDark} onToggle={toggleTheme} />
 
-        {/* Bell */}
-        <TouchableOpacity style={[ds.iconBtn, { backgroundColor: theme.surfaceAlt }]} activeOpacity={0.7}>
-          <Bell size={15} color={theme.textSecondary} strokeWidth={2} />
-          <View style={[ds.dot, { backgroundColor: theme.red }]} />
-        </TouchableOpacity>
+        {/* Real-time Notification Bell & Panel */}
+        <View style={{ position: 'relative', zIndex: 9999 }}>
+          <NotificationBell
+            isOpen={isNotifPanelOpen}
+            onPress={() => setIsNotifPanelOpen((prev) => !prev)}
+            color={theme.textSecondary}
+            backgroundColor={theme.surfaceAlt}
+          />
+          <NotificationPanel
+            isOpen={isNotifPanelOpen}
+            onClose={() => setIsNotifPanelOpen(false)}
+            onSelectConversation={handleSelectConversationFromNotif}
+            isDark={isDark}
+          />
+        </View>
 
         {/* Avatar */}
         <TouchableOpacity style={ds.avatarBtn} onPress={() => setActiveTab('settings')} activeOpacity={0.8}>
@@ -1911,6 +1944,10 @@ function DashboardScreenContent() {
 
   return (
     <View style={[ds.root, { backgroundColor: theme.bg }]}>
+      <NotificationToast
+        onSelectConversation={handleSelectConversationFromNotif}
+        isDark={isDark}
+      />
       {isDesktop && (
         <Sidebar
           activeTab={activeTab}
