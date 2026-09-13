@@ -98,6 +98,28 @@ async function safeInsertMessage(data: Record<string, any>) {
   }
 }
 
+let cachedGuestId: string = '';
+export function getGuestId(): string {
+  if (!cachedGuestId) {
+    if (typeof window !== 'undefined' && (window as any).localStorage) {
+      try {
+        const stored = (window as any).localStorage.getItem('@immoci_chat_guest_id');
+        if (stored) {
+          cachedGuestId = stored;
+          return cachedGuestId;
+        }
+      } catch {}
+    }
+    cachedGuestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    if (typeof window !== 'undefined' && (window as any).localStorage) {
+      try {
+        (window as any).localStorage.setItem('@immoci_chat_guest_id', cachedGuestId);
+      } catch {}
+    }
+  }
+  return cachedGuestId;
+}
+
 export const [ChatProvider, useChat] = createContextHook(() => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
@@ -416,19 +438,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     property: Property,
     agentOverride?: any
   ): Promise<ChatConversation | null> => {
-    const currentBuyerId = user?.id;
-    if (!currentBuyerId) {
-      Alert.alert(
-        'Connexion requise',
-        'Veuillez vous connecter pour contacter l\'agence par chat.',
-        [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Se connecter', onPress: () => router.push('/auth') },
-        ]
-      );
-      return null;
-    }
-
+    const currentBuyerId = user?.id || getGuestId();
     const currentBuyerName = user?.name || 'Acheteur Intéressé';
     const currentBuyerRole: MessageRole = 'buyer';
 
@@ -580,18 +590,9 @@ export const [ChatProvider, useChat] = createContextHook(() => {
 
   // 8. Start Support Conversation
   const startSupportConversation = async (): Promise<ChatConversation | null> => {
-    const currentBuyerId = user?.id;
-    if (!currentBuyerId) {
-      Alert.alert(
-        'Connexion requise',
-        'Veuillez vous connecter pour contacter le support client.',
-        [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Se connecter', onPress: () => router.push('/auth') },
-        ]
-      );
-      return null;
-    }
+    const currentBuyerId = user?.id || getGuestId();
+    const currentBuyerName = user?.name || 'Client ImmoCI';
+    const currentBuyerPhone = user?.phone || '';
 
     const existing = conversations.find(
       (c) => c.propertyId === 'support' && c.buyer.id === currentBuyerId
@@ -985,6 +986,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     setActiveConversation,
     startOrGetConversation,
     startSupportConversation,
+    openSupportChat: startSupportConversation,
     sendMessage,
     updateCaseStatus,
     markAsRead,

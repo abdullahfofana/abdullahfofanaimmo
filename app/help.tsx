@@ -88,8 +88,13 @@ export default function HelpScreen() {
   const { startSupportConversation } = useChat();
   const { language } = useLanguage();
 
-  const handleSupportChat = () => {
-    startSupportConversation();
+  const handleSupportChat = async () => {
+    try {
+      console.log('[Help] Starting live support chat...');
+      await startSupportConversation();
+    } catch (err) {
+      console.warn('[Help] Support chat error:', err);
+    }
   };
 
   const handleCall = () => {
