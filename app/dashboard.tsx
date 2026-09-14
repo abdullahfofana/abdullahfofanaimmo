@@ -65,7 +65,7 @@ import RecentTransactionsList, {
 import FadeInView from '@/components/FadeInView';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/providers/AuthProvider';
-import { useChat } from '@/providers/ChatProvider';
+import { useChat, cleanCustomerFacingName } from '@/providers/ChatProvider';
 import { useNotifications } from '@/providers/NotificationProvider';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import NotificationPanel from '@/components/notifications/NotificationPanel';
@@ -1495,7 +1495,7 @@ function DashboardScreenContent() {
       const isSupportConv = activeConv.propertyId === 'support';
       await sendMessage(activeConv.id, text, undefined, {
         role: isSupportConv ? 'support' : 'agent',
-        name: user?.name || (isSupportConv ? 'Fatou Diallo (Support ImmoCI)' : 'Agent ImmoCI'),
+        name: user?.name ? cleanCustomerFacingName(user.name, isSupportConv) : (isSupportConv ? 'Fatou Diallo' : 'Agent ImmoCI'),
       });
       setTimeout(() => {
         dashScrollRef.current?.scrollToEnd({ animated: true });
@@ -1883,7 +1883,7 @@ function DashboardScreenContent() {
                           {isAgentSender ? (
                             <>
                               <Text style={{ fontSize: 11, fontWeight: '700', color: theme.purpleLight }}>
-                                {msg.senderName || (isSupport ? 'Fatou Diallo (Support)' : 'Vous (Agent)')}
+                                {cleanCustomerFacingName(msg.senderName, isSupport) || (isSupport ? 'Fatou Diallo' : 'Vous (Agent)')}
                               </Text>
                               <View style={{
                                 backgroundColor: 'rgba(16, 185, 129, 0.15)',

@@ -74,7 +74,7 @@ import type { CaseStatus, CaseStatusChange, ChatAttachment, MessageRole } from '
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useAuth } from '@/providers/AuthProvider';
-import { useChat } from '@/providers/ChatProvider';
+import { useChat, cleanCustomerFacingName } from '@/providers/ChatProvider';
 import { useNotifications } from '@/providers/NotificationProvider';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import NotificationPanel from '@/components/notifications/NotificationPanel';
@@ -1030,7 +1030,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       // Live ChatProvider message — broadcasts across tabs in real-time
       await sendChatMessage(activeT.conversationId, textToSend, undefined, {
         role: 'support',
-        name: user?.name || activeRole || 'Fatou Diallo (Customer Care)',
+        name: user?.name ? cleanCustomerFacingName(user.name, true) : 'Fatou Diallo',
       });
     } else if (activeT) {
       // Mock ticket fallback
@@ -2118,7 +2118,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         {isAdmin ? (
                           <>
                             <Text style={{ fontSize: 11, fontWeight: '700', color: '#10B981' }}>
-                              {msg.senderName || 'Fatou Diallo (Customer Care)'}
+                              {cleanCustomerFacingName(msg.senderName, true)}
                             </Text>
                             <View style={{ backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 3 }}>
                               <Text style={{ fontSize: 9, fontWeight: '800', color: '#10B981' }}>SUPPORT</Text>

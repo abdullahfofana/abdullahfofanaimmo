@@ -332,7 +332,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                 try {
                   await skipAuth({
                     role: 'super_admin',
-                    name: 'Fatou Diallo (Super Admin)',
+                    name: 'Fatou Diallo',
                     id: 'support-agent-fatou',
                   });
                 } catch {}

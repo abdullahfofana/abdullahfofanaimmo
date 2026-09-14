@@ -27,14 +27,39 @@ const sortConversations = (convs: ChatConversation[]) => {
   );
 };
 
+/**
+ * Strips technical/internal administrator roles from customer-facing display names.
+ * Ensures customers only see human-friendly names (e.g. "Fatou Diallo", "Customer Care").
+ */
+export function cleanCustomerFacingName(name?: string, isSupport = false): string {
+  if (!name || typeof name !== 'string') {
+    return isSupport ? 'Customer Care' : 'Agent ImmoCI';
+  }
+
+  const cleaned = name
+    .replace(/\s*\((?:Super\s*Admin|super_admin|SuperAdmin|Admin|admin)\)/gi, '')
+    .replace(/\s*[-–—]\s*(?:Super\s*Admin|super_admin|SuperAdmin|Admin|admin)/gi, '')
+    .replace(/\bSuper\s+Admin\b/gi, isSupport ? 'Customer Care' : '')
+    .replace(/\bsuper_admin\b/gi, isSupport ? 'Customer Care' : '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  return cleaned || (isSupport ? 'Customer Care' : 'Agent ImmoCI');
+}
+
 // Map database row to ChatConversation type
 function mapRowToConversation(row: any): ChatConversation {
+  const isSupport = row.property_id === 'support';
+  const rawAgent = row.agent_data || { id: row.agent_id, name: 'Agent', role: 'agent' };
   return {
     id: row.id,
     propertyId: row.property_id,
     property: row.property_data || undefined,
     buyer: row.buyer_data || { id: row.buyer_id, name: 'Client', role: 'buyer' },
-    agent: row.agent_data || { id: row.agent_id, name: 'Agent', role: 'agent' },
+    agent: {
+      ...rawAgent,
+      name: cleanCustomerFacingName(rawAgent.name, isSupport),
+    },
     lastMessage: row.last_message || '',
     lastMessageAt: row.last_message_at || row.updated_at || new Date().toISOString(),
     unreadCountBuyer: row.unread_count_buyer || 0,
@@ -50,11 +75,12 @@ function mapRowToConversation(row: any): ChatConversation {
 
 // Map database row to ChatMessage type
 function mapRowToMessage(row: any): ChatMessage {
+  const isSupport = row.sender_role === 'support';
   return {
     id: row.id,
     conversationId: row.conversation_id,
     senderId: row.sender_id,
-    senderName: row.sender_name || 'Utilisateur',
+    senderName: cleanCustomerFacingName(row.sender_name, isSupport),
     senderAvatar: row.sender_avatar || undefined,
     senderRole: (row.sender_role as MessageRole) || 'buyer',
     message: row.message || '',
@@ -755,7 +781,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       },
       agent: {
         id: 'support-agent-fatou',
-        name: 'Fatou Diallo (Customer Care)',
+        name: 'Fatou Diallo',
         role: 'support',
         avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop',
         phone: '+225 07 00 00 00 00',
@@ -775,7 +801,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       id: welcomeMsgId,
       conversationId: supportConvId,
       senderId: 'support-agent-fatou',
-      senderName: 'Fatou Diallo (Customer Care)',
+      senderName: 'Fatou Diallo',
       senderRole: 'support',
       message: 'Bonjour ! Comment pouvons-nous vous aider aujourd’hui dans votre recherche immobilière ?',
       timestamp: now,
@@ -875,12 +901,14 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       user?.id ||
       (isStaff ? 'support-agent-fatou' : getGuestId());
 
-    const senderName =
+    const rawSenderName =
       senderOverride?.name ||
       user?.name ||
       (isStaff
-        ? (senderRole === 'support' ? 'Fatou Diallo (Customer Care)' : 'Agent ImmoCI')
+        ? (senderRole === 'support' ? 'Fatou Diallo' : 'Agent ImmoCI')
         : 'Client');
+
+    const senderName = cleanCustomerFacingName(rawSenderName, senderRole === 'support');
 
     const now = new Date().toISOString();
 

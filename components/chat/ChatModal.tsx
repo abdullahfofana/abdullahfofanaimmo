@@ -39,7 +39,7 @@ import {
   User,
 } from 'lucide-react-native';
 import { useAuth } from '@/providers/AuthProvider';
-import { useChat, getGuestId } from '@/providers/ChatProvider';
+import { useChat, getGuestId, cleanCustomerFacingName } from '@/providers/ChatProvider';
 import { useResponsive } from '@/constants/breakpoints';
 import { useLanguage } from '@/providers/LanguageProvider';
 import type { ChatAttachment } from '@/types/chat';
@@ -227,7 +227,11 @@ export default function ChatModal() {
 
   const isSupportChat = activeConversation.propertyId === 'support';
   const property = activeConversation.property;
-  const participant = activeConversation.agent;
+  const rawParticipant = activeConversation.agent;
+  const participant = {
+    ...rawParticipant,
+    name: isSupportChat ? 'Fatou Diallo' : cleanCustomerFacingName(rawParticipant?.name, false),
+  };
 
   const formatMessageTime = (isoString: string) => {
     try {
@@ -312,7 +316,7 @@ export default function ChatModal() {
                 </View>
                 <Text style={styles.participantRole}>
                   {isSupportChat
-                    ? 'Assistance ImmoCI 24/7'
+                    ? 'Customer Care'
                     : `Agent Responsable · ${participant.phone || 'ImmoCI Certifié'}`}
                 </Text>
               </View>
@@ -453,7 +457,7 @@ export default function ChatModal() {
                       ) : (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                           <Text style={styles.incomingSenderName} numberOfLines={1}>
-                            {msg.senderName || (isSupportSender ? 'Fatou Diallo (Support)' : 'Agent ImmoCI')}
+                            {cleanCustomerFacingName(msg.senderName, isSupportSender)}
                           </Text>
                           <View style={[
                             styles.roleBadgePill,
@@ -468,7 +472,7 @@ export default function ChatModal() {
                               styles.roleBadgeText,
                               { color: isSupportSender ? '#059669' : '#2563EB' }
                             ]}>
-                              {isSupportSender ? 'Support Officiel' : 'Agent ImmoCI'}
+                              {isSupportSender ? 'Customer Care' : 'Agent ImmoCI'}
                             </Text>
                           </View>
                         </View>
@@ -702,7 +706,7 @@ export default function ChatModal() {
               <View style={styles.supportRecipientBadge}>
                 <Headphones size={11} color="#64748B" />
                 <Text style={styles.supportRecipientBadgeText}>
-                  {language === 'fr' ? 'Support (Fatou)' : 'Support (Fatou)'}
+                  {language === 'fr' ? 'Customer Care' : 'Customer Care'}
                 </Text>
               </View>
             </View>

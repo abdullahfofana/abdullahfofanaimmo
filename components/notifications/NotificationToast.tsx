@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { MessageSquare, X, ArrowRight, Building2 } from 'lucide-react-native';
 import { useNotifications } from '@/providers/NotificationProvider';
+import { cleanCustomerFacingName } from '@/providers/ChatProvider';
 
 interface NotificationToastProps {
   onSelectConversation: (conversationId: string) => void;
@@ -54,7 +55,7 @@ export default function NotificationToast({
       >
         <View style={styles.topRow}>
           <Text style={[styles.senderName, { color: text }]} numberOfLines={1}>
-            {activeToast.senderName}
+            {cleanCustomerFacingName(activeToast.senderName, activeToast.senderRole === 'support')}
           </Text>
           <View style={styles.badgeNew}>
             <Text style={styles.badgeNewText}>NOUVEAU</Text>

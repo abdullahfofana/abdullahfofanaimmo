@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 import { useNotifications, NotificationItem } from '@/providers/NotificationProvider';
+import { cleanCustomerFacingName } from '@/providers/ChatProvider';
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -184,7 +185,7 @@ export default function NotificationPanel({
                   <View style={styles.itemBody}>
                     <View style={styles.itemTopRow}>
                       <Text style={[styles.customerName, { color: text }]} numberOfLines={1}>
-                        {item.senderName}
+                        {cleanCustomerFacingName(item.senderName, item.senderRole === 'support')}
                       </Text>
                       <Text style={[styles.timeText, { color: textMuted }]}>
                         {formatRelativeTime(item.createdAt)}
