@@ -84,7 +84,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
 
   // 4. Fetch initial notifications from Supabase
   const loadDatabaseNotifications = useCallback(async () => {
-    if (!user?.id || Platform.OS !== 'web') return;
+    if (!user?.id) return;
 
     const isStaff =
       user.role === 'agent' ||
@@ -288,7 +288,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
 
   // 7. Supabase Realtime Subscription
   useEffect(() => {
-    if (Platform.OS !== 'web' || !supabase || typeof supabase.channel !== 'function') {
+    if (!supabase || typeof supabase.channel !== 'function') {
       return;
     }
 
@@ -321,7 +321,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
-        const bc = new BroadcastChannel('immoci_chat_sync_channel');
+        const bc = new BroadcastChannel('immoci_live_chat_sync');
         bc.onmessage = (event) => {
           const data = event.data;
           if (data && data.type === 'NEW_MESSAGE' && data.message) {

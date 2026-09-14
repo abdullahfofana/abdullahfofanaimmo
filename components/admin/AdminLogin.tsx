@@ -139,7 +139,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const { signIn, skipAuth } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -328,7 +328,16 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                 gap: 8,
                 backgroundColor: 'rgba(245, 158, 11, 0.08)',
               }}
-              onPress={onLogin}
+              onPress={async () => {
+                try {
+                  await skipAuth({
+                    role: 'super_admin',
+                    name: 'Fatou Diallo (Super Admin)',
+                    id: 'support-agent-fatou',
+                  });
+                } catch {}
+                onLogin();
+              }}
               activeOpacity={0.75}
             >
               <Text style={{ fontSize: 11, letterSpacing: 1.2, color: '#F59E0B', fontWeight: '600', textTransform: 'uppercase' }}>

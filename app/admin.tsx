@@ -781,6 +781,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     sendMessage: sendChatMessage,
     updateCaseStatus,
     markAsRead: markChatAsRead,
+    loadMessagesForConversation,
+    connectionStatus,
   } = useChat();
 
   const [mockTicketsState, setMockTicketsState] = useState<SupportTicket[]>(mockTickets);
@@ -862,15 +864,26 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     }
   }, [activeSection, selectedTicketId, chatMessagesMap]);
 
-  // Auto-select conversation with unread messages
+  // Auto-hydrate messages when selected conversation changes or tickets load
+  useEffect(() => {
+    const activeT = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
+    if (activeT?.conversationId && loadMessagesForConversation) {
+      loadMessagesForConversation(activeT.conversationId);
+    }
+  }, [selectedTicketId, tickets.length, loadMessagesForConversation]);
+
+  // Auto-select conversation with unread messages or first live conversation
   useEffect(() => {
     if (activeSection === 'support' && chatConversations.length > 0) {
       const withUnread = chatConversations.find((c) => c.unreadCountAgent > 0);
+      const isCurrentInLive = chatConversations.some((c) => c.id === selectedTicketId);
       if (withUnread && withUnread.id !== selectedTicketId) {
         setSelectedTicketId(withUnread.id);
+      } else if (!isCurrentInLive && chatConversations[0]) {
+        setSelectedTicketId(chatConversations[0].id);
       }
     }
-  }, [chatConversations, activeSection]);
+  }, [chatConversations, activeSection, selectedTicketId]);
 
   // ── Real-time Notification System for Admin ──
   const { setActiveConversationId } = useNotifications();
@@ -1751,6 +1764,61 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {language === 'fr'
                 ? 'Gestion dédiée du support client et suivi en temps réel du statut des dossiers'
                 : 'Dedicated customer care desk with live case status tracking & management'}
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 20,
+              backgroundColor:
+                connectionStatus === 'connected'
+                  ? 'rgba(16, 185, 129, 0.1)'
+                  : connectionStatus === 'reconnecting'
+                  ? 'rgba(245, 158, 11, 0.1)'
+                  : 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 1,
+              borderColor:
+                connectionStatus === 'connected'
+                  ? 'rgba(16, 185, 129, 0.3)'
+                  : connectionStatus === 'reconnecting'
+                  ? 'rgba(245, 158, 11, 0.3)'
+                  : 'rgba(239, 68, 68, 0.3)',
+            }}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor:
+                  connectionStatus === 'connected'
+                    ? '#10B981'
+                    : connectionStatus === 'reconnecting'
+                    ? '#F59E0B'
+                    : '#EF4444',
+              }}
+            />
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '600',
+                color:
+                  connectionStatus === 'connected'
+                    ? '#10B981'
+                    : connectionStatus === 'reconnecting'
+                    ? '#F59E0B'
+                    : '#EF4444',
+              }}
+            >
+              {connectionStatus === 'connected'
+                ? (language === 'fr' ? 'Temps Réel Actif' : 'Real-time Live')
+                : connectionStatus === 'reconnecting'
+                ? (language === 'fr' ? 'Reconnexion...' : 'Reconnecting...')
+                : (language === 'fr' ? 'Hors ligne' : 'Offline')}
             </Text>
           </View>
         </View>

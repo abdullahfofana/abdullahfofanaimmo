@@ -84,6 +84,7 @@ export default function ChatModal() {
     messages,
     sendMessage,
     isSending,
+    connectionStatus,
   } = useChat();
   const { user } = useAuth();
 
@@ -280,9 +281,33 @@ export default function ChatModal() {
                   <Text style={styles.participantName} numberOfLines={1}>
                     {participant.name}
                   </Text>
-                  <View style={styles.onlineBadge}>
-                    <View style={styles.onlineDot} />
-                    <Text style={styles.onlineText}>En ligne</Text>
+                  <View
+                    style={[
+                      styles.onlineBadge,
+                      connectionStatus === 'reconnecting' && { backgroundColor: 'rgba(245, 158, 11, 0.12)' },
+                      connectionStatus === 'disconnected' && { backgroundColor: 'rgba(239, 68, 68, 0.12)' },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.onlineDot,
+                        connectionStatus === 'reconnecting' && { backgroundColor: '#F59E0B' },
+                        connectionStatus === 'disconnected' && { backgroundColor: '#EF4444' },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.onlineText,
+                        connectionStatus === 'reconnecting' && { color: '#B45309' },
+                        connectionStatus === 'disconnected' && { color: '#B91C1C' },
+                      ]}
+                    >
+                      {connectionStatus === 'connected'
+                        ? (language === 'fr' ? 'En direct' : 'Live')
+                        : connectionStatus === 'reconnecting'
+                        ? (language === 'fr' ? 'Reconnexion...' : 'Reconnecting...')
+                        : (language === 'fr' ? 'Hors ligne' : 'Offline')}
+                    </Text>
                   </View>
                 </View>
                 <Text style={styles.participantRole}>

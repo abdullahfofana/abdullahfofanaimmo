@@ -1,6 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Platform, Alert } from 'react-native';
+import { Platform, Alert, AppState, type AppStateStatus } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/backend/supabase';
@@ -98,25 +98,34 @@ async function safeInsertMessage(data: Record<string, any>) {
   }
 }
 
+const GUEST_ID_STORAGE_KEY = '@immoci_chat_guest_id';
 let cachedGuestId: string = '';
+
+// Preload guest ID from AsyncStorage for native mobile apps
+AsyncStorage.getItem(GUEST_ID_STORAGE_KEY).then((stored) => {
+  if (stored) cachedGuestId = stored;
+}).catch(() => {});
+
 export function getGuestId(): string {
-  if (!cachedGuestId) {
-    if (typeof window !== 'undefined' && (window as any).localStorage) {
-      try {
-        const stored = (window as any).localStorage.getItem('@immoci_chat_guest_id');
-        if (stored) {
-          cachedGuestId = stored;
-          return cachedGuestId;
-        }
-      } catch {}
-    }
-    cachedGuestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    if (typeof window !== 'undefined' && (window as any).localStorage) {
-      try {
-        (window as any).localStorage.setItem('@immoci_chat_guest_id', cachedGuestId);
-      } catch {}
-    }
+  if (cachedGuestId) return cachedGuestId;
+
+  if (typeof window !== 'undefined' && (window as any).localStorage) {
+    try {
+      const stored = (window as any).localStorage.getItem(GUEST_ID_STORAGE_KEY);
+      if (stored) {
+        cachedGuestId = stored;
+        return cachedGuestId;
+      }
+    } catch {}
   }
+
+  cachedGuestId = `guest-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  if (typeof window !== 'undefined' && (window as any).localStorage) {
+    try {
+      (window as any).localStorage.setItem(GUEST_ID_STORAGE_KEY, cachedGuestId);
+    } catch {}
+  }
+  AsyncStorage.setItem(GUEST_ID_STORAGE_KEY, cachedGuestId).catch(() => {});
   return cachedGuestId;
 }
 
@@ -128,10 +137,14 @@ export const [ChatProvider, useChat] = createContextHook(() => {
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'reconnecting' | 'disconnected'>('disconnected');
 
   const broadcastChannelRef = useRef<any>(null);
   const activeConversationRef = useRef<ChatConversation | null>(null);
   const userRef = useRef(user);
+  const channelRef = useRef<any>(null);
+  const reconnectTimeoutRef = useRef<any>(null);
+  const reconnectAttemptsRef = useRef<number>(0);
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
@@ -206,22 +219,20 @@ export const [ChatProvider, useChat] = createContextHook(() => {
         } catch {}
       }
 
-      if (!user?.id) {
-        setIsLoading(false);
-        return;
-      }
+      const currentUser = userRef.current;
+      const currentBuyerId = currentUser?.id || getGuestId();
 
       const isStaff =
-        user.role === 'admin' ||
-        user.role === 'super_admin' ||
-        user.role === 'agent' ||
-        user.role === 'landlord' ||
-        user.role === 'support';
+        currentUser?.role === 'admin' ||
+        currentUser?.role === 'super_admin' ||
+        currentUser?.role === 'agent' ||
+        currentUser?.role === 'landlord' ||
+        currentUser?.role === 'support';
 
       let query = supabase.from('conversations').select('*');
       if (!isStaff) {
-        // Customers only query their own conversations
-        query = query.eq('buyer_id', user.id);
+        // Customers query their conversations by buyer ID (auth UID or persistent guest ID)
+        query = query.eq('buyer_id', currentBuyerId);
       }
 
       const { data, error } = await query.order('last_message_at', { ascending: false });
@@ -245,8 +256,9 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     loadConversations();
   }, [loadConversations]);
 
-  // 3. Fetch messages for a conversation from Supabase
+  // 3. Fetch messages for a conversation from Supabase with strict ordering & deduplication
   const loadMessagesForConversation = useCallback(async (conversationId: string) => {
+    if (!conversationId) return;
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -279,6 +291,11 @@ export const [ChatProvider, useChat] = createContextHook(() => {
           loadedMsgs.push(m);
         }
 
+        // Guarantee strict chronological order by server timestamp
+        loadedMsgs.sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
         setMessages((prev) => {
           const next = { ...prev, [conversationId]: loadedMsgs };
           AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(next)).catch(() => {});
@@ -306,10 +323,15 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       let nextList: ChatMessage[];
       if (existsIndex >= 0) {
         // Reconcile optimistic message with confirmed server message
-        nextList = currentList.map((m, i) => (i === existsIndex ? { ...msg, status: 'delivered' } : m));
+        nextList = currentList.map((m, i) => (i === existsIndex ? { ...m, ...msg, status: 'delivered' } : m));
       } else {
         nextList = [...currentList, msg];
       }
+
+      // Guarantee strict chronological order by server timestamp
+      nextList.sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
 
       const nextMap = { ...prev, [msg.conversationId]: nextList };
       AsyncStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(nextMap)).catch(() => {});
@@ -369,11 +391,32 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     });
   }, []);
 
-  // 5. Supabase Realtime Channels (PostgreSQL Replication Listeners)
-  useEffect(() => {
+  // 5. Supabase Realtime Channels (PostgreSQL Replication Listeners) with Auto-Reconnect & App Lifecycle
+  const setupRealtimeChannel = useCallback(async () => {
     if (!supabase || typeof supabase.channel !== 'function') return;
 
-    const channelId = `immoci_realtime_chat_${Date.now()}`;
+    if (channelRef.current) {
+      try {
+        await supabase.removeChannel(channelRef.current);
+      } catch {}
+      channelRef.current = null;
+    }
+
+    // Ensure socket isn't in transitional state before reconnecting
+    if ((supabase as any).realtime) {
+      while (
+        (supabase as any).realtime._connectionState === 'disconnecting' ||
+        (supabase as any).realtime._connectionState === 'connecting'
+      ) {
+        await new Promise((r) => setTimeout(r, 60));
+      }
+      if (typeof (supabase as any).realtime.connect === 'function') {
+        (supabase as any).realtime.connect();
+      }
+    }
+
+    setConnectionStatus('reconnecting');
+    const channelId = `immoci_chat_${Date.now()}`;
     const channel = supabase
       .channel(channelId)
       .on(
@@ -396,7 +439,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
 
           setMessages((prev) => {
             const list = prev[updatedMsg.conversationId] || [];
-            const nextList = list.map((m) => (m.id === updatedMsg.id ? updatedMsg : m));
+            const nextList = list.map((m) => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m));
             return { ...prev, [updatedMsg.conversationId]: nextList };
           });
         }
@@ -430,15 +473,70 @@ export const [ChatProvider, useChat] = createContextHook(() => {
       .subscribe((status: string, err?: Error) => {
         if (status === 'SUBSCRIBED') {
           console.log('[Chat] Realtime channel connected successfully');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.warn('[Chat] Realtime channel error:', err?.message);
+          setConnectionStatus('connected');
+          reconnectAttemptsRef.current = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('[Chat] Realtime status:', status, err?.message);
+          setConnectionStatus('reconnecting');
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
+          reconnectAttemptsRef.current += 1;
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            setupRealtimeChannel();
+          }, delay);
         }
       });
 
-    return () => {
-      supabase.removeChannel(channel);
+    channelRef.current = channel;
+  }, [handleIncomingMessage]);
+
+  useEffect(() => {
+    setupRealtimeChannel();
+
+    // Mobile AppState listener (background -> active foreground recovery)
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        console.log('[Chat] App became active, resyncing connection and data...');
+        setupRealtimeChannel();
+        loadConversations();
+        if (activeConversationRef.current?.id) {
+          loadMessagesForConversation(activeConversationRef.current.id);
+        }
+      }
+    });
+
+    // Web online/offline listeners
+    const handleOnline = () => {
+      console.log('[Chat] Network online event detected, reconnecting...');
+      setupRealtimeChannel();
+      loadConversations();
+      if (activeConversationRef.current?.id) {
+        loadMessagesForConversation(activeConversationRef.current.id);
+      }
     };
-  }, [user?.id, handleIncomingMessage]);
+    const handleOffline = () => {
+      setConnectionStatus('disconnected');
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+
+    return () => {
+      clearTimeout(reconnectTimeoutRef.current);
+      appStateSubscription?.remove();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      }
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch {}
+      }
+    };
+  }, [setupRealtimeChannel, loadConversations, loadMessagesForConversation]);
 
   // 6. Open Chat Modal
   const openChat = (conv: ChatConversation) => {
@@ -1047,5 +1145,7 @@ export const [ChatProvider, useChat] = createContextHook(() => {
     markAsRead,
     retryMessage,
     loadConversations,
+    loadMessagesForConversation,
+    connectionStatus,
   };
 });

@@ -831,11 +831,21 @@ function DashboardScreenContent() {
     sendMessage,
     markAsRead,
     totalUnreadCount,
+    loadMessagesForConversation,
+    connectionStatus,
   } = useChat();
 
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [dashReplyText, setDashReplyText] = useState<string>('');
   const [searchConvQuery, setSearchConvQuery] = useState<string>('');
+
+  // Auto-hydrate messages when selected conversation changes in dashboard
+  useEffect(() => {
+    const activeConv = conversations.find((c) => c.id === selectedConvId) || conversations[0];
+    if (activeConv?.id && loadMessagesForConversation) {
+      loadMessagesForConversation(activeConv.id);
+    }
+  }, [selectedConvId, conversations.length, loadMessagesForConversation]);
 
   // ── Real-time Chat Notifications for Customer Care / Staff ──
   const { setActiveConversationId } = useNotifications();
@@ -1494,7 +1504,7 @@ function DashboardScreenContent() {
 
     return (
       <View style={ds.content}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
           <View>
             <Text style={{ fontSize: 22, fontWeight: '800', letterSpacing: -0.6, color: theme.text } as any}>
               {language === 'fr' ? 'Messagerie & Demandes Acheteurs' : 'Messages & Buyer Inquiries'}
@@ -1503,6 +1513,61 @@ function DashboardScreenContent() {
               {language === 'fr'
                 ? `${conversations.length} conversations actives · ${totalUnreadCount} non lues`
                 : `${conversations.length} active conversations · ${totalUnreadCount} unread`}
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 20,
+              backgroundColor:
+                connectionStatus === 'connected'
+                  ? 'rgba(16, 185, 129, 0.1)'
+                  : connectionStatus === 'reconnecting'
+                  ? 'rgba(245, 158, 11, 0.1)'
+                  : 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 1,
+              borderColor:
+                connectionStatus === 'connected'
+                  ? 'rgba(16, 185, 129, 0.3)'
+                  : connectionStatus === 'reconnecting'
+                  ? 'rgba(245, 158, 11, 0.3)'
+                  : 'rgba(239, 68, 68, 0.3)',
+            }}
+          >
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor:
+                  connectionStatus === 'connected'
+                    ? '#10B981'
+                    : connectionStatus === 'reconnecting'
+                    ? '#F59E0B'
+                    : '#EF4444',
+              }}
+            />
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '600',
+                color:
+                  connectionStatus === 'connected'
+                    ? '#10B981'
+                    : connectionStatus === 'reconnecting'
+                    ? '#F59E0B'
+                    : '#EF4444',
+              }}
+            >
+              {connectionStatus === 'connected'
+                ? (language === 'fr' ? 'Temps Réel Actif' : 'Real-time Live')
+                : connectionStatus === 'reconnecting'
+                ? (language === 'fr' ? 'Reconnexion...' : 'Reconnecting...')
+                : (language === 'fr' ? 'Hors ligne' : 'Offline')}
             </Text>
           </View>
         </View>
