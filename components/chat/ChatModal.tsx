@@ -87,7 +87,6 @@ export default function ChatModal() {
   } = useChat();
   const { user } = useAuth();
 
-  const [senderMode, setSenderMode] = useState<'client' | 'support'>('client');
   const [inputMessage, setInputMessage] = useState('');
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -204,22 +203,16 @@ export default function ChatModal() {
 
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
 
-    const isSupportMode = senderMode === 'support';
+    // Customer always sends as Client (You)
     await sendMessage(
       activeConversation.id,
       textToSend,
       attsToSend.length > 0 ? attsToSend : undefined,
-      isSupportMode
-        ? {
-            role: 'support',
-            name: 'Fatou Diallo (Customer Care)',
-            id: 'support-agent-fatou',
-          }
-        : {
-            role: 'buyer',
-            name: user?.name || 'Client',
-            id: user?.id || getGuestId(),
-          }
+      {
+        role: 'buyer',
+        name: user?.name || 'Client',
+        id: user?.id || getGuestId(),
+      }
     );
 
     setTimeout(() => {
@@ -661,49 +654,32 @@ export default function ChatModal() {
             </View>
           )}
 
-          {/* ── SENDER ROLE SELECTOR (Client vs Support) ───────────────── */}
+          {/* ── SENDER & RECIPIENT PARTICIPANT BAR ────────────────────── */}
           <View style={styles.senderRoleSelector}>
-            <Text style={styles.senderRolePrompt}>
-              {language === 'fr' ? 'Envoyer en tant que :' : 'Send as:'}
-            </Text>
-            <View style={styles.senderRolePillGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.roleTogglePill,
-                  senderMode === 'client' && styles.roleTogglePillClientActive,
-                ]}
-                onPress={() => setSenderMode('client')}
-                activeOpacity={0.8}
-              >
-                <User size={11} color={senderMode === 'client' ? '#FFFFFF' : '#64748B'} />
-                <Text
-                  style={[
-                    styles.roleTogglePillText,
-                    senderMode === 'client' && styles.roleTogglePillTextActive,
-                  ]}
-                >
+            {/* Sender: Client (You) is always the active sender */}
+            <View style={styles.senderIndicatorGroup}>
+              <Text style={styles.senderRolePrompt}>
+                {language === 'fr' ? 'Envoyer en tant que :' : 'Send as:'}
+              </Text>
+              <View style={styles.clientSenderBadge}>
+                <User size={11} color="#FFFFFF" />
+                <Text style={styles.clientSenderBadgeText}>
                   {language === 'fr' ? 'Client (Vous)' : 'Client (You)'}
                 </Text>
-              </TouchableOpacity>
+              </View>
+            </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.roleTogglePill,
-                  senderMode === 'support' && styles.roleTogglePillSupportActive,
-                ]}
-                onPress={() => setSenderMode('support')}
-                activeOpacity={0.8}
-              >
-                <Headphones size={11} color={senderMode === 'support' ? '#FFFFFF' : '#64748B'} />
-                <Text
-                  style={[
-                    styles.roleTogglePillText,
-                    senderMode === 'support' && styles.roleTogglePillTextActive,
-                  ]}
-                >
+            {/* Recipient: Support (Fatou) is the non-clickable recipient */}
+            <View style={styles.recipientIndicatorGroup}>
+              <Text style={styles.recipientPrompt}>
+                {language === 'fr' ? 'Destinataire :' : 'Recipient:'}
+              </Text>
+              <View style={styles.supportRecipientBadge}>
+                <Headphones size={11} color="#64748B" />
+                <Text style={styles.supportRecipientBadgeText}>
                   {language === 'fr' ? 'Support (Fatou)' : 'Support (Fatou)'}
                 </Text>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -720,13 +696,9 @@ export default function ChatModal() {
             <TextInput
               style={styles.textInput}
               placeholder={
-                senderMode === 'support'
-                  ? (language === 'fr'
-                      ? 'Répondre au client en tant que Support...'
-                      : 'Reply to client as Support...')
-                  : (language === 'fr'
-                      ? 'Écrivez votre message...'
-                      : 'Type your message...')
+                language === 'fr'
+                  ? 'Écrivez votre message...'
+                  : 'Type your message...'
               }
               placeholderTextColor="#94A3B8"
               value={inputMessage}
@@ -1325,7 +1297,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 150, 105, 0.12)',
   },
 
-  // Sender Role Selector Bar
+  // Sender & Recipient Bar
   senderRoleSelector: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1335,12 +1307,63 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  senderIndicatorGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   senderRolePrompt: {
     fontSize: 11,
     fontWeight: '700',
     color: '#64748B',
   },
+  clientSenderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    backgroundColor: '#059669',
+    borderWidth: 1,
+    borderColor: '#059669',
+  },
+  clientSenderBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  recipientIndicatorGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recipientPrompt: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  supportRecipientBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    opacity: 0.9,
+  },
+  supportRecipientBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  // Legacy aliases for backward compatibility
   senderRolePillGroup: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1353,18 +1376,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderRadius: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    cursor: 'pointer' as any,
   },
   roleTogglePillClientActive: {
     backgroundColor: '#059669',
     borderColor: '#059669',
   },
   roleTogglePillSupportActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
   },
   roleTogglePillText: {
     fontSize: 10.5,
