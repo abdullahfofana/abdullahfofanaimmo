@@ -47,7 +47,11 @@ export default function AuthScreen() {
     setIsLoading(true);
     try {
       if (skipAuth) {
-        await skipAuth();
+        await skipAuth({
+          role: 'renter',
+          name: 'Client ImmoCI',
+          email: 'client@immoci.ci',
+        });
       }
     } catch (e) {
       console.warn('[Auth] skipAuth warning:', e);
@@ -68,7 +72,10 @@ export default function AuthScreen() {
     setIsLoading(true);
     try {
       if (mode === 'login') { await signIn(email, password); }
-      else { await signUp(email, password, name, phone, role); }
+      else {
+        const signupRole: UserRole = isWeb ? role : 'renter';
+        await signUp(email, password, name, phone, signupRole);
+      }
       router.replace('/(tabs)/home');
     } catch (err: any) {
       setLocalError(err.message || 'Une erreur s\'est produite');
@@ -128,8 +135,8 @@ export default function AuthScreen() {
         </View>
       )}
 
-      {/* Role toggle */}
-      {mode === 'signup' && (
+      {/* Role toggle (Web only) */}
+      {mode === 'signup' && isWeb && (
         <View style={styles.roleRow}>
           {(['renter', 'agent'] as UserRole[]).map((r) => (
             <TouchableOpacity

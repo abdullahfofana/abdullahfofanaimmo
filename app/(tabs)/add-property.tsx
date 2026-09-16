@@ -180,6 +180,33 @@ export default function AddPropertyScreen() {
   const insets = useSafeAreaInsets();
   const { t, language } = useLanguage();
   const colors = useColors();
+
+  // SECURITY & ARCHITECTURE: Property publishing is exclusively a Web Pro feature.
+  // Mobile app is strictly for Customers (buyers & renters).
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <View style={{ width: 68, height: 68, borderRadius: 20, backgroundColor: 'rgba(5,150,105,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <Building2 size={32} color="#059669" strokeWidth={2} />
+        </View>
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800', marginBottom: 8, textAlign: 'center' }}>
+          Publication réservée au Web Pro
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 24, paddingHorizontal: 16 }}>
+          La publication d&apos;annonces immobilières et la gestion des mandats sont réservées à notre portail Web Pro sur ordinateur.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: '#059669', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          onPress={() => router.replace('/(tabs)/home')}
+          activeOpacity={0.85}
+        >
+          <Home size={18} color="#FFFFFF" strokeWidth={2.4} />
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Retour à l&apos;accueil</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const { user, session, isLoading: isAuthLoading } = useAuth();
   const { addSubmission } = usePropertySubmissions();
   const [featureInput, setFeatureInput] = useState('');
@@ -1003,7 +1030,7 @@ export default function AddPropertyScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={(Platform.OS as string) === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -1954,7 +1981,7 @@ export default function AddPropertyScreen() {
                 placeholderTextColor="#94A3B8"
                 value={locationSearchQuery}
                 onChangeText={setLocationSearchQuery}
-                autoFocus={Platform.OS !== 'web'}
+                autoFocus={(Platform.OS as string) !== 'web'}
               />
               {locationSearchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setLocationSearchQuery('')}>

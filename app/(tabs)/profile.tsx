@@ -34,6 +34,7 @@ import {
   ExternalLink,
   Briefcase,
   Monitor,
+  Headphones,
 } from 'lucide-react-native';
 import { Linking } from 'react-native';
 
@@ -148,20 +149,21 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { favoriteIds } = useFavorites();
   const { submissions } = usePropertySubmissions();
-  const { conversations } = useChat();
+  const { conversations, openSupportChat } = useChat();
 
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
 
-  const userName = user?.name || (language === 'fr' ? 'Jean Kouassi' : 'Jean Kouassi');
-  const userEmail = user?.email || 'jean.kouassi@example.com';
-  const userRole = user?.role || 'agent';
+  const isMobile = Platform.OS !== 'web';
+  const userName = user?.name || (language === 'fr' ? 'Client ImmoCI' : 'ImmoCI Client');
+  const userEmail = user?.email || 'client@immoci.ci';
+  const userRole = user?.role || 'renter';
 
-  const isBusiness = userRole === 'agent' || userRole === 'landlord';
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  // Strict Customer-Only Mobile: business/admin roles exist exclusively on Desktop Web
+  const isBusiness = !isMobile && (userRole === 'agent' || userRole === 'landlord');
+  const isAdmin = !isMobile && (userRole === 'admin' || userRole === 'super_admin');
   const isCustomer = !isBusiness && !isAdmin;
-
 
   const stats = useMemo(() => {
     if (isBusiness) {
@@ -220,18 +222,20 @@ export default function ProfileScreen() {
       },
       {
         value: `${conversations?.length || 0}`,
-        label: language === 'fr' ? 'Messages' : 'Messages',
+        label: language === 'fr' ? 'Demandes' : 'Inquiries',
         icon: <MessageSquare size={16} color="#10B981" strokeWidth={2} />,
         onPress: () => setShowRequestsModal(true),
       },
       {
-        value: '4.9 ★',
-        label: language === 'fr' ? 'Confiance' : 'Trust Score',
-        icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
-        onPress: () => setShowRatingModal(true),
+        value: '24/7',
+        label: language === 'fr' ? 'Support' : 'Support',
+        icon: <Headphones size={16} color="#059669" strokeWidth={2} />,
+        onPress: () => {
+          if (openSupportChat) openSupportChat();
+        },
       },
     ];
-  }, [isBusiness, isAdmin, submissions, conversations, favoriteIds, language, colors]);
+  }, [isBusiness, isAdmin, submissions, conversations, favoriteIds, language, colors, openSupportChat]);
 
   const handleLogout = () => {
     const title = language === 'fr' ? 'Déconnexion' : 'Log Out';
@@ -348,29 +352,29 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* ── ADMIN ON MOBILE NOTICE ─────────────────────────────── */}
+        {/* ── ADMIN ACCESS (WEB ONLY) ─────────────────────────────── */}
         {isAdmin && (
           <View style={styles.adminNoticeCard}>
             <View style={styles.adminNoticeIconRow}>
               <View style={styles.adminNoticeIconBox}>
-                <Shield size={22} color="#D97706" strokeWidth={2.2} />
+                <Shield size={22} color="#059669" strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.adminNoticeTitle}>
-                  Tableau de bord Admin réservé au Web
+                  Espace Administration ImmoCI
                 </Text>
                 <Text style={styles.adminNoticeSubtitle}>
-                  L'administration générale, la modération globale et la gestion des utilisateurs ne sont pas disponibles sur mobile. Veuillez utiliser votre ordinateur sur immoci.ci/admin.
+                  Accédez aux outils de modération des annonces, gestion des utilisateurs et rapports de performance.
                 </Text>
               </View>
             </View>
             <TouchableOpacity
               style={styles.adminWebBtn}
-              onPress={() => Linking.openURL('https://abdullahfofanaimmo.vercel.app/admin').catch(() => {})}
+              onPress={() => router.push('/admin')}
               activeOpacity={0.85}
             >
               <ExternalLink size={15} color="#FFFFFF" strokeWidth={2.2} />
-              <Text style={styles.adminWebBtnText}>Ouvrir le portail web (immoci.ci/admin)</Text>
+              <Text style={styles.adminWebBtnText}>Ouvrir le Tableau de Bord Admin</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -479,22 +483,53 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {/* 1-Tap Customer Care Support Card */}
             <TouchableOpacity
-              style={styles.customerUpgradeCard}
-              onPress={() => router.push('/add-property')}
-              activeOpacity={0.9}
+              style={styles.customerCareCard}
+              onPress={() => {
+                if (openSupportChat) openSupportChat();
+              }}
+              activeOpacity={0.88}
             >
-              <View style={styles.customerUpgradeIcon}>
-                <Building2 size={22} color="#059669" strokeWidth={2.2} />
+              <View style={styles.customerCareIconWrap}>
+                <Headphones size={22} color="#059669" strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.customerUpgradeTitle}>Vous vendez ou louez un bien ?</Text>
-                <Text style={styles.customerUpgradeSub}>
-                  Publiez votre bien sur ImmoCI ou passez en compte Business pour gérer vos mandats.
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.customerCareTitle}>Assistance & Conseiller ACD</Text>
+                  <View style={styles.onlineDot} />
+                </View>
+                <Text style={styles.customerCareSub}>
+                  Discutez en direct avec Fatou Diallo • Conseil personnalisé & vérification juridique
                 </Text>
               </View>
-              <ChevronRight size={18} color="#059669" strokeWidth={2} />
+              <ChevronRight size={18} color="#059669" strokeWidth={2.2} />
             </TouchableOpacity>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>SÉCURITÉ CADASTRE & ACD</Text>
+              <View style={styles.menuCard}>
+                <MenuItem
+                  icon={<Shield size={17} color="#059669" strokeWidth={2} />}
+                  iconBg="rgba(5,150,105,0.10)"
+                  title="Guide ACD & Titre Foncier"
+                  subtitle="Comprendre la vérification juridique en Côte d'Ivoire"
+                  onPress={() => setShowRatingModal(true)}
+                  colors={colors}
+                />
+                <MenuItem
+                  icon={<Headphones size={17} color="#3B82F6" strokeWidth={2} />}
+                  iconBg="rgba(59,130,246,0.10)"
+                  title="Contacter le Service Client"
+                  subtitle="Fatou Diallo • Support client 7j/7"
+                  onPress={() => {
+                    if (openSupportChat) openSupportChat();
+                  }}
+                  colors={colors}
+                  isLast
+                />
+              </View>
+            </View>
           </>
         )}
 
@@ -974,7 +1009,49 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── Customer Upgrade / Become Seller Card ────────────────────────────────
+  // ── Customer Care Direct Support Card ────────────────────────────────────
+  customerCareCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.2,
+    borderColor: 'rgba(5, 150, 105, 0.22)',
+  },
+  customerCareIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  customerCareTitle: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#065F46',
+    marginBottom: 2,
+  },
+  customerCareSub: {
+    fontSize: 11.5,
+    color: '#047857',
+    lineHeight: 16,
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
   customerUpgradeCard: {
     flexDirection: 'row',
     alignItems: 'center',

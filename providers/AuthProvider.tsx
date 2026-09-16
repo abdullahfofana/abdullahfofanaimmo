@@ -10,10 +10,10 @@ const DEV_STORAGE_KEY = '@immoci_auth_dev_session';
 
 export const DEFAULT_DEV_USER: User = {
   id: 'dev-user-001',
-  email: 'dev@immoci.ci',
-  name: 'Développeur ImmoCI',
+  email: 'client@immoci.ci',
+  name: 'Client ImmoCI',
   phone: '+225 07 00 00 00 01',
-  role: 'agent',
+  role: 'renter',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop',
 };
 
@@ -165,9 +165,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const skipAuth = async (customUser?: Partial<User>): Promise<User> => {
     try {
       setError(null);
+      const isWeb = Platform.OS === 'web';
       const devUser: User = {
         ...DEFAULT_DEV_USER,
         ...customUser,
+        role: isWeb ? (customUser?.role || DEFAULT_DEV_USER.role) : 'renter',
       };
 
       await Promise.all([

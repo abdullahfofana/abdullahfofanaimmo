@@ -100,20 +100,7 @@ export default function TabLayout() {
             tabBarIcon: ({ focused }) => (
               <DockTabIcon
                 focused={focused}
-                icon={(color, stroke) => <MapPin size={21} color={color} strokeWidth={stroke} />}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="add-property"
-          options={{
-            title: 'Publier',
-            tabBarIcon: ({ focused }) => (
-              <DockTabIcon
-                focused={focused}
-                isSpecial={true}
-                icon={(color, stroke) => <Plus size={22} color={color} strokeWidth={2.6} />}
+                icon={(color, stroke) => <Search size={21} color={color} strokeWidth={stroke} />}
               />
             ),
           }}
@@ -147,6 +134,12 @@ export default function TabLayout() {
                 icon={(color, stroke) => <User size={21} color={color} strokeWidth={stroke} />}
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="add-property"
+          options={{
+            href: null,
           }}
         />
       </Tabs>
