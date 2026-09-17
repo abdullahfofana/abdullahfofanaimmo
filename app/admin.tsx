@@ -93,6 +93,8 @@ import MonthlyGrowthChart from '@/components/admin/MonthlyGrowthChart';
 import PropertyDistributionChart from '@/components/admin/PropertyDistributionChart';
 import RevenueAnalyticsChart from '@/components/admin/RevenueAnalyticsChart';
 import PerformanceDistributionChart from '@/components/charts/PerformanceDistributionChart';
+import AdminReports from '@/components/admin/AdminReports';
+import StaffManagement from '@/components/admin/StaffManagement';
 
 export type AdminSection =
   | 'dashboard'
@@ -2293,9 +2295,17 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </View>
         );
       case 'staff':
-        return renderStaff();
+        return (
+          <View style={styles.animateView}>
+            <StaffManagement isDark={isDark} />
+          </View>
+        );
       case 'reports':
-        return renderReports();
+        return (
+          <View style={styles.animateView}>
+            <AdminReports isDark={isDark} />
+          </View>
+        );
       case 'integrations':
         return (
           <View style={styles.animateView}>
