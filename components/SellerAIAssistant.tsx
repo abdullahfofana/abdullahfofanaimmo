@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Briefcase, X, Send, ChevronDown, TrendingUp, FileText, DollarSign, HelpCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import { trpc } from '@/lib/trpc';
 
@@ -26,6 +26,8 @@ const QUICK_ACTIONS = [
 const { height } = Dimensions.get('window');
 
 export default function SellerAIAssistant() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -91,7 +93,7 @@ export default function SellerAIAssistant() {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.agentAvatar}>
-                <Briefcase size={18} color={Colors.primary} />
+                <Briefcase size={18} color={colors.primary} />
               </View>
               <View>
                 <Text style={styles.headerTitle}>Assistant Vendeur</Text>
@@ -99,7 +101,7 @@ export default function SellerAIAssistant() {
               </View>
             </View>
             <TouchableOpacity onPress={close} style={styles.closeBtn}>
-              <X size={22} color={Colors.textSecondary} />
+              <X size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -114,7 +116,7 @@ export default function SellerAIAssistant() {
             ))}
             {chatMutation.isPending && (
               <View style={[styles.bubble, styles.botBubble, styles.loadingBubble]}>
-                <ActivityIndicator size="small" color={Colors.primary} />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={[styles.bubbleText, styles.botText, { marginLeft: 8 }]}>Analyse en cours...</Text>
               </View>
             )}
@@ -124,7 +126,7 @@ export default function SellerAIAssistant() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickRow} contentContainerStyle={styles.quickContent}>
             {QUICK_ACTIONS.map((qa, i) => (
               <TouchableOpacity key={i} style={styles.quickChip} onPress={() => send(qa.query)}>
-                <qa.icon size={12} color={Colors.primary} />
+                <qa.icon size={12} color={colors.primary} />
                 <Text style={styles.quickChipText}>{qa.label}</Text>
               </TouchableOpacity>
             ))}
@@ -135,7 +137,7 @@ export default function SellerAIAssistant() {
             <TextInput
               style={styles.input}
               placeholder="Posez votre question..."
-              placeholderTextColor={Colors.textLight}
+              placeholderTextColor={colors.textLight}
               value={input}
               onChangeText={setInput}
               onSubmitEditing={() => send()}
@@ -156,7 +158,8 @@ export default function SellerAIAssistant() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   fab: {
     position: 'absolute', right: 20,
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -169,7 +172,7 @@ const styles = StyleSheet.create({
   fabLabel: { color: '#fff', fontWeight: '700', fontSize: 13 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     height: '82%', overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: -3 },
@@ -177,49 +180,49 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border,
-    backgroundColor: Colors.surface,
+    padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   agentAvatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: `${Colors.primary}18`,
+    backgroundColor: `${colors.primary}18`,
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  headerSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
   closeBtn: { padding: 4 },
-  messages: { flex: 1, backgroundColor: Colors.backgroundSecondary },
+  messages: { flex: 1, backgroundColor: colors.backgroundSecondary },
   messagesContent: { padding: Spacing.lg, gap: 12, paddingBottom: Spacing.xl },
   bubble: { maxWidth: '85%', padding: 12, borderRadius: 16 },
-  userBubble: { alignSelf: 'flex-end', backgroundColor: Colors.primary, borderBottomRightRadius: 4 },
+  userBubble: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   botBubble: {
-    alignSelf: 'flex-start', backgroundColor: Colors.surface,
-    borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border,
+    alignSelf: 'flex-start', backgroundColor: colors.surface,
+    borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border,
   },
   loadingBubble: { flexDirection: 'row', alignItems: 'center' },
   bubbleText: { fontSize: 14, lineHeight: 21 },
   userText: { color: '#fff' },
-  botText: { color: Colors.text },
-  quickRow: { maxHeight: 48, backgroundColor: Colors.surface, borderTopWidth: 1, borderTopColor: Colors.border },
+  botText: { color: colors.text },
+  quickRow: { maxHeight: 48, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
   quickContent: { paddingHorizontal: Spacing.lg, paddingVertical: 10, gap: 8, alignItems: 'center' },
   quickChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14,
-    backgroundColor: `${Colors.primary}14`,
-    borderWidth: 1, borderColor: `${Colors.primary}30`,
+    backgroundColor: `${colors.primary}14`,
+    borderWidth: 1, borderColor: `${colors.primary}30`,
   },
-  quickChipText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  quickChipText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
   inputRow: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
     padding: Spacing.md,
-    backgroundColor: Colors.surface, borderTopWidth: 1, borderTopColor: Colors.border,
+    backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,
   },
   input: {
     flex: 1, minHeight: 44, maxHeight: 100,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10,
-    fontSize: 15, color: Colors.text,
+    fontSize: 15, color: colors.text,
   },
   sendBtn: {
     width: 44, height: 44, borderRadius: 22,
@@ -227,3 +230,4 @@ const styles = StyleSheet.create({
   },
   sendDisabled: { opacity: 0.45 },
 });
+}

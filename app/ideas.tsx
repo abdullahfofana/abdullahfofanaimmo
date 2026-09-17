@@ -10,12 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import { ChevronLeft, Check, Sparkles, Plus } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { projectSuggestions, ProjectSuggestion } from '@/constants/projectSuggestions';
 
 export default function IdeasScreen() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const curatedSuggestions = useMemo<ProjectSuggestion[]>(() => projectSuggestions, []);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
 
@@ -49,10 +51,10 @@ export default function IdeasScreen() {
         headerShadowVisible: false,
         headerLeft: () => (
           <TouchableOpacity onPress={handleBack} style={{ padding: Spacing.xs }}>
-            <ChevronLeft size={24} color={Colors.text} />
+            <ChevronLeft size={24} color={colors.text} />
           </TouchableOpacity>
         ),
-        headerStyle: { backgroundColor: Colors.background },
+        headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: { fontWeight: '800' },
       }} />
 
@@ -102,7 +104,7 @@ export default function IdeasScreen() {
                 onPress={() => toggleRoadmap(idea.id, idea.title)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  {isAdded ? <Check size={16} color="#FFFFFF" strokeWidth={2.5} /> : <Plus size={16} color={Colors.text} />}
+                  {isAdded ? <Check size={16} color="#FFFFFF" strokeWidth={2.5} /> : <Plus size={16} color={colors.text} />}
                   <Text style={[styles.ctaLabel, isAdded && { color: '#FFFFFF' }]}>
                     {isAdded ? 'Ajouté à la roadmap' : 'Ajouter à la roadmap'}
                   </Text>
@@ -135,10 +137,11 @@ const badgeImpactStyles: Record<ProjectSuggestion['impact'], { backgroundColor: 
   experimental: { backgroundColor: '#E1F3F9' },
 };
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -146,10 +149,10 @@ const styles = StyleSheet.create({
     gap: Spacing.lg,
   },
   heroCard: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     padding: Spacing.xl,
     borderRadius: 28,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 20,
@@ -162,18 +165,18 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     ...Typography.h3,
-    color: Colors.white,
+    color: colors.white,
     marginTop: Spacing.sm,
     marginBottom: Spacing.sm,
   },
   heroCopy: {
     ...Typography.body,
-    color: Colors.white,
+    color: colors.white,
     opacity: 0.9,
     lineHeight: 22,
   },
   ideaCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderRadius: 22,
     padding: Spacing.lg,
     shadowColor: '#00000020',
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
   },
   ideaTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -202,27 +205,27 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     ...Typography.caption,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '700' as const,
   },
   badgeMuted: {
     borderRadius: 999,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
   },
   badgeMutedText: {
     ...Typography.caption,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   ideaSummary: {
     ...Typography.body,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600' as const,
   },
   ideaDetails: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   tagRow: {
@@ -234,11 +237,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
   },
   tagText: {
     ...Typography.caption,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600' as const,
   },
   ctaButton: {
@@ -246,9 +249,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: Colors.borderLight,
+    borderColor: colors.borderLight,
   },
   ctaButtonAdded: {
     backgroundColor: '#059669',
@@ -261,26 +264,27 @@ const styles = StyleSheet.create({
   },
   ctaLabel: {
     ...Typography.body,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '700' as const,
   },
   ctaSubLabel: {
     ...Typography.caption,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   footerNote: {
     padding: Spacing.xl,
     borderRadius: 24,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     gap: Spacing.sm,
   },
   footerHeading: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   footerCopy: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 });
+}

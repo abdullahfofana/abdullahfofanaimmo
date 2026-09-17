@@ -33,7 +33,6 @@ import {
   Zap,
   AlertCircle,
 } from 'lucide-react-native';
-import Colors from '@/constants/colors';
 import Spacing from '@/constants/spacing';
 
 interface AdminLoginProps {

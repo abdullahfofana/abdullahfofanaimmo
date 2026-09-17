@@ -1,7 +1,11 @@
 import { ThemeColors } from '@/constants/colors';
+import { useTheme } from '@/providers/ThemeProvider';
 
+/**
+ * Returns the correct color token set for the current theme (dark or light).
+ * Reactive — re-renders automatically when the user switches theme.
+ */
 export function useColors() {
-  // Always return light theme to keep Home and other main tabs in light mode,
-  // while the Dashboard handles its own isolated dark mode.
-  return ThemeColors['light'];
+  const { activeTheme } = useTheme();
+  return ThemeColors[activeTheme];
 }

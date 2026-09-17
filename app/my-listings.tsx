@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Platform, Image } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ChevronLeft, Plus, MapPin, Eye, Building2, Clock, CheckCircle2, AlertCircle } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
@@ -11,6 +11,8 @@ import { useResponsive } from '@/constants/breakpoints';
 import WebNavbar from '@/components/WebNavbar';
 
 export default function MyListingsScreen() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const { submissions } = usePropertySubmissions();
   const { language } = useLanguage();
   const { isDesktop } = useResponsive();
@@ -171,7 +173,8 @@ export default function MyListingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
@@ -334,4 +337,5 @@ const styles = StyleSheet.create({
     color: '#059669',
   },
 });
+}
 

@@ -11,11 +11,13 @@ import {
   Alert,
 } from 'react-native';
 import { MessageCircle, X, Mail, Phone, HelpCircle } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function ContactSupport() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -67,7 +69,7 @@ export default function ContactSupport() {
         activeOpacity={0.8}
         testID="contactSupportButton"
       >
-        <MessageCircle size={28} color={Colors.white} />
+        <MessageCircle size={28} color={colors.white} />
       </TouchableOpacity>
     );
   }
@@ -84,7 +86,7 @@ export default function ContactSupport() {
           <View style={styles.header}>
             <View style={styles.headerInfo}>
               <View style={styles.iconContainer}>
-                <HelpCircle size={24} color={Colors.primary} />
+                <HelpCircle size={24} color={colors.primary} />
               </View>
               <View>
                 <Text style={styles.headerTitle}>Contact Support</Text>
@@ -92,21 +94,21 @@ export default function ContactSupport() {
               </View>
             </View>
             <TouchableOpacity onPress={toggleSupport} style={styles.closeButton}>
-              <X size={24} color={Colors.text} />
+              <X size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             <View style={styles.infoSection}>
               <View style={styles.infoRow}>
-                <Mail size={20} color={Colors.primary} />
+                <Mail size={20} color={colors.primary} />
                 <View style={styles.infoTextContainer}>
                   <Text style={styles.infoLabel}>Email</Text>
                   <Text style={styles.infoValue}>support@immoci.com</Text>
                 </View>
               </View>
               <View style={styles.infoRow}>
-                <Phone size={20} color={Colors.primary} />
+                <Phone size={20} color={colors.primary} />
                 <View style={styles.infoTextContainer}>
                   <Text style={styles.infoLabel}>Phone</Text>
                   <Text style={styles.infoValue}>+225 XX XX XX XX XX</Text>
@@ -123,7 +125,7 @@ export default function ContactSupport() {
               <TextInput 
                 style={styles.input} 
                 placeholder="Enter your name"
-                placeholderTextColor={Colors.textLight}
+                placeholderTextColor={colors.textLight}
                 value={formData.name}
                 onChangeText={text => setFormData({...formData, name: text})}
               />
@@ -134,7 +136,7 @@ export default function ContactSupport() {
               <TextInput 
                 style={styles.input} 
                 placeholder="Enter your email"
-                placeholderTextColor={Colors.textLight}
+                placeholderTextColor={colors.textLight}
                 value={formData.email}
                 onChangeText={text => setFormData({...formData, email: text})}
                 keyboardType="email-address"
@@ -146,7 +148,7 @@ export default function ContactSupport() {
               <TextInput 
                 style={[styles.input, styles.textArea]} 
                 placeholder="How can we help you?"
-                placeholderTextColor={Colors.textLight}
+                placeholderTextColor={colors.textLight}
                 value={formData.message}
                 onChangeText={text => setFormData({...formData, message: text})}
                 multiline
@@ -161,7 +163,7 @@ export default function ContactSupport() {
               disabled={!formData.name || !formData.message || isSubmitting}
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color={Colors.white} />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
                 <Text style={styles.submitButtonText}>Send Message</Text>
               )}
@@ -173,16 +175,17 @@ export default function ContactSupport() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   fab: {
     position: 'absolute',
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.shadow?.lg || '#000',
+    shadowColor: colors.shadow?.lg || '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
@@ -206,7 +209,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    borderBottomColor: colors.borderLight,
   },
   headerInfo: {
     flexDirection: 'row',
@@ -218,18 +221,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primaryLight + '30',
+    backgroundColor: colors.primaryLight + '30',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 2,
   },
   headerSubtitle: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   closeButton: {
     padding: Spacing.sm,
@@ -246,7 +249,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     padding: Spacing.md,
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
   },
   infoTextContainer: {
@@ -254,22 +257,22 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   infoValue: {
     ...Typography.body,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600' as const,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.borderLight,
+    backgroundColor: colors.borderLight,
     marginVertical: Spacing.lg,
   },
   formTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   inputGroup: {
@@ -277,31 +280,31 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.body,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600' as const,
     marginBottom: Spacing.xs,
   },
   input: {
     ...Typography.body,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: Colors.borderLight,
+    borderColor: colors.borderLight,
     borderRadius: 12,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    color: Colors.text,
+    color: colors.text,
   },
   textArea: {
     minHeight: 100,
     paddingTop: Spacing.md,
   },
   submitButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: Spacing.md,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -312,7 +315,8 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     ...Typography.body,
-    color: Colors.white,
+    color: colors.white,
     fontWeight: '600' as const,
   },
 });
+}

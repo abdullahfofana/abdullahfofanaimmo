@@ -19,7 +19,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { UserRole } from '@/types/property';
@@ -29,6 +29,8 @@ import { useLanguage } from '@/providers/LanguageProvider';
 type AuthMode = 'login' | 'signup';
 
 export default function AuthScreen() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
   const [mode, setMode] = useState<AuthMode>('login');
@@ -130,7 +132,7 @@ export default function AuthScreen() {
       {/* Error */}
       {(localError || authError) && (
         <View style={styles.errorBox}>
-          <AlertCircle size={15} color={Colors.error} strokeWidth={2} />
+          <AlertCircle size={15} color={colors.error} strokeWidth={2} />
           <Text style={styles.errorText}>{localError || authError}</Text>
         </View>
       )}
@@ -156,22 +158,22 @@ export default function AuthScreen() {
       {mode === 'signup' && (
         <>
           <View style={styles.inputWrap}>
-            <User size={18} color={Colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
+            <User size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Nom complet"
-              placeholderTextColor={Colors.textLight}
+              placeholderTextColor={colors.textLight}
               value={name}
               onChangeText={(v) => { setName(v); setLocalError(''); }}
               autoCapitalize="words"
             />
           </View>
           <View style={styles.inputWrap}>
-            <Phone size={18} color={Colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
+            <Phone size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Téléphone"
-              placeholderTextColor={Colors.textLight}
+              placeholderTextColor={colors.textLight}
               value={phone}
               onChangeText={(v) => { setPhone(v); setLocalError(''); }}
               keyboardType="phone-pad"
@@ -182,11 +184,11 @@ export default function AuthScreen() {
 
       {/* Email */}
       <View style={styles.inputWrap}>
-        <Mail size={18} color={Colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
+        <Mail size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Adresse email"
-          placeholderTextColor={Colors.textLight}
+          placeholderTextColor={colors.textLight}
           value={email}
           onChangeText={(v) => { setEmail(v); setLocalError(''); }}
           keyboardType="email-address"
@@ -196,11 +198,11 @@ export default function AuthScreen() {
 
       {/* Password */}
       <View style={styles.inputWrap}>
-        <Lock size={18} color={Colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
+        <Lock size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
         <TextInput
           style={[styles.input, { flex: 1 }]}
           placeholder="Mot de passe"
-          placeholderTextColor={Colors.textLight}
+          placeholderTextColor={colors.textLight}
           value={password}
           onChangeText={(v) => { setPassword(v); setLocalError(''); }}
           secureTextEntry={!showPassword}
@@ -208,8 +210,8 @@ export default function AuthScreen() {
         />
         <TouchableOpacity onPress={() => setShowPassword(s => !s)} style={styles.eyeBtn}>
           {showPassword
-            ? <EyeOff size={18} color={Colors.textSecondary} strokeWidth={1.8} />
-            : <Eye size={18} color={Colors.textSecondary} strokeWidth={1.8} />}
+            ? <EyeOff size={18} color={colors.textSecondary} strokeWidth={1.8} />
+            : <Eye size={18} color={colors.textSecondary} strokeWidth={1.8} />}
         </TouchableOpacity>
       </View>
 
@@ -242,11 +244,11 @@ export default function AuthScreen() {
 
       {/* Social */}
       <TouchableOpacity style={styles.socialBtn} onPress={handleGoogleSignIn} disabled={isLoading}>
-        <Globe size={18} color={Colors.text} strokeWidth={1.8} />
+        <Globe size={18} color={colors.text} strokeWidth={1.8} />
         <Text style={styles.socialBtnText}>Continuer avec Google</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.socialBtn} onPress={handleFacebookSignIn} disabled={isLoading}>
-        <ExternalLink size={18} color={Colors.text} strokeWidth={1.8} />
+        <ExternalLink size={18} color={colors.text} strokeWidth={1.8} />
         <Text style={styles.socialBtnText}>Continuer avec Facebook</Text>
       </TouchableOpacity>
 
@@ -326,12 +328,13 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  mobileShell: { flex: 1, backgroundColor: Colors.background },
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  mobileShell: { flex: 1, backgroundColor: colors.background },
   formScroll: { paddingHorizontal: 24, paddingBottom: 48, flexGrow: 1 },
 
   // Web 2-col
-  webShell: { flex: 1, flexDirection: 'row', backgroundColor: Colors.background },
+  webShell: { flex: 1, flexDirection: 'row', backgroundColor: colors.background },
   webLeft: { flex: 1, position: 'relative', overflow: 'hidden' },
   webLeftInner: { flex: 1, justifyContent: 'space-between', padding: 40 },
   webBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -344,26 +347,26 @@ const styles = StyleSheet.create({
   webBrandInitials: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: -0.2 },
   webBrandName: { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
   webLeftBottom: { gap: 14 },
-  webEyebrow: { fontSize: 10, fontWeight: '700', color: Colors.accentLight, letterSpacing: 1.8, textTransform: 'uppercase' },
+  webEyebrow: { fontSize: 10, fontWeight: '700', color: colors.accentLight, letterSpacing: 1.8, textTransform: 'uppercase' },
   webHero: { fontSize: 46, fontWeight: '800', color: '#fff', lineHeight: 52, letterSpacing: -1.2 },
   webHeroSub: { fontSize: 15, color: 'rgba(255,255,255,0.70)', lineHeight: 23, maxWidth: 340 },
   webRight: {
-    width: 440, backgroundColor: Colors.background,
-    borderLeftWidth: 1, borderLeftColor: Colors.border,
+    width: 440, backgroundColor: colors.background,
+    borderLeftWidth: 1, borderLeftColor: colors.border,
   },
 
   // Logo
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 36 },
   logoSquare: {
     width: 40, height: 40, borderRadius: 11,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
   logoInitials: { fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
-  logoWordmark: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
+  logoWordmark: { fontSize: 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
 
-  formTitle: { fontSize: 28, fontWeight: '800', color: Colors.text, letterSpacing: -0.7, marginBottom: 6 },
-  formSubtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: 24 },
+  formTitle: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.7, marginBottom: 6 },
+  formSubtitle: { fontSize: 15, color: colors.textSecondary, lineHeight: 22, marginBottom: 24 },
 
   // Error
   errorBox: {
@@ -373,40 +376,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12,
     borderRadius: 12, marginBottom: 16,
   },
-  errorText: { fontSize: 13, color: Colors.error, flex: 1, lineHeight: 18 },
+  errorText: { fontSize: 13, color: colors.error, flex: 1, lineHeight: 18 },
 
   // Role
   roleRow: {
     flexDirection: 'row',
-    backgroundColor: Colors.backgroundSecondary,
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12, padding: 4, marginBottom: 20,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: colors.border,
   },
   roleTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 9 },
   roleTabActive: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border,
   },
-  roleTabText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-  roleTabTextActive: { color: Colors.primary, fontWeight: '700' },
+  roleTabText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
+  roleTabTextActive: { color: colors.primary, fontWeight: '700' },
 
   // Input
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: 14, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: 14, borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 16, height: 54, marginBottom: 12,
   },
   inputIcon: { marginRight: 12 },
-  input: { flex: 1, fontSize: 15, color: Colors.text },
+  input: { flex: 1, fontSize: 15, color: colors.text },
   eyeBtn: { paddingLeft: 8 },
 
   forgotRow: { alignSelf: 'flex-end', marginBottom: 20, marginTop: -4 },
-  forgotText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  forgotText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
 
   // CTA
   primaryBtn: {
-    backgroundColor: Colors.primary, height: 54,
+    backgroundColor: colors.primary, height: 54,
     borderRadius: 14, alignItems: 'center', justifyContent: 'center',
     marginBottom: 20,
   },
@@ -414,25 +417,26 @@ const styles = StyleSheet.create({
 
   // Divider
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  dividerLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600', letterSpacing: 1.0, textTransform: 'uppercase' },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 1.0, textTransform: 'uppercase' },
 
   // Social
   socialBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 12, height: 50,
-    backgroundColor: Colors.surface,
-    borderRadius: 14, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: 14, borderWidth: 1, borderColor: colors.border,
     marginBottom: 12,
   },
-  socialBtnText: { fontSize: 15, color: Colors.text, fontWeight: '500' },
+  socialBtnText: { fontSize: 15, color: colors.text, fontWeight: '500' },
 
   // Switch
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' },
-  switchText: { fontSize: 15, color: Colors.textSecondary },
-  switchLink: { fontSize: 15, color: Colors.primary, fontWeight: '700' },
+  switchText: { fontSize: 15, color: colors.textSecondary },
+  switchLink: { fontSize: 15, color: colors.primary, fontWeight: '700' },
 
   // Skip
   skipRow: { alignItems: 'center', marginTop: 24, paddingBottom: 32 },
-  skipText: { fontSize: 13, color: Colors.textLight, textDecorationLine: 'underline' },
+  skipText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
 });
+}

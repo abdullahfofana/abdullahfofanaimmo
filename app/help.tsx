@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Linking, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ChevronLeft, MessageCircle, Phone, Mail, BookOpen, ChevronDown, ChevronUp, Headphones } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useChat } from '@/providers/ChatProvider';
@@ -55,6 +55,8 @@ const faqs: FAQItem[] = [
 
 function FAQAccordion({ item, language }: { item: FAQItem; language: string }) {
   const [expanded, setExpanded] = useState(false);
+  const colors = useColors();
+  const styles = createStyles(colors);
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -84,6 +86,8 @@ function FAQAccordion({ item, language }: { item: FAQItem; language: string }) {
 }
 
 export default function HelpScreen() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const [showFAQs, setShowFAQs] = useState(false);
   const { startSupportConversation } = useChat();
   const { language } = useLanguage();
@@ -214,132 +218,134 @@ export default function HelpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  content: {
-    padding: Spacing.lg,
-    paddingBottom: 40,
-    maxWidth: 680,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  backButton: {
-    padding: Spacing.xs,
-    marginLeft: Platform.OS === 'web' ? Spacing.sm : 0,
-  },
-  heroBox: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    marginTop: 8,
-  },
-  heroIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  headerText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  headerSub: {
-    fontSize: 13.5,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 340,
-  },
-  optionsContainer: {
-    gap: Spacing.md,
-  },
-  optionCard: {
-    backgroundColor: '#FFFFFF',
-    padding: Spacing.lg,
-    borderRadius: 18,
-    flexDirection: 'column',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
-  },
-  optionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 3,
-  },
-  optionDescription: {
-    fontSize: 12.5,
-    color: '#64748B',
-  },
-  faqContainer: {
-    gap: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: Spacing.md,
-  },
-  faqItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  faqHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.md,
-  },
-  faqQuestion: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  faqBody: {
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 10,
-  },
-  faqAnswer: {
-    fontSize: 13,
-    color: '#475569',
-    lineHeight: 20,
-  },
-});
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: Spacing.lg,
+      paddingBottom: 40,
+      maxWidth: 680,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    backButton: {
+      padding: Spacing.xs,
+      marginLeft: Platform.OS === 'web' ? Spacing.sm : 0,
+    },
+    heroBox: {
+      alignItems: 'center',
+      marginBottom: Spacing.xl,
+      marginTop: 8,
+    },
+    heroIconBox: {
+      width: 64,
+      height: 64,
+      borderRadius: 20,
+      backgroundColor: colors.primaryLight + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: colors.primaryLight + '40',
+    },
+    headerText: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.text,
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    headerSub: {
+      fontSize: 13.5,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
+      maxWidth: 340,
+    },
+    optionsContainer: {
+      gap: Spacing.md,
+    },
+    optionCard: {
+      backgroundColor: colors.surface,
+      padding: Spacing.lg,
+      borderRadius: 18,
+      flexDirection: 'column',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    iconContainer: {
+      width: 52,
+      height: 52,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.sm,
+    },
+    optionTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 3,
+    },
+    optionDescription: {
+      fontSize: 12.5,
+      color: colors.textSecondary,
+    },
+    faqContainer: {
+      gap: Spacing.md,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+      marginBottom: Spacing.md,
+    },
+    faqItem: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    faqHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: Spacing.md,
+    },
+    faqQuestion: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+      flex: 1,
+      marginRight: Spacing.sm,
+    },
+    faqBody: {
+      paddingHorizontal: Spacing.md,
+      paddingBottom: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 10,
+    },
+    faqAnswer: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      lineHeight: 20,
+    },
+  });
+}
 

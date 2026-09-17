@@ -33,7 +33,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { IconSizes, IconStrokes } from '@/constants/icons';
@@ -57,6 +57,8 @@ import { calculateAreaPriceStats } from '@/utils/priceStats';
 import { useFavorites } from '@/providers/FavoritesProvider';
 
 export default function PropertyDetailScreen() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { t, language } = useLanguage();
@@ -136,7 +138,7 @@ export default function PropertyDetailScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{t('loading') || 'Loading...'}</Text>
       </View>
     );
@@ -229,7 +231,7 @@ export default function PropertyDetailScreen() {
                 <IconButton
                   variant="translucentLight"
                   size="md"
-                  icon={<ArrowLeft size={IconSizes.action} color={Colors.text} strokeWidth={IconStrokes.medium} />}
+                  icon={<ArrowLeft size={IconSizes.action} color={colors.text} strokeWidth={IconStrokes.medium} />}
                   onPress={handleBack}
                   accessibilityLabel="Retour"
                 />
@@ -237,7 +239,7 @@ export default function PropertyDetailScreen() {
                   <IconButton
                     variant="translucentLight"
                     size="md"
-                    icon={<Share2 size={IconSizes.action} color={Colors.text} strokeWidth={IconStrokes.medium} />}
+                    icon={<Share2 size={IconSizes.action} color={colors.text} strokeWidth={IconStrokes.medium} />}
                     onPress={handleShare}
                     accessibilityLabel="Partager l'annonce"
                   />
@@ -247,8 +249,8 @@ export default function PropertyDetailScreen() {
                     icon={
                       <Heart
                         size={IconSizes.action}
-                        color={property && isFavoriteCheck(property.id) ? Colors.error : Colors.text}
-                        fill={property && isFavoriteCheck(property.id) ? Colors.error : 'transparent'}
+                        color={property && isFavoriteCheck(property.id) ? colors.error : colors.text}
+                        fill={property && isFavoriteCheck(property.id) ? colors.error : 'transparent'}
                         strokeWidth={IconStrokes.medium}
                       />
                     }
@@ -447,14 +449,14 @@ export default function PropertyDetailScreen() {
                   <>
                     <View style={{ marginTop: 16 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '800', color: Colors.text }}>
+                        <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>
                           📍 {t('property_location') || 'Localisation & Quartier'}
                         </Text>
                         <TouchableOpacity
                           onPress={() => setIsMapVisible(true)}
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 }}
                         >
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>
                             {t('view_on_map') || 'Plein écran'} ↗
                           </Text>
                         </TouchableOpacity>
@@ -520,7 +522,7 @@ export default function PropertyDetailScreen() {
                         onPress={() => startOrGetConversation(property)}
                         activeOpacity={0.85}
                       >
-                        <MessageSquare size={19} color={Colors.white} />
+                        <MessageSquare size={19} color={colors.white} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.agentButton}
@@ -534,7 +536,7 @@ export default function PropertyDetailScreen() {
                           }
                         }}
                       >
-                        <Phone size={19} color={Colors.white} />
+                        <Phone size={19} color={colors.white} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.agentButton, { backgroundColor: '#25D366' }]}
@@ -544,7 +546,7 @@ export default function PropertyDetailScreen() {
                           Linking.openURL('https://wa.me/' + clean).catch(() => {});
                         }}
                       >
-                        <MessageCircle size={19} color={Colors.white} />
+                        <MessageCircle size={19} color={colors.white} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.agentButton}
@@ -556,7 +558,7 @@ export default function PropertyDetailScreen() {
                           }
                         }}
                       >
-                        <Mail size={19} color={Colors.white} />
+                        <Mail size={19} color={colors.white} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -577,14 +579,14 @@ export default function PropertyDetailScreen() {
 
           {/* Similar Properties */}
           <View style={{ marginTop: 24, paddingHorizontal: 20, marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 4, letterSpacing: -0.4 }}>Similar Properties</Text>
-            <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 16 }}>You might also like</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.4 }}>Similar Properties</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>You might also like</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {allProperties.filter(p => p.id !== property.id && p.type === property.type).slice(0, 4).map(p => (
                 <TouchableOpacity key={p.id} onPress={() => router.push(`/property/${p.id}`)} activeOpacity={0.9} style={{ width: 200 }}>
                   <Image source={{ uri: p.images[0] }} style={{ width: 200, height: 130, borderRadius: 12 }} resizeMode="cover" />
-                  <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '700', color: Colors.text, marginTop: 8 }}>{p.title}</Text>
-                  <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '700', marginTop: 2 }}>{formatPriceCompact(p.price)}</Text>
+                  <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 8 }}>{p.title}</Text>
+                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '700', marginTop: 2 }}>{formatPriceCompact(p.price)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -680,13 +682,13 @@ export default function PropertyDetailScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <MapPin size={18} color={Colors.primary} />
+              <MapPin size={18} color={colors.primary} />
               <Text
                 numberOfLines={1}
                 style={{
                   fontSize: 15,
                   fontWeight: '700',
-                  color: Colors.text,
+                  color: colors.text,
                   flex: 1,
                 }}
               >
@@ -695,12 +697,12 @@ export default function PropertyDetailScreen() {
             </View>
             <TouchableOpacity
               style={{
-                backgroundColor: Colors.white,
+                backgroundColor: colors.white,
                 padding: 8,
                 borderRadius: 20,
                 borderWidth: 1,
                 borderColor: 'rgba(0,0,0,0.08)',
-                shadowColor: Colors.shadow.md,
+                shadowColor: colors.shadow.md,
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.18,
                 shadowRadius: 6,
@@ -708,7 +710,7 @@ export default function PropertyDetailScreen() {
               }}
               onPress={() => setIsMapVisible(false)}
             >
-              <X size={22} color={Colors.text} />
+              <X size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -717,10 +719,11 @@ export default function PropertyDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
   },
   centerContent: {
     justifyContent: 'center',
@@ -729,29 +732,29 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...Typography.body,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.md,
   },
   notFoundText: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
   },
   backButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     borderRadius: 12,
   },
   backButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.white,
   },
   imageContainer: {
     position: 'relative',
     height: 400,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   image: {
     height: 400,
@@ -769,10 +772,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.shadow.lg,
+    shadowColor: colors.shadow.lg,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 12,
@@ -792,14 +795,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: Spacing.md,
     right: Spacing.md,
-    backgroundColor: Colors.overlay,
+    backgroundColor: colors.overlay,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderRadius: 6,
   },
   imageIndicatorText: {
     ...Typography.caption,
-    color: Colors.white,
+    color: colors.white,
   },
   content: {
     padding: Spacing.lg,
@@ -987,21 +990,21 @@ const styles = StyleSheet.create({
   },
   price: {
     ...Typography.h1,
-    color: Colors.primary,
+    color: colors.primary,
   },
   priceUnit: {
     ...Typography.h3,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   statusBadge: {
-    backgroundColor: Colors.accent,
+    backgroundColor: colors.accent,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: 8,
   },
   statusText: {
     ...Typography.bodySmall,
-    color: Colors.white,
+    color: colors.white,
     fontWeight: '600' as const,
   },
   title: {
@@ -1016,8 +1019,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
     marginBottom: Spacing.lg,
-    backgroundColor: Colors.primary + '12',
-    borderColor: Colors.primary + '28',
+    backgroundColor: colors.primary + '12',
+    borderColor: colors.primary + '28',
     borderWidth: 1,
     borderRadius: 24,
     paddingVertical: 8,
@@ -1030,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     ...Typography.body,
-    color: Colors.primary,
+    color: colors.primary,
     flex: 1,
     fontSize: 13,
   },
@@ -1066,12 +1069,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   description: {
     ...Typography.body,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 24,
   },
   features: {
@@ -1086,17 +1089,17 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   featureText: {
     ...Typography.body,
-    color: Colors.text,
+    color: colors.text,
   },
   agentCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     padding: Spacing.md,
     borderRadius: 12,
   },
@@ -1115,26 +1118,26 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   agentAvatarText: {
     ...Typography.h3,
-    color: Colors.white,
+    color: colors.white,
   },
   agentDetails: {
     flex: 1,
   },
   agentName: {
     ...Typography.body,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600' as const,
     marginBottom: 4,
   },
   agentPhone: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   agentActions: {
     flexDirection: 'row',
@@ -1144,7 +1147,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer' as any,
@@ -1158,27 +1161,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.white,
+    borderTopColor: colors.border,
+    backgroundColor: colors.white,
   },
   contactButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.lg,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 6,
   },
   contactButtonDesktop: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: Spacing.lg,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1192,7 +1195,7 @@ const styles = StyleSheet.create({
   },
   contactButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.white,
   },
 
   // ── MOBILE STICKY ACTION BAR ────────────────────────────────
@@ -1303,3 +1306,4 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+}

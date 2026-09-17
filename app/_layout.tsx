@@ -4,11 +4,11 @@ import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { LanguageProvider } from "@/providers/LanguageProvider";
+import { LanguageProvider, useLanguage } from "@/providers/LanguageProvider";
 import { PropertySubmissionProvider } from "@/providers/PropertySubmissionProvider";
 import { IntegrationProvider } from "@/providers/IntegrationProvider";
 import { FavoritesProvider } from "@/providers/FavoritesProvider";
-import { ThemeProvider } from "@/providers/ThemeProvider";
+import { ThemeProvider, useTheme } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ChatProvider } from "@/providers/ChatProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
@@ -358,6 +358,17 @@ const fallbackStyles = StyleSheet.create({
   },
 });
 
+/**
+ * AppReady — waits for both ThemeProvider and LanguageProvider to hydrate
+ * from AsyncStorage before rendering the app. Prevents flash of wrong theme/language.
+ */
+function AppReady({ children }: { children: React.ReactNode }) {
+  const { isLoaded: themeLoaded } = useTheme();
+  const { isLoaded: langLoaded } = useLanguage();
+  if (!themeLoaded || !langLoaded) return null;
+  return <>{children}</>;
+}
+
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
@@ -416,12 +427,14 @@ export default function RootLayout() {
                     <LanguageProvider>
                       <ChatProvider>
                         <NotificationProvider>
-                          <GestureHandlerRootView style={{ flex: 1 }}>
-                            <View style={{ flex: 1 }}>
-                              <RootLayoutNav />
-                              <ChatModal />
-                            </View>
-                          </GestureHandlerRootView>
+                          <AppReady>
+                            <GestureHandlerRootView style={{ flex: 1 }}>
+                              <View style={{ flex: 1 }}>
+                                <RootLayoutNav />
+                                <ChatModal />
+                              </View>
+                            </GestureHandlerRootView>
+                          </AppReady>
                         </NotificationProvider>
                       </ChatProvider>
                     </LanguageProvider>

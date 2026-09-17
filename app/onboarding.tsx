@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -57,6 +57,8 @@ const slides: Slide[] = [
 ];
 
 export default function OnboardingScreen() {
+  const colors = useColors();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -192,14 +194,15 @@ export default function OnboardingScreen() {
               ? (language === 'en' ? 'Get Started' : 'Commencer')
               : (language === 'en' ? 'Next' : 'Suivant')}
           </Text>
-          <ArrowRight size={18} color={Colors.primary} strokeWidth={2.2} />
+          <ArrowRight size={18} color={colors.primary} strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0A0F0C',
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
   slideEyebrow: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.accentLight,
+    color: colors.accentLight,
     letterSpacing: 2.0,
     textTransform: 'uppercase',
     marginBottom: 2,
@@ -304,7 +307,8 @@ const styles = StyleSheet.create({
   ctaBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: 0.1,
   },
 });
+}

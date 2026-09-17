@@ -6,22 +6,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLanguage } from '@/providers/LanguageProvider';
 import { useColors } from '@/hooks/useColors';
+import { useTheme } from '@/providers/ThemeProvider';
 import WebNavbar from '@/components/WebNavbar';
 import { useResponsive } from '@/constants/breakpoints';
 
-// ── Capsule Active Icon Component (Reference Image Inspired) ──────────────────
+// ── Capsule Active Icon Component ─────────────────────────────────────────────
 function DockTabIcon({
   icon,
   focused,
   isSpecial,
+  isDark,
 }: {
   icon: (color: string, strokeWidth: number) => React.ReactNode;
   focused: boolean;
   isSpecial?: boolean;
+  isDark: boolean;
 }) {
   const activeBg = '#059669';
   const activeIconColor = '#FFFFFF';
-  const inactiveIconColor = '#8DA494';
+  // Adapt inactive icon color to theme: muted green in dark, darker muted in light
+  const inactiveIconColor = isDark ? '#8DA494' : '#6B7F72';
 
   return (
     <View style={[dockStyles.tabItemWrap, focused && dockStyles.tabItemWrapFocused]}>
@@ -42,7 +46,18 @@ export default function TabLayout() {
   const { isDesktop } = useResponsive();
   const { t } = useLanguage();
   const colors = useColors();
+  const { activeTheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const isDark = activeTheme === 'dark';
+
+  // Theme-aware tab bar colours
+  const tabBarBg = isDark
+    ? 'rgba(20, 30, 25, 0.94)'      // dark: deep forest glass
+    : 'rgba(248, 245, 240, 0.96)';  // light: warm ivory glass
+  const tabBarBorder = isDark
+    ? 'rgba(255, 255, 255, 0.10)'
+    : 'rgba(27, 58, 45, 0.12)';
+  const tabBarShadow = isDark ? '#0A120E' : '#1B3A2D';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -60,13 +75,13 @@ export default function TabLayout() {
                 bottom: Math.max(insets.bottom, 12) + 4,
                 height: 62,
                 borderRadius: 34,
-                backgroundColor: 'rgba(20, 30, 25, 0.94)',
+                backgroundColor: tabBarBg,
                 borderTopWidth: 0,
                 borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.12)',
-                shadowColor: '#0A120E',
+                borderColor: tabBarBorder,
+                shadowColor: tabBarShadow,
                 shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.32,
+                shadowOpacity: isDark ? 0.32 : 0.14,
                 shadowRadius: 22,
                 elevation: 16,
                 paddingHorizontal: 8,
@@ -84,10 +99,11 @@ export default function TabLayout() {
         <Tabs.Screen
           name="home"
           options={{
-            title: t('nav_home') || 'Accueil',
+            title: t('nav_home'),
             tabBarIcon: ({ focused }) => (
               <DockTabIcon
                 focused={focused}
+                isDark={isDark}
                 icon={(color, stroke) => <Home size={21} color={color} strokeWidth={stroke} />}
               />
             ),
@@ -96,10 +112,11 @@ export default function TabLayout() {
         <Tabs.Screen
           name="search"
           options={{
-            title: t('nav_search') || 'Explorer',
+            title: t('nav_search'),
             tabBarIcon: ({ focused }) => (
               <DockTabIcon
                 focused={focused}
+                isDark={isDark}
                 icon={(color, stroke) => <Search size={21} color={color} strokeWidth={stroke} />}
               />
             ),
@@ -108,14 +125,15 @@ export default function TabLayout() {
         <Tabs.Screen
           name="favorites"
           options={{
-            title: t('nav_favorites') || 'Favoris',
+            title: t('nav_favorites'),
             tabBarIcon: ({ focused }) => (
               <DockTabIcon
                 focused={focused}
+                isDark={isDark}
                 icon={(color, stroke) => (
                   <Heart
                     size={20}
-                    color={focused ? '#FFFFFF' : color}
+                    color={focused ? '#FFFFFF' : (isDark ? '#8DA494' : '#6B7F72')}
                     fill={focused ? '#FFFFFF' : 'transparent'}
                     strokeWidth={stroke}
                   />
@@ -127,10 +145,11 @@ export default function TabLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: t('nav_profile') || 'Profil',
+            title: t('nav_profile'),
             tabBarIcon: ({ focused }) => (
               <DockTabIcon
                 focused={focused}
+                isDark={isDark}
                 icon={(color, stroke) => <User size={21} color={color} strokeWidth={stroke} />}
               />
             ),
@@ -181,5 +200,3 @@ const dockStyles = StyleSheet.create({
     opacity: 0.85,
   },
 });
-
-

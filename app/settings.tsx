@@ -71,9 +71,10 @@ function SettingsItem({
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { language, setLanguage, t } = useLanguage();
-  const { themeMode, setTheme } = useTheme();
+  const { themeMode, activeTheme, setTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const colors = useColors();
+  const isDark = activeTheme === 'dark';
 
   const toggleDarkMode = async (value: boolean) => {
     await setTheme(value ? 'dark' : 'light');
@@ -149,14 +150,14 @@ export default function SettingsScreen() {
               icon={<Moon size={22} color={colors.primary} />}
               title={t('settings_dark_mode')}
               subtitle={
-                themeMode === 'dark'
+                isDark
                   ? t('settings_enabled')
                   : t('settings_disabled')
               }
               showChevron={false}
               rightElement={
                 <Switch
-                  value={themeMode === 'dark'}
+                  value={isDark}
                   onValueChange={toggleDarkMode}
                   trackColor={{ false: colors.borderLight, true: colors.primary }}
                   thumbColor={colors.white}

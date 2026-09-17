@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { MessageCircle, X, Send, Sparkles, User, Bot, HelpCircle, Search, DollarSign } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { trpc } from '@/lib/trpc';
@@ -31,6 +31,8 @@ interface Message {
 const { width, height } = Dimensions.get('window');
 
 export default function AIChatbot() {
+  const colors = useColors();
+  const styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { t, language } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
@@ -147,7 +149,7 @@ export default function AIChatbot() {
             style={styles.quickAction}
             onPress={() => sendMessage(query)}
         >
-            <Icon size={14} color={Colors.primary} />
+            <Icon size={14} color={colors.primary} />
             <Text style={styles.quickActionText}>{label}</Text>
         </TouchableOpacity>
     );
@@ -160,7 +162,7 @@ export default function AIChatbot() {
                 activeOpacity={0.8}
                 testID="aiChatFab"
             >
-                <Sparkles size={24} color={Colors.white} />
+                <Sparkles size={24} color={colors.white} />
             </TouchableOpacity>
         );
     }
@@ -183,7 +185,7 @@ export default function AIChatbot() {
                     <View style={styles.header}>
                         <View style={styles.headerInfo}>
                             <View style={styles.iconContainer}>
-                                <Bot size={24} color={Colors.primary} />
+                                <Bot size={24} color={colors.primary} />
                             </View>
                             <View>
                                 <Text style={styles.headerTitle}>ImmoCI AI</Text>
@@ -193,7 +195,7 @@ export default function AIChatbot() {
                             </View>
                         </View>
                         <TouchableOpacity onPress={toggleChat} style={styles.closeButton}>
-                            <X size={24} color={Colors.text} />
+                            <X size={24} color={colors.text} />
                         </TouchableOpacity>
                     </View>
 
@@ -213,7 +215,7 @@ export default function AIChatbot() {
                             >
                                 {msg.role === 'assistant' && (
                                     <View style={styles.botAvatar}>
-                                        <Bot size={14} color={Colors.white} />
+                                        <Bot size={14} color={colors.white} />
                                     </View>
                                 )}
                                 <View style={[
@@ -232,11 +234,11 @@ export default function AIChatbot() {
                         {chatMutation.isPending && (
                             <View style={[styles.messageBubble, styles.botBubble]}>
                                 <View style={styles.botAvatar}>
-                                    <Bot size={14} color={Colors.white} />
+                                    <Bot size={14} color={colors.white} />
                                 </View>
                                 <View style={[styles.bubbleContent, styles.botBubbleContent, { flexDirection: 'row', gap: 4, alignItems: 'center', height: 40 }]}>
-                                    <ActivityIndicator size="small" color={Colors.textSecondary} />
-                                    <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>Typing...</Text>
+                                    <ActivityIndicator size="small" color={colors.textSecondary} />
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Typing...</Text>
                                 </View>
                             </View>
                         )}
@@ -266,7 +268,7 @@ export default function AIChatbot() {
                         <TextInput
                             style={styles.input}
                             placeholder={language === 'fr' ? "Posez une question..." : "Ask a question..."}
-                            placeholderTextColor={Colors.textLight}
+                            placeholderTextColor={colors.textLight}
                             value={inputMessage}
                             onChangeText={setInputMessage}
                             onSubmitEditing={() => sendMessage()}
@@ -280,7 +282,7 @@ export default function AIChatbot() {
                             onPress={() => sendMessage()}
                             disabled={!inputMessage.trim() || chatMutation.isPending}
                         >
-                            <Send size={20} color={Colors.white} />
+                            <Send size={20} color={colors.white} />
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
@@ -289,16 +291,17 @@ export default function AIChatbot() {
     );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
     fab: {
         position: 'absolute',
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: Colors.shadow?.lg || '#000',
+        shadowColor: colors.shadow?.lg || '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -311,7 +314,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalContent: {
-        backgroundColor: Colors.background,
+        backgroundColor: colors.background,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         height: '80%', // Takes up 80% of screen
@@ -328,8 +331,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: Spacing.lg,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.border,
-        backgroundColor: Colors.surface,
+        borderBottomColor: colors.border,
+        backgroundColor: colors.surface,
     },
     headerInfo: {
         flexDirection: 'row',
@@ -340,25 +343,25 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: Colors.primaryLight + '30',
+        backgroundColor: colors.primaryLight + '30',
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Typography.h4,
-        color: Colors.text,
+        color: colors.text,
         marginBottom: 2,
     },
     headerSubtitle: {
         ...Typography.bodySmall,
-        color: Colors.textSecondary,
+        color: colors.textSecondary,
     },
     closeButton: {
         padding: Spacing.sm,
     },
     messagesContainer: {
         flex: 1,
-        backgroundColor: Colors.backgroundSecondary,
+        backgroundColor: colors.backgroundSecondary,
     },
     messagesContent: {
         padding: Spacing.lg,
@@ -382,7 +385,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 4,
@@ -393,30 +396,30 @@ const styles = StyleSheet.create({
         maxWidth: '100%',
     },
     userBubbleContent: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         borderBottomRightRadius: 4,
     },
     botBubbleContent: {
-        backgroundColor: Colors.white,
+        backgroundColor: colors.white,
         borderBottomLeftRadius: 4,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: colors.border,
     },
     messageText: {
         fontSize: 15,
         lineHeight: 22,
     },
     userMessageText: {
-        color: Colors.white,
+        color: colors.white,
     },
     botMessageText: {
-        color: Colors.text,
+        color: colors.text,
     },
     quickActionsContainer: {
         maxHeight: 50,
-        backgroundColor: Colors.surface,
+        backgroundColor: colors.surface,
         borderTopWidth: 1,
-        borderTopColor: Colors.border,
+        borderTopColor: colors.border,
     },
     quickActionsContent: {
         paddingHorizontal: Spacing.lg,
@@ -431,43 +434,44 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
-        backgroundColor: Colors.primaryLight + '20',
+        backgroundColor: colors.primaryLight + '20',
         borderWidth: 1,
-        borderColor: Colors.primaryLight + '40',
+        borderColor: colors.primaryLight + '40',
     },
     quickActionText: {
         fontSize: 13,
-        color: Colors.primary,
+        color: colors.primary,
         fontWeight: '500',
     },
     inputArea: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: Spacing.md,
-        backgroundColor: Colors.surface,
+        backgroundColor: colors.surface,
         borderTopWidth: 1,
-        borderTopColor: Colors.border,
+        borderTopColor: colors.border,
         gap: Spacing.md,
     },
     input: {
         flex: 1,
         height: 44,
-        backgroundColor: Colors.backgroundSecondary,
+        backgroundColor: colors.backgroundSecondary,
         borderRadius: 22,
         paddingHorizontal: Spacing.lg,
         fontSize: 15,
-        color: Colors.text,
+        color: colors.text,
     },
     sendButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
     },
     sendButtonDisabled: {
         opacity: 0.5,
-        backgroundColor: Colors.textLight,
+        backgroundColor: colors.textLight,
     },
 });
+}

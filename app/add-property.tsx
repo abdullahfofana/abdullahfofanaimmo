@@ -64,7 +64,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
 
-import Colors from '@/constants/colors';
+import { useColors } from '@/hooks/useColors';
 import Spacing from '@/constants/spacing';
 import Typography from '@/constants/typography';
 import { useLanguage } from '@/providers/LanguageProvider';
@@ -73,7 +73,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { PropertyType, PropertyStatus, PaymentMethod } from '@/types/property';
 import { ivoryCoastLocations } from '@/constants/ivoryCoastLocations';
 import { trpc } from '@/lib/trpc';
-import { useColors } from '@/hooks/useColors';
 import LocationPickerModal from '@/components/LocationPickerModal';
 
 interface FormData {
