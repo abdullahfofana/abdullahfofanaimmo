@@ -34,6 +34,8 @@ import {
   AlertCircle,
 } from 'lucide-react-native';
 import Spacing from '@/constants/spacing';
+import { getStaffByEmail } from '@/utils/staffStorage';
+import { logAuditEvent } from '@/utils/auditLogger';
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -153,11 +155,28 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       // Step 1: Authenticate with Supabase
       const userData = await signIn(email, password);
 
-      // Step 2: Verify the user has admin role
-      const adminRoles = ['admin', 'super_admin'];
-      if (!userData || !adminRoles.includes(userData.role)) {
-        setError('Accès refusé. Ce compte n\'a pas les droits d\'administration requis.');
-        // Sign out the non-admin user immediately
+      // Step 2: Verify the user has admin or staff role
+      const staffAccount = await getStaffByEmail(email);
+      const isStaffOrAdmin =
+        (userData && ['admin', 'super_admin', 'agent', 'support'].includes(userData.role)) ||
+        staffAccount !== null;
+
+      if (!isStaffOrAdmin) {
+        setError("Accès refusé. Ce portail est réservé aux collaborateurs et administrateurs d'ImmoCI.");
+        logAuditEvent({
+          action: 'LOGIN_FAILED',
+          severity: 'ALERT',
+          actor: {
+            id: userData?.id || 'unknown',
+            name: userData?.name || email,
+            email,
+            role: userData?.role || 'customer',
+          },
+          target: 'Portail Staff & Administration',
+          details: { reason: 'Tentative de connexion par un compte client ou non habilité' },
+        });
+
+        // Sign out the non-staff user immediately
         try {
           const { supabase } = await import('@/backend/supabase');
           await supabase.auth.signOut();
@@ -166,7 +185,20 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
         return;
       }
 
-      // Step 3: Admin verified — grant access
+      // Step 3: Staff/Admin verified — log success and grant access
+      logAuditEvent({
+        action: 'LOGIN_SUCCESS',
+        severity: 'INFO',
+        actor: {
+          id: staffAccount?.id || userData?.id || 'staff-user',
+          name: staffAccount?.name || userData?.name || email,
+          email,
+          role: staffAccount?.role || userData?.role || 'Staff',
+        },
+        target: 'Portail Staff & Administration',
+        details: { department: staffAccount?.department || 'Operations' },
+      });
+
       onLogin();
     } catch (err: any) {
       const msg = err?.message || '';
@@ -313,36 +345,66 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
               )}
             </TouchableOpacity>
 
-            {/* DEV Skip Button */}
-            <TouchableOpacity
-              style={{
-                marginTop: 12,
-                borderWidth: 1,
-                borderColor: 'rgba(245, 158, 11, 0.5)',
-                borderRadius: 11,
-                height: 44,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-                gap: 8,
-                backgroundColor: 'rgba(245, 158, 11, 0.08)',
-              }}
-              onPress={async () => {
-                try {
-                  await skipAuth({
-                    role: 'super_admin',
-                    name: 'Fatou Diallo',
-                    id: 'support-agent-fatou',
-                  });
-                } catch {}
-                onLogin();
-              }}
-              activeOpacity={0.75}
-            >
-              <Text style={{ fontSize: 11, letterSpacing: 1.2, color: '#F59E0B', fontWeight: '600', textTransform: 'uppercase' }}>
-                ⚡ DEV — Skip Login
+            {/* DEV UAT Role Fast-Switching Panel */}
+            <View style={{ marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' }}>
+              <Text style={{ fontSize: 10, letterSpacing: 1.2, color: '#F59E0B', fontWeight: '700', textTransform: 'uppercase', marginBottom: 8, textAlign: 'center' }}>
+                ⚡ Test UAT Rapide — Profils de Rôles
               </Text>
-            </TouchableOpacity>
+              
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                {[
+                  { label: 'Super Admin', email: 'abm.fofana@gmail.com', name: 'Abdullah Fofana', role: 'super_admin' as const },
+                  { label: 'Admin', email: 'jeanluc.b@immoci.ci', name: 'Jean-Luc Bamba', role: 'admin' as const },
+                  { label: 'Gestionnaire Immo', email: 'koffi.k@immoci.ci', name: 'Koffi Kouamé', role: 'agent' as const },
+                  { label: 'Customer Care', email: 'fatou.d@immoci.ci', name: 'Fatou Diallo', role: 'support' as const },
+                  { label: 'Commercial / Sales', email: 'awa.k@immoci.ci', name: 'Awa Koné', role: 'agent' as const },
+                  { label: '🚫 Client (Test Bloqué)', email: 'client@immoci.ci', name: 'Client Test', role: 'renter' as const, isCustomer: true },
+                ].map((preset, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 5,
+                      borderRadius: 6,
+                      backgroundColor: preset.isCustomer ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                      borderWidth: 1,
+                      borderColor: preset.isCustomer ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)',
+                    }}
+                    onPress={async () => {
+                      if (preset.isCustomer) {
+                        setError("Accès refusé. Les comptes clients sont strictement interdits d'accès au portail Staff & Administration.");
+                        logAuditEvent({
+                          action: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+                          severity: 'ALERT',
+                          actor: { id: 'test-cust', name: preset.name, email: preset.email, role: 'Customer' },
+                          target: 'Tentative de connexion client sur /admin',
+                        });
+                        return;
+                      }
+                      try {
+                        await skipAuth({
+                          id: `staff-uat-${idx}`,
+                          role: preset.role,
+                          name: preset.name,
+                          email: preset.email,
+                        });
+                        logAuditEvent({
+                          action: 'LOGIN_SUCCESS',
+                          severity: 'INFO',
+                          actor: { id: `staff-uat-${idx}`, name: preset.name, email: preset.email, role: preset.label },
+                          target: 'Connexion UAT réussie',
+                        });
+                      } catch {}
+                      onLogin();
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, color: preset.isCustomer ? '#FCA5A5' : '#FDE68A', fontWeight: '600' }}>
+                      {preset.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
 
           {/* Navigation Links Footer */}

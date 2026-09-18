@@ -42,6 +42,7 @@ import {
   updateStaffMember,
   addStaffMember,
 } from '@/utils/staffStorage';
+import { logAuditEvent } from '@/utils/auditLogger';
 import StaffAccessModal from './StaffAccessModal';
 
 interface StaffManagementProps {
@@ -116,13 +117,25 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
   const handleSaveAccess = async (updated: StaffAccount) => {
     await updateStaffMember(updated);
     await reloadStaff();
+    logAuditEvent({
+      action: 'STAFF_PERMISSIONS_CHANGED',
+      severity: 'WARNING',
+      actor: { id: 'admin-actor', name: 'Administrateur', email: 'admin@immoci.ci', role: 'Admin' },
+      target: `${updated.name} (${updated.email})`,
+      department: updated.department,
+      details: {
+        role: updated.role,
+        permissionsCount: updated.permissions.length,
+        status: updated.status,
+      },
+    });
     showToast(`Permissions de ${updated.name} mises à jour avec succès.`);
   };
 
   const handleCreateStaff = async () => {
     if (!newStaff.name.trim() || !newStaff.email.trim()) return;
 
-    await addStaffMember({
+    const created = await addStaffMember({
       name: newStaff.name.trim(),
       email: newStaff.email.trim().toLowerCase(),
       phone: newStaff.phone.trim() || '+225 07 00 00 00 00',
@@ -134,6 +147,19 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
       avatar: newStaff.name.slice(0, 2).toUpperCase(),
     });
 
+    logAuditEvent({
+      action: 'STAFF_CREATED',
+      severity: 'INFO',
+      actor: { id: 'admin-actor', name: 'Administrateur', email: 'admin@immoci.ci', role: 'Admin' },
+      target: `${created.name} (${created.email})`,
+      department: created.department,
+      details: {
+        role: created.role,
+        department: created.department,
+        status: created.status,
+      },
+    });
+
     setShowAddModal(false);
     setNewStaff({
       name: '',
@@ -143,7 +169,7 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
       department: 'Customer Support',
     });
     await reloadStaff();
-    showToast(`Nouveau collaborateur ${newStaff.name} ajouté.`);
+    showToast(`Nouveau collaborateur ${created.name} ajouté.`);
   };
 
   const filteredStaff = useMemo(() => {

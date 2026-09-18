@@ -312,4 +312,44 @@ export const propertiesRouter = createTRPCRouter({
         recordedAt: new Date().toISOString(),
       };
     }),
+
+  // Requires auth: only Admins and Super Admins may permanently delete listings
+  delete: authedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (USE_SUPABASE) {
+        const { data: callerData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', ctx.user.id)
+          .single();
+        const allowedRoles = ['admin', 'super_admin'];
+        if (!callerData || !allowedRoles.includes(callerData.role)) {
+          const { TRPCError } = await import('@trpc/server');
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only administrators can delete property listings' });
+        }
+
+        const { error } = await supabase
+          .from('properties')
+          .delete()
+          .eq('id', input.id);
+
+        if (error) {
+          throw new Error(`Failed to delete property: ${error.message}`);
+        }
+      } else {
+        submissions = submissions.filter((s) => s.id !== input.id);
+        const currentDb = db.read();
+        currentDb.properties = submissions;
+        db.write(currentDb);
+      }
+
+      await addActivity({
+        type: 'property_verified',
+        message: `Property deleted (ID: ${input.id})`,
+        user: ctx.user.email || 'Admin',
+      });
+
+      return { success: true, id: input.id };
+    }),
 });

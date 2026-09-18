@@ -32,9 +32,9 @@ import {
   Search,
   Sparkles,
   ArrowUpRight,
-  AlertCircle,
   X,
   ChevronDown,
+  Lock,
 } from 'lucide-react-native';
 
 import { usePropertySubmissions } from '@/providers/PropertySubmissionProvider';
@@ -47,6 +47,7 @@ import { StaffAccount } from '@/types/staffRbac';
 
 interface AdminReportsProps {
   isDark?: boolean;
+  canExport?: boolean;
 }
 
 export type ReportCategory =
@@ -65,7 +66,7 @@ export type DateFilterRange =
   | 'this_year'
   | 'custom';
 
-export default function AdminReports({ isDark = true }: AdminReportsProps) {
+export default function AdminReports({ isDark = true, canExport = true }: AdminReportsProps) {
   const [activeReport, setActiveReport] = useState<ReportCategory>('revenue');
   const [dateRange, setDateRange] = useState<DateFilterRange>('this_month');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -537,21 +538,30 @@ export default function AdminReports({ isDark = true }: AdminReportsProps) {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.exportBtn, isExporting && { opacity: 0.6 }]}
-          onPress={handleExportExcel}
-          disabled={isExporting}
-          activeOpacity={0.85}
-        >
-          {isExporting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <FileSpreadsheet size={17} color="#FFFFFF" strokeWidth={2.2} />
-          )}
-          <Text style={styles.exportBtnText}>
-            {isExporting ? 'Génération du fichier...' : 'Exporter en Excel (.xlsx)'}
-          </Text>
-        </TouchableOpacity>
+        {canExport ? (
+          <TouchableOpacity
+            style={[styles.exportBtn, isExporting && { opacity: 0.6 }]}
+            onPress={handleExportExcel}
+            disabled={isExporting}
+            activeOpacity={0.85}
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <FileSpreadsheet size={17} color="#FFFFFF" strokeWidth={2.2} />
+            )}
+            <Text style={styles.exportBtnText}>
+              {isExporting ? 'Génération du fichier...' : 'Exporter en Excel (.xlsx)'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.exportBtn, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#CBD5E1' }]}>
+            <Lock size={15} color={isDark ? '#94A3B8' : '#64748B'} />
+            <Text style={[styles.exportBtnText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+              Export restreint (Admin requis)
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* ── REPORT CATEGORY TABS ── */}

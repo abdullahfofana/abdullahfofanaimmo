@@ -144,3 +144,36 @@ export function hasPermission(
   if (staff.role === 'Super Admin') return true;
   return Array.isArray(staff.permissions) && staff.permissions.includes(permission);
 }
+
+export async function getStaffByEmail(email: string): Promise<StaffAccount | null> {
+  const accounts = await loadStaffAccounts();
+  const lower = email.toLowerCase().trim();
+  const found = accounts.find((s) => s.email.toLowerCase().trim() === lower);
+  if (found) return found;
+
+  // If email is an admin from Supabase (e.g. Abdullah Fofana)
+  if (lower === 'abm.fofana@gmail.com' || lower.includes('admin@immoci.ci')) {
+    const adminAccount: StaffAccount = {
+      id: 'staff-admin-root',
+      name: 'Abdullah Fofana',
+      email: lower,
+      phone: '+225 05 49 80 08 81',
+      role: 'Super Admin',
+      department: 'Platform Administration',
+      status: 'Active',
+      hireDate: '2023-01-01',
+      lastActive: 'À l’instant',
+      avatar: 'AF',
+      permissions: ROLE_DEFAULT_PERMISSIONS['Super Admin'],
+    };
+    return adminAccount;
+  }
+
+  return null;
+}
+
+export async function getStaffById(id: string): Promise<StaffAccount | null> {
+  const accounts = await loadStaffAccounts();
+  return accounts.find((s) => s.id === id) || null;
+}
+

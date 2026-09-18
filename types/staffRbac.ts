@@ -50,13 +50,16 @@ export type PermissionKey =
   | 'staff.manage_permissions'
   // Settings
   | 'settings.view'
-  | 'settings.modify';
+  | 'settings.modify'
+  // Audit Logs
+  | 'audit.view'
+  | 'audit.export';
 
 export interface PermissionDefinition {
   key: PermissionKey;
   labelFr: string;
   labelEn: string;
-  category: 'dashboard' | 'properties' | 'customers' | 'inquiries' | 'chat' | 'reports' | 'staff' | 'settings';
+  category: 'dashboard' | 'properties' | 'customers' | 'inquiries' | 'chat' | 'reports' | 'staff' | 'settings' | 'audit';
   descriptionFr: string;
 }
 
@@ -251,6 +254,22 @@ export const ALL_PERMISSIONS: PermissionDefinition[] = [
     category: 'settings',
     descriptionFr: 'Modifier les clés API, webhooks et règles de modération.',
   },
+
+  // Audit Logs
+  {
+    key: 'audit.view',
+    labelFr: 'Consulter le journal d\'audit',
+    labelEn: 'View Audit Logs',
+    category: 'audit',
+    descriptionFr: 'Accès au registre immuable de traçabilité des actions administratives et de sécurité.',
+  },
+  {
+    key: 'audit.export',
+    labelFr: 'Exporter le journal d\'audit',
+    labelEn: 'Export Audit Logs',
+    category: 'audit',
+    descriptionFr: 'Exporter les pistes d\'audit pour conformité légale et gouvernance.',
+  },
 ];
 
 export const PERMISSION_CATEGORIES: {
@@ -266,6 +285,7 @@ export const PERMISSION_CATEGORIES: {
   { id: 'chat', titleFr: 'Chat & Support Client', titleEn: 'Live Chat', icon: 'MessageSquare' },
   { id: 'reports', titleFr: 'Rapports & Exports', titleEn: 'Reports & Export', icon: 'BarChart3' },
   { id: 'staff', titleFr: 'Équipe & Gestion des Accès', titleEn: 'Staff & RBAC', icon: 'Shield' },
+  { id: 'audit', titleFr: 'Audit & Sécurité', titleEn: 'Audit & Security', icon: 'History' },
   { id: 'settings', titleFr: 'Paramètres Système', titleEn: 'Settings', icon: 'Settings' },
 ];
 
@@ -293,6 +313,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<StaffRole, PermissionKey[]> = {
     'staff.view',
     'staff.create',
     'staff.edit',
+    'audit.view',
+    'audit.export',
     'settings.view',
   ],
 
@@ -344,3 +366,48 @@ export interface StaffAccount {
   avatar: string;
   permissions: PermissionKey[];
 }
+
+export type DashboardSectionKey =
+  | 'dashboard'
+  | 'properties'
+  | 'customers'
+  | 'inquiries'
+  | 'chat'
+  | 'reports'
+  | 'staff'
+  | 'audit'
+  | 'settings'
+  | 'analytics'
+  | 'documents'
+  | 'integrations';
+
+export const SECTION_REQUIRED_PERMISSIONS: Record<string, PermissionKey[]> = {
+  dashboard: ['dashboard.view'],
+  properties: ['properties.view'],
+  customers: ['customers.view'],
+  users: ['customers.view'],
+  inquiries: ['inquiries.view'],
+  chat: ['chat.view'],
+  support: ['chat.view'],
+  reports: ['reports.view'],
+  staff: ['staff.view'],
+  audit: ['audit.view'],
+  'audit-logs': ['audit.view'],
+  settings: ['settings.view'],
+  analytics: ['dashboard.view'],
+  documents: ['properties.view'],
+  integrations: ['settings.view'],
+};
+
+export function isSectionAuthorized(
+  section: string,
+  userPermissions: PermissionKey[] | undefined | null,
+  role?: StaffRole
+): boolean {
+  if (role === 'Super Admin') return true;
+  const required = SECTION_REQUIRED_PERMISSIONS[section];
+  if (!required || required.length === 0) return true;
+  if (!Array.isArray(userPermissions)) return false;
+  return required.some((perm) => userPermissions.includes(perm));
+}
+

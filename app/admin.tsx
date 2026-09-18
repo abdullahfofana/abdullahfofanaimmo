@@ -49,6 +49,8 @@ import {
   Bot,
   RefreshCw,
   LogOut,
+  History,
+  ShieldAlert,
 } from 'lucide-react-native';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
@@ -95,6 +97,10 @@ import RevenueAnalyticsChart from '@/components/admin/RevenueAnalyticsChart';
 import PerformanceDistributionChart from '@/components/charts/PerformanceDistributionChart';
 import AdminReports from '@/components/admin/AdminReports';
 import StaffManagement from '@/components/admin/StaffManagement';
+import AuditLogs from '@/components/admin/AuditLogs';
+import { logAuditEvent } from '@/utils/auditLogger';
+import { getStaffByEmail, hasPermission } from '@/utils/staffStorage';
+import { isSectionAuthorized, StaffAccount, StaffRole, ROLE_DEFAULT_PERMISSIONS } from '@/types/staffRbac';
 
 export type AdminSection =
   | 'dashboard'
@@ -106,7 +112,8 @@ export type AdminSection =
   | 'reports'
   | 'integrations'
   | 'settings'
-  | 'support';
+  | 'support'
+  | 'audit';
 
 export type DepartmentType =
   | 'Operations & Logistics'
@@ -141,7 +148,7 @@ const ROLES: RoleDefinition[] = [
     department: 'Platform Administration',
     icon: Shield,
     color: '#059669',
-    allowedSections: ['dashboard', 'analytics', 'properties', 'documents', 'users', 'staff', 'support', 'reports', 'integrations', 'settings'],
+    allowedSections: ['dashboard', 'analytics', 'properties', 'documents', 'users', 'staff', 'support', 'reports', 'integrations', 'settings', 'audit'],
     descriptionKey: 'admin_unrestricted_access',
   },
   {
@@ -717,9 +724,22 @@ export default function AdminDashboardWrapper() {
 
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const { user, signOut } = useAuth();
+  const [currentStaff, setCurrentStaff] = useState<StaffAccount | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [activeRole, setActiveRole] = useState<AdminRoleType>('Super Admin');
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+
+  // Synchronize authenticated user with staff directory
+  useEffect(() => {
+    if (user?.email) {
+      getStaffByEmail(user.email).then((account) => {
+        if (account) {
+          setCurrentStaff(account);
+          setActiveRole(account.role as any);
+        }
+      });
+    }
+  }, [user?.email]);
 
   const {
     submissions,
@@ -1198,6 +1218,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       category: 'OTHER',
     },
     {
+      id: 'audit',
+      icon: (a) => <History size={19} color={a ? '#10B981' : '#94A3B8'} />,
+      title: "Journal d'Audit & Sécurité",
+      category: 'MANAGEMENT',
+    },
+    {
       id: 'settings',
       icon: (a) => <Settings size={19} color={a ? '#10B981' : '#94A3B8'} />,
       title: t('admin_nav_settings'),
@@ -1205,10 +1231,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     },
   ];
 
-  // RBAC Filtering for Navigation Items
+  // RBAC Filtering for Navigation Items based on user role + granular permissions
   const filteredNavItems = useMemo(() => {
-    return allNavItems.filter((item) => currentRoleDef.allowedSections.includes(item.id));
-  }, [allNavItems, currentRoleDef]);
+    const userRole = (currentStaff?.role || activeRole) as StaffRole;
+    const permissions = currentStaff?.permissions || (ROLE_DEFAULT_PERMISSIONS[userRole] || []);
+    return allNavItems.filter((item) => isSectionAuthorized(item.id, permissions, userRole));
+  }, [allNavItems, currentStaff, activeRole]);
 
 
 
@@ -1487,11 +1515,43 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               theme={stitchTheme}
               isDark={isDark}
               onApprove={() => {
+                if (!hasPermission(currentStaff, 'properties.approve')) {
+                  showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+                  return;
+                }
                 updateSubmissionStatus(submission.id, 'approved');
+                logAuditEvent({
+                  action: 'PROPERTY_APPROVED',
+                  severity: 'INFO',
+                  actor: {
+                    id: currentStaff?.id || user?.id || 'admin',
+                    name: currentStaff?.name || user?.name || 'Admin',
+                    role: (currentStaff?.role || activeRole) as StaffRole,
+                    email: currentStaff?.email || user?.email || '',
+                  },
+                  target: `${submission.title} (${submission.id})`,
+                  details: { propertyId: submission.id, title: submission.title },
+                });
                 showToast(language === 'fr' ? 'Document approuvé avec succès' : 'Document verified and approved');
               }}
               onReject={() => {
+                if (!hasPermission(currentStaff, 'properties.reject')) {
+                  showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+                  return;
+                }
                 updateSubmissionStatus(submission.id, 'rejected', 'Document invalid');
+                logAuditEvent({
+                  action: 'PROPERTY_REJECTED',
+                  severity: 'WARNING',
+                  actor: {
+                    id: currentStaff?.id || user?.id || 'admin',
+                    name: currentStaff?.name || user?.name || 'Admin',
+                    role: (currentStaff?.role || activeRole) as StaffRole,
+                    email: currentStaff?.email || user?.email || '',
+                  },
+                  target: `${submission.title} (${submission.id})`,
+                  details: { propertyId: submission.id, title: submission.title, reason: 'Document invalid' },
+                });
                 showToast(language === 'fr' ? 'Document rejeté' : 'Document rejected');
               }}
               onViewDocs={() => setAttachmentView({ type: 'document', submission })}
@@ -2247,6 +2307,45 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   const renderContent = () => {
+    const userRole = (currentStaff?.role || activeRole) as StaffRole;
+    const permissions = currentStaff?.permissions || (ROLE_DEFAULT_PERMISSIONS[userRole] || []);
+    const isAuthorized = isSectionAuthorized(activeSection, permissions, userRole);
+
+    if (!isAuthorized) {
+      logAuditEvent({
+        action: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+        severity: 'WARNING',
+        actor: {
+          id: currentStaff?.id || user?.id || 'anonymous',
+          name: currentStaff?.name || user?.name || 'Utilisateur',
+          role: userRole,
+          email: currentStaff?.email || user?.email || '',
+        },
+        target: `Section: ${activeSection}`,
+        details: { attemptedSection: activeSection, role: userRole },
+      });
+
+      return (
+        <View style={[styles.animateView, { padding: 48, alignItems: 'center', justifyContent: 'center', minHeight: 400 }]}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#EF444415', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <ShieldAlert size={40} color="#EF4444" />
+          </View>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: stitchTheme.textPrimary, marginBottom: 8 }}>
+            Accès Non Autorisé
+          </Text>
+          <Text style={{ fontSize: 14, color: stitchTheme.textSecondary, textAlign: 'center', maxWidth: 480, marginBottom: 24, lineHeight: 22 }}>
+            Votre rôle ({userRole}) ou vos permissions actuelles ne vous autorisent pas à accéder au module &quot;{activeSection}&quot;. Veuillez contacter un Administrateur si vous devez consulter ces données.
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#10B981', paddingHorizontal: 20, paddingVertical: 11, borderRadius: 10 }}
+            onPress={() => setActiveSection('dashboard')}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>Retour au Tableau de Bord</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     switch (activeSection) {
       case 'dashboard':
         return renderDashboard();
@@ -2303,7 +2402,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       case 'reports':
         return (
           <View style={styles.animateView}>
-            <AdminReports isDark={isDark} />
+            <AdminReports
+              isDark={isDark}
+              canExport={hasPermission(currentStaff, 'reports.export')}
+            />
+          </View>
+        );
+      case 'audit':
+        return (
+          <View style={styles.animateView}>
+            <AuditLogs isDark={isDark} />
           </View>
         );
       case 'integrations':
@@ -2642,13 +2750,45 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             setModerationProperty(null);
           }}
           onApprove={() => {
+            if (!hasPermission(currentStaff, 'properties.approve')) {
+              showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+              return;
+            }
             updateSubmissionStatus(moderationProperty.id, 'approved');
+            logAuditEvent({
+              action: 'PROPERTY_APPROVED',
+              severity: 'INFO',
+              actor: {
+                id: currentStaff?.id || user?.id || 'admin',
+                name: currentStaff?.name || user?.name || 'Admin',
+                role: (currentStaff?.role || activeRole) as StaffRole,
+                email: currentStaff?.email || user?.email || '',
+              },
+              target: `${moderationProperty.title} (${moderationProperty.id})`,
+              details: { propertyId: moderationProperty.id, title: moderationProperty.title, method: 'AI Moderation' },
+            });
             setShowAIModeration(false);
             setModerationProperty(null);
             showToast(language === 'fr' ? 'Annonce validée par IA' : 'Listing approved via AI');
           }}
           onReject={(reason) => {
+            if (!hasPermission(currentStaff, 'properties.reject')) {
+              showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+              return;
+            }
             updateSubmissionStatus(moderationProperty.id, 'rejected', reason);
+            logAuditEvent({
+              action: 'PROPERTY_REJECTED',
+              severity: 'WARNING',
+              actor: {
+                id: currentStaff?.id || user?.id || 'admin',
+                name: currentStaff?.name || user?.name || 'Admin',
+                role: (currentStaff?.role || activeRole) as StaffRole,
+                email: currentStaff?.email || user?.email || '',
+              },
+              target: `${moderationProperty.title} (${moderationProperty.id})`,
+              details: { propertyId: moderationProperty.id, title: moderationProperty.title, reason, method: 'AI Moderation' },
+            });
             setShowAIModeration(false);
             setModerationProperty(null);
             showToast(language === 'fr' ? 'Annonce rejetée par IA' : 'Listing rejected via AI');
