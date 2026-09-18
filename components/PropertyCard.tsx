@@ -51,6 +51,7 @@ export default function PropertyCard({
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(property.id);
   const { language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -124,9 +125,11 @@ export default function PropertyCard({
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
     if (!cleanPhone) return;
     const text = encodeURIComponent(
-      language === 'fr'
-        ? `Bonjour, je vous contacte concernant l'annonce : ${property.title} sur ImmoCI.`
-        : `Hello, I'm contacting you regarding the listing: ${property.title} on ImmoCI.`
+      loc(
+        `Bonjour, je vous contacte concernant l'annonce : ${property.title} sur ImmoCI.`,
+        `Hello, I'm contacting you regarding the listing: ${property.title} on ImmoCI.`,
+        `مرحباً، أتواصل معك بخصوص هذا الإعلان: ${property.title} على منصة ImmoCI.`
+      )
     );
     Linking.openURL(`https://wa.me/${cleanPhone}?text=${text}`).catch((err) => {
       console.warn('[WhatsApp Linking Error]:', err);
@@ -145,8 +148,8 @@ export default function PropertyCard({
 
   const isForSale = property.status === 'sale';
   const statusLabel = isForSale
-    ? (language === 'fr' ? 'À VENDRE' : 'FOR SALE')
-    : (language === 'fr' ? 'À LOUER' : 'FOR RENT');
+    ? loc('À VENDRE', 'FOR SALE', 'للبيع')
+    : loc('À LOUER', 'FOR RENT', 'للإيجار');
 
   const cardTranslateY = hoverAnim.interpolate({
     inputRange: [0, 1],
@@ -212,7 +215,7 @@ export default function PropertyCard({
 
             {property.isFeatured && (
               <View style={styles.featuredPillBadge}>
-                <Text style={styles.featuredPillText}>{language === 'fr' ? 'VEDETTE' : 'FEATURED'}</Text>
+                <Text style={styles.featuredPillText}>{loc('VEDETTE', 'FEATURED', 'مميز')}</Text>
               </View>
             )}
           </View>
@@ -278,7 +281,7 @@ export default function PropertyCard({
               <View style={styles.specChip}>
                 <Bed size={13} color="#059669" strokeWidth={2.2} />
                 <Text style={styles.specText}>
-                  {property.bedrooms} {language === 'fr' ? 'Ch.' : 'Beds'}
+                  {property.bedrooms} {loc('Ch.', 'Beds', 'غرف')}
                 </Text>
               </View>
             )}
@@ -286,7 +289,7 @@ export default function PropertyCard({
               <View style={styles.specChip}>
                 <Bath size={13} color="#059669" strokeWidth={2.2} />
                 <Text style={styles.specText}>
-                  {property.bathrooms} {language === 'fr' ? 'Sdb.' : 'Baths'}
+                  {property.bathrooms} {loc('Sdb.', 'Baths', 'حمامات')}
                 </Text>
               </View>
             )}
@@ -314,7 +317,7 @@ export default function PropertyCard({
                 activeOpacity={0.8}
               >
                 <Phone size={14} color="#475569" strokeWidth={2.2} />
-                <Text style={styles.callBtnText}>{language === 'fr' ? 'Appeler' : 'Call'}</Text>
+                <Text style={styles.callBtnText}>{loc('Appeler', 'Call', 'اتصال')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -323,7 +326,7 @@ export default function PropertyCard({
                 activeOpacity={0.75}
               >
                 <Text style={styles.detailPillText}>
-                  {language === 'fr' ? 'Détails' : 'Details'}
+                  {loc('Détails', 'Details', 'التفاصيل')}
                 </Text>
                 <ArrowRight size={13} color="#059669" strokeWidth={2.5} />
               </TouchableOpacity>

@@ -143,6 +143,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { language, t } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -156,7 +157,7 @@ export default function ProfileScreen() {
   const [showRequestsModal, setShowRequestsModal] = useState(false);
 
   const isMobile = Platform.OS !== 'web';
-  const userName = user?.name || (language === 'fr' ? 'Client ImmoCI' : 'ImmoCI Client');
+  const userName = user?.name || loc('Client ImmoCI', 'ImmoCI Client', 'عميل ImmoCI');
   const userEmail = user?.email || 'client@immoci.ci';
   const userRole = user?.role || 'renter';
 
@@ -170,19 +171,19 @@ export default function ProfileScreen() {
       return [
         {
           value: `${submissions?.length || 0}`,
-          label: language === 'fr' ? 'Mes Biens' : 'Listings',
+          label: loc('Mes Biens', 'Listings', 'عقاراتي'),
           icon: <Building2 size={16} color={colors.primary} strokeWidth={2} />,
           onPress: () => router.push('/my-listings'),
         },
         {
           value: `${conversations?.length || 0}`,
-          label: language === 'fr' ? 'Demandes' : 'Inquiries',
+          label: loc('Demandes', 'Inquiries', 'الاستفسارات'),
           icon: <MessageSquare size={16} color="#3B82F6" strokeWidth={2} />,
           onPress: () => router.push('/dashboard'),
         },
         {
           value: '4.9 ★',
-          label: language === 'fr' ? 'Note Pro' : 'Rating',
+          label: loc('Note Pro', 'Rating', 'التقييم'),
           icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
           onPress: () => setShowRatingModal(true),
         },
@@ -193,19 +194,19 @@ export default function ProfileScreen() {
       return [
         {
           value: 'Web',
-          label: language === 'fr' ? 'Portail' : 'Portal',
+          label: loc('Portail', 'Portal', 'البوابة'),
           icon: <Monitor size={16} color="#D97706" strokeWidth={2} />,
           onPress: () => Linking.openURL('https://abdullahfofanaimmo.vercel.app/admin').catch(() => {}),
         },
         {
           value: '0',
-          label: language === 'fr' ? 'Admin Mobile' : 'Mobile Admin',
+          label: loc('Admin Mobile', 'Mobile Admin', 'إدارة الجوال'),
           icon: <Shield size={16} color="#EF4444" strokeWidth={2} />,
           onPress: () => {},
         },
         {
           value: 'Admin',
-          label: language === 'fr' ? 'Rôle Système' : 'System Role',
+          label: loc('Rôle Système', 'System Role', 'دور النظام'),
           icon: <Shield size={16} color={colors.primary} strokeWidth={2} />,
           onPress: () => {},
         },
@@ -216,19 +217,19 @@ export default function ProfileScreen() {
     return [
       {
         value: `${favoriteIds?.length || 0}`,
-        label: language === 'fr' ? 'Favoris' : 'Saved',
+        label: loc('Favoris', 'Saved', 'المفضلة'),
         icon: <Heart size={16} color="#EF4444" strokeWidth={2} fill="#EF4444" />,
         onPress: () => router.push('/(tabs)/favorites'),
       },
       {
         value: `${conversations?.length || 0}`,
-        label: language === 'fr' ? 'Demandes' : 'Inquiries',
+        label: loc('Demandes', 'Inquiries', 'الطلبات'),
         icon: <MessageSquare size={16} color="#10B981" strokeWidth={2} />,
         onPress: () => setShowRequestsModal(true),
       },
       {
         value: '24/7',
-        label: language === 'fr' ? 'Support' : 'Support',
+        label: loc('Support', 'Support', 'الدعم'),
         icon: <Headphones size={16} color="#059669" strokeWidth={2} />,
         onPress: () => {
           if (openSupportChat) openSupportChat();
@@ -238,12 +239,14 @@ export default function ProfileScreen() {
   }, [isBusiness, isAdmin, submissions, conversations, favoriteIds, language, colors, openSupportChat]);
 
   const handleLogout = () => {
-    const title = language === 'fr' ? 'Déconnexion' : 'Log Out';
-    const message = language === 'fr'
-      ? 'Êtes-vous sûr de vouloir vous déconnecter de votre compte ImmoCI ?'
-      : 'Are you sure you want to log out from ImmoCI?';
-    const confirmText = language === 'fr' ? 'Se déconnecter' : 'Log Out';
-    const cancelText = language === 'fr' ? 'Annuler' : 'Cancel';
+    const title = loc('Déconnexion', 'Log Out', 'تسجيل الخروج');
+    const message = loc(
+      'Êtes-vous sûr de vouloir vous déconnecter de votre compte ImmoCI ?',
+      'Are you sure you want to log out from ImmoCI?',
+      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك في ImmoCI؟'
+    );
+    const confirmText = loc('Se déconnecter', 'Log Out', 'تسجيل الخروج');
+    const cancelText = loc('Annuler', 'Cancel', 'إلغاء');
 
     if (Platform.OS === 'web') {
       if (window.confirm(`${title}\n${message}`)) {
@@ -325,10 +328,10 @@ export default function ProfileScreen() {
             )}
             <Text style={styles.verifiedText}>
               {isBusiness
-                ? (language === 'fr' ? 'Compte Pro • Agent / Agence' : 'Business Account • Agent')
+                ? loc('Compte Pro • Agent / Agence', 'Business Account • Agent', 'حساب أعمال • وكيل عقاري')
                 : isAdmin
-                ? (language === 'fr' ? 'Compte Administrateur (Web Exclusif)' : 'Admin Account (Web Only)')
-                : (language === 'fr' ? 'Compte Client • Acheteur / Locataire' : 'Customer Account • Buyer / Renter')}
+                ? loc('Compte Administrateur (Web Exclusif)', 'Admin Account (Web Only)', 'حساب مدير النظام (ويب حصري)')
+                : loc('Compte Client • Acheteur / Locataire', 'Customer Account • Buyer / Renter', 'حساب عميل • مشتري / مستأجر')}
             </Text>
           </View>
         </View>
@@ -585,7 +588,7 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Bell size={20} color="#059669" />
                 <Text style={styles.modalTitle}>
-                  {language === 'fr' ? 'Alertes & Notifications' : 'Alerts & Notifications'}
+                  {loc('Alertes & Notifications', 'Alerts & Notifications', 'التنبيهات والإشعارات')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
@@ -593,16 +596,18 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <Text style={styles.modalBodyText}>
-              {language === 'fr'
-                ? '🔔 Vos alertes de recherche pour Abidjan et Cocody sont actives. Vous recevrez instantanément une notification dès qu’un bien correspondant à vos critères est publié.'
-                : '🔔 Your search alerts for Abidjan & Cocody are active. You will receive instant notifications when matching properties are listed.'}
+              {loc(
+                '🔔 Vos alertes de recherche pour Abidjan et Cocody sont actives. Vous recevrez instantanément une notification dès qu’un bien correspondant à vos critères est publié.',
+                '🔔 Your search alerts for Abidjan & Cocody are active. You will receive instant notifications when matching properties are listed.',
+                '🔔 تنبيهات البحث الخاصة بك في أبيدجان وكوكودي مفعلة. ستتلقى إشعاراً فورياً عند نشر عقار يتطابق مع معاييرك.'
+              )}
             </Text>
             <TouchableOpacity
               style={styles.modalPrimaryBtn}
               onPress={() => setShowNotificationsModal(false)}
             >
               <Text style={styles.modalPrimaryBtnText}>
-                {language === 'fr' ? 'D’accord' : 'Got it'}
+                {loc('D’accord', 'Got it', 'حسناً')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -622,7 +627,7 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Star size={20} color="#D97706" fill="#D97706" />
                 <Text style={styles.modalTitle}>
-                  {language === 'fr' ? 'Score de Confiance : 4.9/5' : 'Trust Score: 4.9/5'}
+                  {loc('Score de Confiance : 4.9/5', 'Trust Score: 4.9/5', 'معدل الموثوقية: 4.9/5')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowRatingModal(false)}>
@@ -630,16 +635,18 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <Text style={styles.modalBodyText}>
-              {language === 'fr'
-                ? '⭐ Ce score est basé sur la vérification des titres fonciers (ACD), la réactivité aux messages et les avis des acheteurs vérifiés sur la plateforme ImmoCI.'
-                : '⭐ This score is calculated from deed verifications (ACD), message responsiveness, and feedback from verified buyers on ImmoCI.'}
+              {loc(
+                '⭐ Ce score est basé sur la vérification des titres fonciers (ACD), la réactivité aux messages et les avis des acheteurs vérifiés sur la plateforme ImmoCI.',
+                '⭐ This score is calculated from deed verifications (ACD), message responsiveness, and feedback from verified buyers on ImmoCI.',
+                '⭐ يتم احتساب هذا التقييم بناءً على التحقق من سندات الملكية (ACD)، وسرعة الاستجابة للرسائل، وتقييمات المشترين المعتمدين على منصة ImmoCI.'
+              )}
             </Text>
             <TouchableOpacity
               style={styles.modalPrimaryBtn}
               onPress={() => setShowRatingModal(false)}
             >
               <Text style={styles.modalPrimaryBtnText}>
-                {language === 'fr' ? 'Fermer' : 'Close'}
+                {loc('Fermer', 'Close', 'إغلاق')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -708,7 +715,7 @@ export default function ProfileScreen() {
               style={styles.modalPrimaryBtn}
               onPress={() => setShowRequestsModal(false)}
             >
-              <Text style={styles.modalPrimaryBtnText}>Fermer</Text>
+              <Text style={styles.modalPrimaryBtnText}>{loc('Fermer', 'Close', 'إغلاق')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -748,6 +748,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   } = usePropertySubmissions();
 
   const { t, language, setLanguage } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const { activeTheme, setTheme } = useTheme();
   const isDark = activeTheme !== 'light';
 
@@ -845,15 +846,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       const dept = conv.department || (isSupport ? 'Customer Care' : 'Sales & Commercial');
 
       const subject = isSupport
-        ? (language === 'fr' ? 'Demande d’assistance directe (Support Client)' : 'Direct Customer Support Request')
+        ? loc('Demande d’assistance directe (Support Client)', 'Direct Customer Support Request', 'طلب دعم فني مباشر')
         : conv.property
-        ? (language === 'fr' ? `Demande : ${conv.property.title}` : `Inquiry: ${conv.property.title}`)
-        : (language === 'fr' ? 'Demande client' : 'Customer inquiry');
+        ? loc(`Demande : ${conv.property.title}`, `Inquiry: ${conv.property.title}`, `استفسار: ${conv.property.title}`)
+        : loc('Demande client', 'Customer inquiry', 'استفسار العميل');
 
       const diffMs = Date.now() - new Date(conv.lastMessageAt).getTime();
       const diffMins = Math.floor(diffMs / 60000);
       const timeStr = diffMins < 1
-        ? (language === 'fr' ? 'À l’instant' : 'Just now')
+        ? loc('À l’instant', 'Just now', 'الآن')
         : diffMins < 60
         ? `${diffMins} min ago`
         : `${Math.floor(diffMins / 60)}h ago`;
@@ -938,12 +939,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     // Check role permission
     const isAuthorized = activeRole === 'Super Admin' || activeRole === 'Sales Agent' || activeRole === 'Operations Manager' || user?.role === 'support' || user?.role === 'admin';
     if (!isAuthorized) {
-      showToast(language === 'fr' ? 'Action réservée aux agents Support & Admins' : 'Authorized for Support & Admin agents only');
+      showToast(loc('Action réservée aux agents Support & Admins', 'Authorized for Support & Admin agents only', 'الإجراء مخصص لفرق الدعم والمديرين فقط'));
       return;
     }
 
     const changerName = user?.name || activeRole || 'Agent Support';
-    const note = language === 'fr' ? `Statut passé à "${newStatus}" par ${changerName}` : `Status updated to "${newStatus}" by ${changerName}`;
+    const note = loc(`Statut passé à "${newStatus}" par ${changerName}`, `Status updated to "${newStatus}" by ${changerName}`, `تم تغيير الحالة إلى "${newStatus}" بواسطة ${changerName}`);
 
     if (ticket.conversationId && updateCaseStatus) {
       await updateCaseStatus(ticket.conversationId, newStatus, note);
@@ -996,7 +997,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const handleDeleteStaff = (id: string) => {
     setStaff((prev) => prev.filter((s) => s.id !== id));
     setShowStaffActionModal(false);
-    showToast(language === 'fr' ? 'Membre du personnel supprimé' : 'Staff member removed');
+    showToast(loc('Membre du personnel supprimé', 'Staff member removed', 'تم حذف الموظف بنجاح'));
   };
 
   const handleAddStaff = () => {
@@ -1029,7 +1030,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       role: 'Agent',
       department: 'Operations & Logistics',
     });
-    showToast(language === 'fr' ? 'Nouveau membre ajouté avec succès' : 'New staff member added');
+    showToast(loc('Nouveau membre ajouté avec succès', 'New staff member added', 'تمت إضافة عضو جديد بنجاح'));
   };
 
   const handleRoleChange = (role: AdminRoleType) => {
@@ -1039,7 +1040,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     if (def && !def.allowedSections.includes(activeSection)) {
       setActiveSection(def.allowedSections[0]);
     }
-    showToast(`${language === 'fr' ? 'Mode changé :' : 'Access switched:'} ${role}`);
+    showToast(`${loc('Mode changé :', 'Access switched:', 'تم تغيير الوضع إلى:')} ${role}`);
   };
 
   const handleSendTicketReply = async () => {
@@ -1079,7 +1080,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setTimeout(() => {
       supportMessagesScrollRef.current?.scrollToEnd({ animated: true });
     }, 80);
-    showToast(language === 'fr' ? 'Réponse envoyée au client' : 'Reply sent to customer');
+    showToast(loc('Réponse envoyée au client', 'Reply sent to customer', 'تم إرسال الرد إلى العميل'));
   };
 
   const handleAIGenerateReply = () => {
@@ -1095,7 +1096,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleDownloadReport = (reportName: string) => {
-    showToast(language === 'fr' ? `Téléchargement de ${reportName}` : `Downloading ${reportName}`);
+    showToast(loc(`Téléchargement de ${reportName}`, `Downloading ${reportName}`, `جارٍ تنزيل ${reportName}`));
   };
 
   const handleLogout = async () => {
@@ -1103,7 +1104,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       if (signOut) await signOut();
     } catch {}
     onLogout();
-    showToast(language === 'fr' ? 'Déconnexion réussie' : 'Logged out successfully');
+    showToast(loc('Déconnexion réussie', 'Logged out successfully', 'تم تسجيل الخروج بنجاح'));
   };
 
   // Stitch Tonal Metric Cards
@@ -1220,7 +1221,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     {
       id: 'audit',
       icon: (a) => <History size={19} color={a ? '#10B981' : '#94A3B8'} />,
-      title: "Journal d'Audit & Sécurité",
+      title: t('audit_page_title'),
       category: 'MANAGEMENT',
     },
     {
@@ -1516,7 +1517,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               isDark={isDark}
               onApprove={() => {
                 if (!hasPermission(currentStaff, 'properties.approve')) {
-                  showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+                  showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
                   return;
                 }
                 updateSubmissionStatus(submission.id, 'approved');
@@ -1532,11 +1533,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   target: `${submission.title} (${submission.id})`,
                   details: { propertyId: submission.id, title: submission.title },
                 });
-                showToast(language === 'fr' ? 'Document approuvé avec succès' : 'Document verified and approved');
+                showToast(loc('Document approuvé avec succès', 'Document verified and approved', 'تمت الموافقة على الوثيقة بنجاح'));
               }}
               onReject={() => {
                 if (!hasPermission(currentStaff, 'properties.reject')) {
-                  showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+                  showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
                   return;
                 }
                 updateSubmissionStatus(submission.id, 'rejected', 'Document invalid');
@@ -1552,7 +1553,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   target: `${submission.title} (${submission.id})`,
                   details: { propertyId: submission.id, title: submission.title, reason: 'Document invalid' },
                 });
-                showToast(language === 'fr' ? 'Document rejeté' : 'Document rejected');
+                showToast(loc('Document rejeté', 'Document rejected', 'تم رفض الوثيقة'));
               }}
               onViewDocs={() => setAttachmentView({ type: 'document', submission })}
               onViewMedia={() => setAttachmentView({ type: 'media', submission })}
@@ -1674,7 +1675,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary },
                     ]}
                   >
-                    {dept === 'All' ? (language === 'fr' ? 'Tous les départements' : 'All Departments') : dept}
+                    {dept === 'All' ? loc('Tous les départements', 'All Departments', 'كافة الأقسام') : dept}
                   </Text>
                 </TouchableOpacity>
               );
@@ -1704,7 +1705,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
           <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
             <View style={styles.staffStatHeader}>
-              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{language === 'fr' ? 'Juridique' : 'Legal'}</Text>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{loc('Juridique', 'Legal', 'الشؤون القانونية')}</Text>
               <Scale size={18} color="#F59E0B" />
             </View>
             <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -1714,7 +1715,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
           <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
             <View style={styles.staffStatHeader}>
-              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{language === 'fr' ? 'Commercial' : 'Sales'}</Text>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{loc('Commercial', 'Sales', 'المبيعات')}</Text>
               <Briefcase size={18} color="#8B5CF6" />
             </View>
             <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -1946,7 +1947,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <View style={{ padding: 24, alignItems: 'center' }}>
                 <Headphones size={32} color={stitchTheme.textSecondary} style={{ marginBottom: 8, opacity: 0.5 }} />
                 <Text style={{ color: stitchTheme.textSecondary, fontSize: 13, textAlign: 'center' }}>
-                  {language === 'fr' ? 'Aucun dossier dans cette catégorie' : 'No cases in this status category'}
+                  {loc('Aucun dossier dans cette catégorie', 'No cases in this status category', 'لا توجد ملفات في هذا التصنيف')}
                 </Text>
               </View>
             ) : (
@@ -1988,7 +1989,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       >
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusMeta.color }} />
                         <Text style={[styles.statusText, { color: statusMeta.color, fontWeight: '700' }]}>
-                          {language === 'fr' ? statusMeta.labelFr : statusMeta.labelEn}
+                          {loc(statusMeta.labelFr, statusMeta.labelEn, (statusMeta as any).labelAr || statusMeta.labelEn)}
                         </Text>
                       </View>
                     </View>
@@ -2003,7 +2004,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </View>
                     {t.assignedAgent && (
                       <Text style={{ fontSize: 11, color: stitchTheme.textSecondary, marginTop: 4 }} numberOfLines={1}>
-                        👤 {language === 'fr' ? 'Assigné à :' : 'Assigned to:'} <Text style={{ fontWeight: '600' }}>{t.assignedAgent}</Text>
+                        👤 {loc('Assigné à :', 'Assigned to:', 'مُسند إلى :')} <Text style={{ fontWeight: '600' }}>{t.assignedAgent}</Text>
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -2037,7 +2038,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     >
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activeStatusMeta.color }} />
                       <Text style={{ color: activeStatusMeta.color, fontWeight: '800', fontSize: 11 }}>
-                        {language === 'fr' ? activeStatusMeta.labelFr : activeStatusMeta.labelEn}
+                        {loc(activeStatusMeta.labelFr, activeStatusMeta.labelEn, (activeStatusMeta as any).labelAr || activeStatusMeta.labelEn)}
                       </Text>
                     </View>
                   </View>
@@ -2071,7 +2072,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Sliders size={14} color={stitchTheme.textSecondary} />
                   <Text style={{ fontSize: 12, fontWeight: '700', color: stitchTheme.textSecondary }}>
-                    {language === 'fr' ? 'Changer le statut du dossier :' : 'Change Case Status:'}
+                    {loc('Changer le statut du dossier :', 'Change Case Status:', 'تغيير حالة الملف :')}
                   </Text>
                 </View>
 
@@ -2110,7 +2111,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                             color: isCurrent ? '#FFFFFF' : stitchTheme.textPrimary,
                           }}
                         >
-                          {language === 'fr' ? st.labelFr : st.labelEn}
+                          {loc(st.labelFr, st.labelEn, (st as any).labelAr || st.labelEn)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -2134,11 +2135,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 >
                   <CheckCircle size={12} color="#059669" />
                   <Text style={{ fontSize: 11, color: stitchTheme.textSecondary }} numberOfLines={1}>
-                    {language === 'fr' ? 'Dernière modification :' : 'Last status transition:'}{' '}
+                    {loc('Dernière modification :', 'Last status transition:', 'آخر تحديث :')}{' '}
                     <Text style={{ fontWeight: '700', color: stitchTheme.textPrimary }}>
                       {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].status}
                     </Text>
-                    {' '}{language === 'fr' ? 'par' : 'by'}{' '}
+                    {' '}{loc('par', 'by', 'بواسطة')}{' '}
                     <Text style={{ fontWeight: '600', color: stitchTheme.textPrimary }}>
                       {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].changedBy}
                     </Text>
@@ -2751,7 +2752,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           }}
           onApprove={() => {
             if (!hasPermission(currentStaff, 'properties.approve')) {
-              showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+              showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
               return;
             }
             updateSubmissionStatus(moderationProperty.id, 'approved');
@@ -2769,11 +2770,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             });
             setShowAIModeration(false);
             setModerationProperty(null);
-            showToast(language === 'fr' ? 'Annonce validée par IA' : 'Listing approved via AI');
+            showToast(loc('Annonce validée par IA', 'Listing approved via AI', 'تمت الموافقة على الإعلان بالذكاء الاصطناعي'));
           }}
           onReject={(reason) => {
             if (!hasPermission(currentStaff, 'properties.reject')) {
-              showToast(language === 'fr' ? 'Action non autorisée : permission requise' : 'Unauthorized action: permission required');
+              showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
               return;
             }
             updateSubmissionStatus(moderationProperty.id, 'rejected', reason);
@@ -2791,7 +2792,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             });
             setShowAIModeration(false);
             setModerationProperty(null);
-            showToast(language === 'fr' ? 'Annonce rejetée par IA' : 'Listing rejected via AI');
+            showToast(loc('Annonce rejetée par IA', 'Listing rejected via AI', 'تم رفض الإعلان بالذكاء الاصطناعي'));
           }}
         />
       )}
@@ -2838,7 +2839,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <TouchableOpacity
                       style={[styles.primaryButton, { backgroundColor: '#10B981', alignSelf: 'center', marginTop: 16 }]}
                       onPress={() => {
-                        showToast(language === 'fr' ? 'Document ACD conforme' : 'Cadastral deed verified');
+                        showToast(loc('Document ACD conforme', 'Cadastral deed verified', 'سند الملكية العقاري (ACD) سليم ومطابق'));
                         setAttachmentView(null);
                       }}
                     >
@@ -3002,12 +3003,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     borderColor: stitchTheme.cardBorder,
                   },
                 ]}
-                onPress={() => setLanguage(language === 'en' ? 'fr' : 'en')}
+                onPress={() => {
+                  const nextLang = language === 'fr' ? 'en' : language === 'en' ? 'ar' : 'fr';
+                  setLanguage(nextLang);
+                }}
                 activeOpacity={0.8}
               >
                 <Globe size={15} color={stitchTheme.textSecondary} />
                 <Text style={[styles.langText, { color: stitchTheme.textPrimary }]}>
-                  {language.toUpperCase()}
+                  {language === 'ar' ? 'عربي' : language.toUpperCase()}
                 </Text>
               </TouchableOpacity>
 

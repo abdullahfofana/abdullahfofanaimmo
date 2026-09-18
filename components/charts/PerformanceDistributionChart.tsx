@@ -95,6 +95,7 @@ export default function PerformanceDistributionChart({
   style,
 }: PerformanceDistributionChartProps) {
   const { t, language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const displayTitle = title || t('admin_performance_distribution');
 
   const [selectedPeriod, setSelectedPeriod] = useState(controlledPeriod || subtitle);
@@ -388,14 +389,14 @@ export default function PerformanceDistributionChart({
         <View style={[styles.kpiFooter, { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' }]}>
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: subtitleColor }]}>
-              {language === 'fr' ? 'Total Surveillé' : 'Total Units'}
+              {loc('Total Surveillé', 'Total Units', 'إجمالي الوحدات')}
             </Text>
             <Text style={[styles.kpiValue, { color: titleColor }]}>{totalCount}</Text>
           </View>
           <View style={styles.kpiDivider} />
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: subtitleColor }]}>
-              {language === 'fr' ? 'Top Rangs' : 'Top Performers'}
+              {loc('Top Rangs', 'Top Performers', 'الأعلى أداءً')}
             </Text>
             <Text style={[styles.kpiValue, { color: '#10B981' }]}>
               {((segmentsWithArcs.find(s => s.id === 'exceptional')?.value || 0) +
@@ -405,7 +406,7 @@ export default function PerformanceDistributionChart({
           <View style={styles.kpiDivider} />
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: subtitleColor }]}>
-              {language === 'fr' ? 'Croissance' : 'Benchmark'}
+              {loc('Croissance', 'Benchmark', 'مؤشر النمو')}
             </Text>
             <Text style={[styles.kpiValue, { color: '#3B82F6' }]}>+14.2% YoY</Text>
           </View>

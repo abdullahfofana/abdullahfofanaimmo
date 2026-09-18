@@ -63,20 +63,21 @@ const QUICK_SUGGESTIONS = [
 
 const CASE_STATUS_CONFIG: Record<
   string,
-  { labelFr: string; labelEn: string; color: string; bg: string }
+  { labelFr: string; labelEn: string; labelAr: string; color: string; bg: string }
 > = {
-  Open: { labelFr: 'Dossier Ouvert', labelEn: 'Case Open', color: '#10B981', bg: '#ECFDF5' },
-  'In Progress': { labelFr: 'En cours de traitement', labelEn: 'In Progress', color: '#3B82F6', bg: '#EFF6FF' },
-  Hold: { labelFr: 'En attente', labelEn: 'On Hold', color: '#F59E0B', bg: '#FFFBEB' },
-  Solved: { labelFr: 'Solutionné', labelEn: 'Solved', color: '#8B5CF6', bg: '#F5F3FF' },
-  Resolved: { labelFr: 'Dossier Clôturé', labelEn: 'Resolved & Closed', color: '#64748B', bg: '#F1F5F9' },
-  Reopen: { labelFr: 'Dossier Réouvert', labelEn: 'Case Reopened', color: '#F43F5E', bg: '#FFF1F2' },
+  Open: { labelFr: 'Dossier Ouvert', labelEn: 'Case Open', labelAr: 'الملف مفتوح', color: '#10B981', bg: '#ECFDF5' },
+  'In Progress': { labelFr: 'En cours de traitement', labelEn: 'In Progress', labelAr: 'قيد المعالجة', color: '#3B82F6', bg: '#EFF6FF' },
+  Hold: { labelFr: 'En attente', labelEn: 'On Hold', labelAr: 'قيد الانتظار', color: '#F59E0B', bg: '#FFFBEB' },
+  Solved: { labelFr: 'Solutionné', labelEn: 'Solved', labelAr: 'تم الحل', color: '#8B5CF6', bg: '#F5F3FF' },
+  Resolved: { labelFr: 'Dossier Clôturé', labelEn: 'Resolved & Closed', labelAr: 'تم الإغلاق', color: '#64748B', bg: '#F1F5F9' },
+  Reopen: { labelFr: 'Dossier Réouvert', labelEn: 'Case Reopened', labelAr: 'أعيد فتحه', color: '#F43F5E', bg: '#FFF1F2' },
 };
 
 export default function ChatModal() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const {
     activeConversation,
     isChatOpen,
@@ -307,10 +308,10 @@ export default function ChatModal() {
                       ]}
                     >
                       {connectionStatus === 'connected'
-                        ? (language === 'fr' ? 'En direct' : 'Live')
+                        ? loc('En direct', 'Live', 'مباشر')
                         : connectionStatus === 'reconnecting'
-                        ? (language === 'fr' ? 'Reconnexion...' : 'Reconnecting...')
-                        : (language === 'fr' ? 'Hors ligne' : 'Offline')}
+                        ? loc('Reconnexion...', 'Reconnecting...', 'جارٍ إعادة الاتصال...')
+                        : loc('Hors ligne', 'Offline', 'غير متصل')}
                     </Text>
                   </View>
                 </View>
@@ -340,7 +341,7 @@ export default function ChatModal() {
                 <View style={styles.supportCaseLeft}>
                   <View style={[styles.caseDot, { backgroundColor: caseMeta.color }]} />
                   <Text style={[styles.caseBadgeText, { color: caseMeta.color }]}>
-                    {language === 'fr' ? caseMeta.labelFr : caseMeta.labelEn}
+                    {loc(caseMeta.labelFr, caseMeta.labelEn, caseMeta.labelAr)}
                   </Text>
                 </View>
                 <Text style={styles.caseDeptText}>
@@ -407,7 +408,7 @@ export default function ChatModal() {
             <View style={styles.datePillRow}>
               <View style={styles.datePill}>
                 <Text style={styles.datePillText}>
-                  {language === 'fr' ? 'Aujourd’hui' : 'Today'}
+                  {loc('Aujourd’hui', 'Today', 'اليوم')}
                 </Text>
               </View>
             </View>
@@ -451,7 +452,7 @@ export default function ChatModal() {
                         <View style={styles.userLabelBadge}>
                           <User size={10} color="#64748B" />
                           <Text style={styles.userLabelText}>
-                            {language === 'fr' ? 'Vous (Client)' : 'You (Client)'}
+                            {loc('Vous (Client)', 'You (Client)', 'أنت (العميل)')}
                           </Text>
                         </View>
                       ) : (
@@ -659,7 +660,7 @@ export default function ChatModal() {
                   <Camera size={18} color="#059669" />
                 </View>
                 <Text style={styles.attachOptionText}>
-                  {language === 'fr' ? 'Prendre une photo' : 'Take Photo'}
+                  {loc('Prendre une photo', 'Take Photo', 'التقاط صورة')}
                 </Text>
               </TouchableOpacity>
 
@@ -668,7 +669,7 @@ export default function ChatModal() {
                   <ImageIcon size={18} color="#3B82F6" />
                 </View>
                 <Text style={styles.attachOptionText}>
-                  {language === 'fr' ? 'Galerie Photos' : 'Photo Gallery'}
+                  {loc('Galerie Photos', 'Photo Gallery', 'معرض الصور')}
                 </Text>
               </TouchableOpacity>
 
@@ -677,7 +678,7 @@ export default function ChatModal() {
                   <FileText size={18} color="#D97706" />
                 </View>
                 <Text style={styles.attachOptionText}>
-                  {language === 'fr' ? 'Document (PDF / ACD / Reçu)' : 'Document (PDF / Deed / Receipt)'}
+                  {loc('Document (PDF / ACD / Reçu)', 'Document (PDF / Deed / Receipt)', 'مستند (PDF / سند ملكية / إيصال)')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -688,12 +689,12 @@ export default function ChatModal() {
             {/* Sender: Client (You) is always the active sender */}
             <View style={styles.senderIndicatorGroup}>
               <Text style={styles.senderRolePrompt}>
-                {language === 'fr' ? 'Envoyer en tant que :' : 'Send as:'}
+                {loc('Envoyer en tant que :', 'Send as:', 'إرسال بصفتك:')}
               </Text>
               <View style={styles.clientSenderBadge}>
                 <User size={11} color="#FFFFFF" />
                 <Text style={styles.clientSenderBadgeText}>
-                  {language === 'fr' ? 'Client (Vous)' : 'Client (You)'}
+                  {loc('Client (Vous)', 'Client (You)', 'عميل (أنت)')}
                 </Text>
               </View>
             </View>
@@ -701,12 +702,12 @@ export default function ChatModal() {
             {/* Recipient: Support (Fatou) is the non-clickable recipient */}
             <View style={styles.recipientIndicatorGroup}>
               <Text style={styles.recipientPrompt}>
-                {language === 'fr' ? 'Destinataire :' : 'Recipient:'}
+                {loc('Destinataire :', 'Recipient:', 'المستلم:')}
               </Text>
               <View style={styles.supportRecipientBadge}>
                 <Headphones size={11} color="#64748B" />
                 <Text style={styles.supportRecipientBadgeText}>
-                  {language === 'fr' ? 'Customer Care' : 'Customer Care'}
+                  loc('Customer Care', 'Customer Care', 'خدمة العملاء')
                 </Text>
               </View>
             </View>
@@ -724,11 +725,7 @@ export default function ChatModal() {
 
             <TextInput
               style={styles.textInput}
-              placeholder={
-                language === 'fr'
-                  ? 'Écrivez votre message...'
-                  : 'Type your message...'
-              }
+              placeholder={loc('Écrivez votre message...', 'Type your message...', 'اكتب رسالتك...')}
               placeholderTextColor="#94A3B8"
               value={inputMessage}
               onChangeText={setInputMessage}

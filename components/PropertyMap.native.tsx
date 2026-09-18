@@ -158,6 +158,7 @@ export default function PropertyMapNative({
 }: PropertyMapProps) {
   const insets = useSafeAreaInsets();
   const { language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const mapRef = useRef<MapView>(null);
 
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
@@ -581,7 +582,7 @@ export default function PropertyMapNative({
           {/* Search Input */}
           <TextInput
             style={styles.searchTextInput}
-            placeholder={language === 'fr' ? 'Where to buy home ?' : 'Where to buy home ?'}
+            placeholder={loc('Où chercher votre bien ?', 'Where to look for property?', 'أين تبحث عن عقارك؟')}
             placeholderTextColor="#94A3B8"
             value={activeSearch}
             onChangeText={handleSearchTextChange}
@@ -644,7 +645,7 @@ export default function PropertyMapNative({
 
               {POPULAR_PLACES.map((place) => {
                 const isActive = selectedPlaceId === place.id;
-                const placeLabel = language === 'fr' ? place.nameFr : place.name;
+                const placeLabel = language === 'fr' ? place.nameFr : language === 'ar' ? ((place as any).nameAr || place.name) : place.name;
                 return (
                   <TouchableOpacity
                     key={place.id}

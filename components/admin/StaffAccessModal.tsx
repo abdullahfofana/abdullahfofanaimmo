@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/providers/LanguageProvider';
 import {
   Modal,
   View,
@@ -80,6 +81,7 @@ export default function StaffAccessModal({
   onClose,
   onSave,
 }: StaffAccessModalProps) {
+  const { language } = useLanguage();
   if (!staff) return null;
 
   const [currentRole, setCurrentRole] = useState<StaffRole>(staff.role);
@@ -310,7 +312,7 @@ export default function StaffAccessModal({
               {/* Status Toggle */}
               <View style={{ flex: 1 }}>
                 <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-                  STATUT DU COMPTE
+                  {language === 'ar' ? 'حالة الحساب' : language === 'en' ? 'ACCOUNT STATUS' : 'STATUT DU COMPTE'}
                 </Text>
                 <View
                   style={[
@@ -513,7 +515,7 @@ export default function StaffAccessModal({
           {/* ── FOOTER ── */}
           <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={isSaving}>
-              <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>Annuler</Text>
+              <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>{language === 'ar' ? 'إلغاء' : language === 'en' ? 'Cancel' : 'Annuler'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

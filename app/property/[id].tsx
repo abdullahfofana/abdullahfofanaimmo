@@ -62,6 +62,7 @@ export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { t, language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const { isFavorite: isFavoriteCheck, toggleFavorite } = useFavorites();
   const { startOrGetConversation } = useChat();
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
@@ -303,17 +304,17 @@ export default function PropertyDetailScreen() {
                     <Text style={styles.categoryCrownIcon}>👑</Text>
                     <Text style={styles.categoryCrownText}>
                       {property.type === 'villa'
-                        ? (language === 'fr' ? 'Villa de Prestige' : 'Luxury Villa')
+                        ? loc('Villa de Prestige', 'Luxury Villa', 'فيلا فاخرة')
                         : property.type === 'apartment'
-                        ? (language === 'fr' ? 'Appartement Haut Standing' : 'Luxury Apartment')
-                        : (language === 'fr' ? 'Résidence de Prestige' : 'Luxury Residence')}
+                        ? loc('Appartement Haut Standing', 'Luxury Apartment', 'شقة راقية')
+                        : loc('Résidence de Prestige', 'Luxury Residence', 'إقامة فاخرة')}
                     </Text>
                   </View>
 
                   <View style={styles.detailRatingBadge}>
                     <Text style={styles.detailRatingStar}>★</Text>
                     <Text style={styles.detailRatingScore}>4.8</Text>
-                    <Text style={styles.detailRatingCount}>({language === 'fr' ? '18 avis' : '18 Reviews'})</Text>
+                    <Text style={styles.detailRatingCount}>({loc('18 avis', '18 Reviews', '18 تقييم')})</Text>
                   </View>
                 </View>
 
@@ -336,10 +337,10 @@ export default function PropertyDetailScreen() {
                 {/* Segmented Navigation Tabs (Overview | Gallery | Features | Location) */}
                 <View style={styles.segmentedTabsRow}>
                   {[
-                    { id: 'overview', label: language === 'fr' ? 'Aperçu' : 'Overview' },
-                    { id: 'gallery', label: language === 'fr' ? 'Photos' : 'Gallery' },
-                    { id: 'features', label: language === 'fr' ? 'Commodités' : 'Features' },
-                    { id: 'location', label: language === 'fr' ? 'Localisation' : 'Location' },
+                    { id: 'overview', label: loc('Aperçu', 'Overview', 'نظرة عامة') },
+                    { id: 'gallery', label: loc('Photos', 'Gallery', 'الصور') },
+                    { id: 'features', label: loc('Commodités', 'Features', 'المميزات') },
+                    { id: 'location', label: loc('Localisation', 'Location', 'الموقع') },
                   ].map((tab) => {
                     const isActive = activeDetailTab === tab.id;
                     return (
@@ -363,13 +364,13 @@ export default function PropertyDetailScreen() {
                   {property.bedrooms ? (
                     <View style={styles.spec}>
                       <Bed size={18} color="#059669" strokeWidth={2.2} />
-                      <Text style={styles.specText}>{property.bedrooms} {language === 'fr' ? 'Chambres' : 'Beds'}</Text>
+                      <Text style={styles.specText}>{property.bedrooms} {loc('Chambres', 'Beds', 'غرف')}</Text>
                     </View>
                   ) : null}
                   {property.bathrooms ? (
                     <View style={styles.spec}>
                       <Bath size={18} color="#059669" strokeWidth={2.2} />
-                      <Text style={styles.specText}>{property.bathrooms} {language === 'fr' ? 'Salles de bain' : 'Baths'}</Text>
+                      <Text style={styles.specText}>{property.bathrooms} {loc('Salles de bain', 'Baths', 'حمامات')}</Text>
                     </View>
                   ) : null}
                   <View style={styles.spec}>
@@ -413,7 +414,7 @@ export default function PropertyDetailScreen() {
                 {/* Tab: GALLERY Content */}
                 {activeDetailTab === 'gallery' && !isDesktop && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>{language === 'fr' ? 'Galerie Photos Complète' : 'Full Photo Gallery'}</Text>
+                    <Text style={styles.sectionTitle}>{loc('Galerie Photos Complète', 'Full Photo Gallery', 'معرض الصور الكامل')}</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
                       {property.images.map((img, i) => (
                         <TouchableOpacity
@@ -432,7 +433,7 @@ export default function PropertyDetailScreen() {
                 {/* Tab: FEATURES Content */}
                 {activeDetailTab === 'features' && !isDesktop && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>{language === 'fr' ? 'Toutes les Commodités' : 'All Features & Amenities'}</Text>
+                    <Text style={styles.sectionTitle}>{loc('Toutes les Commodités', 'All Features & Amenities', 'جميع المميزات والمرافق')}</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
                       {property.features.map((feature, index) => (
                         <View key={index} style={[styles.featurePillTag, { paddingVertical: 10, paddingHorizontal: 14 }]}>
@@ -579,8 +580,8 @@ export default function PropertyDetailScreen() {
 
           {/* Similar Properties */}
           <View style={{ marginTop: 24, paddingHorizontal: 20, marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.4 }}>Similar Properties</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>You might also like</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.4 }}>{loc('Biens similaires', 'Similar Properties', 'عقارات مشابهة')}</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>{loc('Vous pourriez également aimer', 'You might also like', 'قد ينال إعجابك أيضاً')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {allProperties.filter(p => p.id !== property.id && p.type === property.type).slice(0, 4).map(p => (
                 <TouchableOpacity key={p.id} onPress={() => router.push(`/property/${p.id}`)} activeOpacity={0.9} style={{ width: 200 }}>
@@ -608,7 +609,7 @@ export default function PropertyDetailScreen() {
                 {formatPrice(property.price, property.currency)}
               </Text>
               <Text style={styles.mobileStickySubText}>
-                {property.status === 'rent' ? '/mois' : (property.area ? `${Math.round(property.price / property.area).toLocaleString()} FCFA/m²` : 'Prix direct')}
+                {property.status === 'rent' ? loc('/mois', '/month', '/شهرياً') : (property.area ? `${Math.round(property.price / property.area).toLocaleString()} FCFA/m²` : loc('Prix direct', 'Direct Price', 'سعر مباشر'))}
               </Text>
             </View>
 

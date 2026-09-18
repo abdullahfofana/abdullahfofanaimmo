@@ -56,7 +56,7 @@ interface NavLinkItem {
 }
 
 export default function WebNavbar() {
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, language, setLanguage, toggleLanguage } = useLanguage();
   const { activeTheme, setTheme } = useTheme();
   const colors = useColors();
   const segments = useSegments();
@@ -175,7 +175,13 @@ export default function WebNavbar() {
                 <Text style={styles.brandTitleImmo}>Immo</Text>
                 <Text style={styles.brandTitleCI}>CI</Text>
               </View>
-              <Text style={styles.brandTagline}>Immobilier Côte d&apos;Ivoire</Text>
+              <Text style={styles.brandTagline}>
+                {language === 'ar'
+                  ? 'عقارات ساحل العاج'
+                  : language === 'en'
+                  ? 'Ivory Coast Real Estate'
+                  : "Immobilier Côte d'Ivoire"}
+              </Text>
             </View>
           </TouchableOpacity>
 
@@ -318,34 +324,44 @@ export default function WebNavbar() {
 
 
 
-            {/* Language Switcher Pill */}
-            <TouchableOpacity
-              style={styles.languagePill}
-              onPress={toggleLanguage}
-              activeOpacity={0.75}
-              accessibilityLabel="Switch Language"
-            >
+            {/* Language Switcher Pill (FR | EN | AR) */}
+            <View style={styles.languagePill}>
               <Globe size={14} color="#059669" strokeWidth={2.2} />
               <View style={styles.langPillOptions}>
-                <Text
-                  style={[
-                    styles.langText,
-                    language === 'en' ? styles.langTextActive : styles.langTextInactive,
-                  ]}
-                >
-                  EN
-                </Text>
+                <TouchableOpacity onPress={() => setLanguage('fr')} activeOpacity={0.7}>
+                  <Text
+                    style={[
+                      styles.langText,
+                      language === 'fr' ? styles.langTextActive : styles.langTextInactive,
+                    ]}
+                  >
+                    FR
+                  </Text>
+                </TouchableOpacity>
                 <Text style={styles.langDivider}>|</Text>
-                <Text
-                  style={[
-                    styles.langText,
-                    language === 'fr' ? styles.langTextActive : styles.langTextInactive,
-                  ]}
-                >
-                  FR
-                </Text>
+                <TouchableOpacity onPress={() => setLanguage('en')} activeOpacity={0.7}>
+                  <Text
+                    style={[
+                      styles.langText,
+                      language === 'en' ? styles.langTextActive : styles.langTextInactive,
+                    ]}
+                  >
+                    EN
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.langDivider}>|</Text>
+                <TouchableOpacity onPress={() => setLanguage('ar')} activeOpacity={0.7}>
+                  <Text
+                    style={[
+                      styles.langText,
+                      language === 'ar' ? styles.langTextActive : styles.langTextInactive,
+                    ]}
+                  >
+                    عربي
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
+            </View>
 
             {/* Auth / User Section */}
             {user || session ? (

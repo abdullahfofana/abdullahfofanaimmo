@@ -15,6 +15,7 @@ export default function MyListingsScreen() {
   const styles = createStyles(colors);
   const { submissions } = usePropertySubmissions();
   const { language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
   const { isDesktop } = useResponsive();
 
   const handleBack = () => {
@@ -32,7 +33,7 @@ export default function MyListingsScreen() {
           bg: '#ECFDF5',
           border: '#A7F3D0',
           text: '#059669',
-          label: language === 'fr' ? 'Publiée' : 'Approved',
+          label: loc('Publiée', 'Approved', 'موافق عليه'),
           icon: <CheckCircle2 size={12} color="#059669" />,
         };
       case 'rejected':
@@ -40,7 +41,7 @@ export default function MyListingsScreen() {
           bg: '#FEF2F2',
           border: '#FECACA',
           text: '#DC2626',
-          label: language === 'fr' ? 'Refusée' : 'Rejected',
+          label: loc('Refusée', 'Rejected', 'مرفوض'),
           icon: <AlertCircle size={12} color="#DC2626" />,
         };
       default:
@@ -48,7 +49,7 @@ export default function MyListingsScreen() {
           bg: '#FFFBEB',
           border: '#FDE68A',
           text: '#D97706',
-          label: language === 'fr' ? 'En vérification (24h)' : 'Pending Review',
+          label: loc('En vérification (24h)', 'Pending Review', 'قيد الفحص (24 ساعة)'),
           icon: <Clock size={12} color="#D97706" />,
         };
     }
@@ -59,7 +60,7 @@ export default function MyListingsScreen() {
       {isDesktop && <WebNavbar />}
       <Stack.Screen
         options={{
-          title: language === 'fr' ? 'Mes Annonces' : 'My Listings',
+          title: loc('Mes Annonces', 'My Listings', 'إعلاناتي'),
           headerLeft: () => (
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <ChevronLeft size={24} color="#0F172A" />
@@ -91,12 +92,14 @@ export default function MyListingsScreen() {
               <Building2 size={36} color="#059669" strokeWidth={1.8} />
             </View>
             <Text style={styles.emptyTitle}>
-              {language === 'fr' ? 'Aucune annonce publiée' : 'No properties listed yet'}
+              {loc('Aucune annonce publiée', 'No properties listed yet', 'لم يتم نشر أي إعلان بعد')}
             </Text>
             <Text style={styles.emptyText}>
-              {language === 'fr'
-                ? 'Publiez votre bien immobilier et touchez des milliers d’acheteurs et locataires à Abidjan.'
-                : 'Publish your real estate property and reach thousands of buyers and renters in Ivory Coast.'}
+              {loc(
+                'Publiez votre bien immobilier et touchez des milliers d’acheteurs et locataires à Abidjan.',
+                'Publish your real estate property and reach thousands of buyers and renters in Ivory Coast.',
+                'انشر عقارك واستقطب آلاف المشترين والمستأجرين في كوت ديفوار.'
+              )}
             </Text>
             <TouchableOpacity
               style={styles.ctaButton}
@@ -105,7 +108,7 @@ export default function MyListingsScreen() {
             >
               <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
               <Text style={styles.ctaButtonText}>
-                {language === 'fr' ? 'Ajouter une annonce' : 'Add New Property'}
+                {loc('Ajouter une annonce', 'Add New Property', 'إضافة عقار جديد')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -154,13 +157,13 @@ export default function MyListingsScreen() {
 
                 <View style={styles.footerRow}>
                   <Text style={styles.cardDate}>
-                    {language === 'fr' ? 'Publié le ' : 'Listed on '}
+                    {loc('Publié le ', 'Listed on ', 'تاريخ النشر ')}
                     {new Date(item.submittedAt).toLocaleDateString()}
                   </Text>
                   <View style={styles.viewLink}>
                     <Eye size={13} color="#059669" />
                     <Text style={styles.viewLinkText}>
-                      {language === 'fr' ? 'Voir' : 'View'}
+                      {loc('Voir', 'View', 'عرض')}
                     </Text>
                   </View>
                 </View>

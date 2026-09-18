@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import {
   Building2,
@@ -12,7 +12,7 @@ import { useLanguage } from '@/providers/LanguageProvider';
 import { getMaxContentWidth, useResponsive } from '@/constants/breakpoints';
 
 export default function WebFooter() {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const { isDesktop, width } = useResponsive();
   const maxContentWidth = getMaxContentWidth(width);
 
@@ -21,6 +21,101 @@ export default function WebFooter() {
   const navigateTo = (pathname: string, params?: Record<string, any>) => {
     router.push({ pathname: pathname as any, params });
   };
+
+  const text = {
+    brandTagline: {
+      fr: "Immobilier Côte d'Ivoire",
+      en: "Ivory Coast Real Estate",
+      ar: "عقارات ساحل العاج",
+    },
+    brandDesc: {
+      fr: "La plateforme de référence pour l'achat, la vente et la location de biens immobiliers certifiés à Abidjan et dans toute la Côte d'Ivoire.",
+      en: "The premier platform for buying, renting, and selling verified real estate in Abidjan and across Ivory Coast.",
+      ar: "المنصة الرائدة والمعتمدة لبيع وشراء وتأجير العقارات الموثقة في أبيدجان وكافة أنحاء ساحل العاج.",
+    },
+    trustBadge: {
+      fr: "Annonces 100% Vérifiées & Sécurisées",
+      en: "100% Verified & Secure Listings",
+      ar: "إعلانات موثقة وآمنة بنسبة 100%",
+    },
+    colRealEstate: {
+      fr: "Immobilier",
+      en: "Real Estate",
+      ar: "عقارات",
+    },
+    forSale: {
+      fr: "Biens à Vendre (Acheter)",
+      en: "Properties for Sale (Buy)",
+      ar: "عقارات للبيع (شراء)",
+    },
+    forRent: {
+      fr: "Biens à Louer (Location)",
+      en: "Properties for Rent (Rent)",
+      ar: "عقارات للإيجار",
+    },
+    luxuryVillas: {
+      fr: "Villas de Prestige",
+      en: "Luxury Villas",
+      ar: "فيلات فاخرة",
+    },
+    apartments: {
+      fr: "Appartements Meublés & Non Meublés",
+      en: "Furnished & Unfurnished Apartments",
+      ar: "شقق مفروشة وغير مفروشة",
+    },
+    addListing: {
+      fr: "+ Publier une Annonce",
+      en: "+ List a Property",
+      ar: "+ نشر إعلان عقاري",
+    },
+    colLocations: {
+      fr: "Quartiers Prisés",
+      en: "Top Locations",
+      ar: "أشهر الأحياء والمناطق",
+    },
+    colSupport: {
+      fr: "Support & Contact",
+      en: "Support & Contact",
+      ar: "الدعم والمساعدة",
+    },
+    helpCenter: {
+      fr: "Centre d'Aide & FAQ",
+      en: "Help Center & FAQ",
+      ar: "مركز المساعدة والأسئلة الشائعة",
+    },
+    myFavorites: {
+      fr: "Mes Favoris Sauvegardés",
+      en: "My Saved Favorites",
+      ar: "عقاراتي المفضلة",
+    },
+    adminPortal: {
+      fr: "Espace Professionnel & Admin",
+      en: "Agent & Admin Portal",
+      ar: "بوابة الوكلاء والإدارة",
+    },
+    copyright: {
+      fr: `© ${new Date().getFullYear()} ImmoCI. Tous droits réservés.`,
+      en: `© ${new Date().getFullYear()} ImmoCI. All rights reserved.`,
+      ar: `© ${new Date().getFullYear()} ImmoCI. جميع الحقوق محفوظة.`,
+    },
+    legalNotice: {
+      fr: "Mentions Légales",
+      en: "Legal Notice",
+      ar: "الشروط القانونية",
+    },
+    privacyPolicy: {
+      fr: "Confidentialité",
+      en: "Privacy Policy",
+      ar: "سياسة الخصوصية",
+    },
+    termsOfService: {
+      fr: "Conditions d'Utilisation",
+      en: "Terms of Service",
+      ar: "شروط الاستخدام",
+    },
+  };
+
+  const get = (key: keyof typeof text) => text[key][language] || text[key].fr;
 
   return (
     <View style={styles.footerWrapper}>
@@ -45,38 +140,28 @@ export default function WebFooter() {
                   <Text style={styles.brandTitleImmo}>Immo</Text>
                   <Text style={styles.brandTitleCI}>CI</Text>
                 </View>
-                <Text style={styles.brandTagline}>Immobilier Côte d&apos;Ivoire</Text>
+                <Text style={styles.brandTagline}>{get('brandTagline')}</Text>
               </View>
             </TouchableOpacity>
 
-            <Text style={styles.brandDesc}>
-              {language === 'fr'
-                ? "La plateforme de référence pour l'achat, la vente et la location de biens immobiliers certifiés à Abidjan et dans toute la Côte d'Ivoire."
-                : 'The premier platform for buying, renting, and selling verified real estate in Abidjan and across Ivory Coast.'}
-            </Text>
+            <Text style={styles.brandDesc}>{get('brandDesc')}</Text>
 
             <View style={styles.trustBadge}>
               <ShieldCheck size={14} color="#059669" strokeWidth={2.2} />
-              <Text style={styles.trustBadgeText}>
-                {language === 'fr' ? 'Annonces 100% Vérifiées & Sécurisées' : '100% Verified & Secure Listings'}
-              </Text>
+              <Text style={styles.trustBadgeText}>{get('trustBadge')}</Text>
             </View>
           </View>
 
           {/* Column 2: Navigation (Acheter & Louer) */}
           <View style={styles.colSection}>
-            <Text style={styles.colTitle}>
-              {language === 'fr' ? 'Immobilier' : 'Real Estate'}
-            </Text>
+            <Text style={styles.colTitle}>{get('colRealEstate')}</Text>
 
             <TouchableOpacity
               style={styles.linkItem}
               onPress={() => navigateTo('/(tabs)/search', { status: 'sale' })}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? 'Biens à Vendre (Acheter)' : 'Properties for Sale (Buy)'}
-              </Text>
+              <Text style={styles.linkText}>{get('forSale')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -84,9 +169,7 @@ export default function WebFooter() {
               onPress={() => navigateTo('/(tabs)/search', { status: 'rent' })}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? 'Biens à Louer (Location)' : 'Properties for Rent (Rent)'}
-              </Text>
+              <Text style={styles.linkText}>{get('forRent')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -94,9 +177,7 @@ export default function WebFooter() {
               onPress={() => navigateTo('/(tabs)/search', { status: 'all', type: 'villa' })}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? 'Villas de Prestige' : 'Luxury Villas'}
-              </Text>
+              <Text style={styles.linkText}>{get('luxuryVillas')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -104,9 +185,7 @@ export default function WebFooter() {
               onPress={() => navigateTo('/(tabs)/search', { status: 'all', type: 'apartment' })}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? 'Appartements Meublés & Non Meublés' : 'Apartments'}
-              </Text>
+              <Text style={styles.linkText}>{get('apartments')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -114,17 +193,13 @@ export default function WebFooter() {
               onPress={() => navigateTo('/(tabs)/add-property')}
               activeOpacity={0.75}
             >
-              <Text style={[styles.linkText, styles.highlightLink]}>
-                {language === 'fr' ? '+ Publier une Annonce' : '+ List a Property'}
-              </Text>
+              <Text style={[styles.linkText, styles.highlightLink]}>{get('addListing')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Column 3: Quartiers Populaires */}
           <View style={styles.colSection}>
-            <Text style={styles.colTitle}>
-              {language === 'fr' ? 'Quartiers Prisés' : 'Top Locations'}
-            </Text>
+            <Text style={styles.colTitle}>{get('colLocations')}</Text>
 
             {[
               { label: 'Cocody (Ambassades, Danga)', slug: 'cocody' },
@@ -148,18 +223,14 @@ export default function WebFooter() {
 
           {/* Column 4: Support & Contact */}
           <View style={styles.colSection}>
-            <Text style={styles.colTitle}>
-              {language === 'fr' ? 'Support & Contact' : 'Support & Contact'}
-            </Text>
+            <Text style={styles.colTitle}>{get('colSupport')}</Text>
 
             <TouchableOpacity
               style={styles.linkItem}
               onPress={() => navigateTo('/help')}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? "Centre d'Aide & FAQ" : 'Help Center & FAQ'}
-              </Text>
+              <Text style={styles.linkText}>{get('helpCenter')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -167,19 +238,15 @@ export default function WebFooter() {
               onPress={() => navigateTo('/(tabs)/favorites')}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? 'Mes Favoris Sauvegardés' : 'My Saved Favorites'}
-              </Text>
+              <Text style={styles.linkText}>{get('myFavorites')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.linkItem}
-              onPress={() => navigateTo('/dashboard')}
+              onPress={() => navigateTo('/admin')}
               activeOpacity={0.75}
             >
-              <Text style={styles.linkText}>
-                {language === 'fr' ? 'Espace Professionnel & Admin' : 'Agent & Admin Portal'}
-              </Text>
+              <Text style={styles.linkText}>{get('adminPortal')}</Text>
             </TouchableOpacity>
 
             <View style={styles.contactBox}>
@@ -197,27 +264,19 @@ export default function WebFooter() {
 
         {/* ── BOTTOM COPYRIGHT & LEGAL BAR ──────────────────────────── */}
         <View style={styles.bottomBar}>
-          <Text style={styles.copyrightText}>
-            © {new Date().getFullYear()} ImmoCI. Tous droits réservés.
-          </Text>
+          <Text style={styles.copyrightText}>{get('copyright')}</Text>
 
           <View style={styles.legalLinksRow}>
             <TouchableOpacity onPress={() => navigateTo('/help')} activeOpacity={0.75}>
-              <Text style={styles.legalLink}>
-                {language === 'fr' ? 'Mentions Légales' : 'Legal Notice'}
-              </Text>
+              <Text style={styles.legalLink}>{get('legalNotice')}</Text>
             </TouchableOpacity>
             <Text style={styles.legalDivider}>•</Text>
             <TouchableOpacity onPress={() => navigateTo('/help')} activeOpacity={0.75}>
-              <Text style={styles.legalLink}>
-                {language === 'fr' ? 'Confidentialité' : 'Privacy Policy'}
-              </Text>
+              <Text style={styles.legalLink}>{get('privacyPolicy')}</Text>
             </TouchableOpacity>
             <Text style={styles.legalDivider}>•</Text>
             <TouchableOpacity onPress={() => navigateTo('/help')} activeOpacity={0.75}>
-              <Text style={styles.legalLink}>
-                {language === 'fr' ? 'Conditions d’Utilisation' : 'Terms of Service'}
-              </Text>
+              <Text style={styles.legalLink}>{get('termsOfService')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -241,130 +300,113 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 28,
+    paddingTop: 56,
+    paddingBottom: 36,
   },
   gridContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     flexWrap: 'wrap',
-    gap: 32,
-    paddingBottom: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 36,
+    justifyContent: 'space-between',
   },
-
-  // Col 1: Brand
   colBrand: {
-    flex: 1.2,
+    flex: 1.4,
     minWidth: 260,
-    gap: 14,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    cursor: 'pointer' as any,
+    marginBottom: 16,
   },
   logoBadge: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 9,
     backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
   },
   brandTitleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
   },
   brandTitleImmo: {
-    fontSize: 18,
+    fontSize: 21,
     fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
+    color: '#F8FAFC',
+    letterSpacing: -0.5,
   },
   brandTitleCI: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#34D399',
-    letterSpacing: -0.4,
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#10B981',
+    letterSpacing: -0.5,
   },
   brandTagline: {
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: '500',
-    marginTop: -2,
-    letterSpacing: 0.2,
+    fontWeight: '600',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 1,
   },
   brandDesc: {
-    fontSize: 13,
+    fontSize: 13.5,
+    lineHeight: 22,
     color: '#94A3B8',
-    lineHeight: 20,
-    fontWeight: '400',
+    marginBottom: 20,
+    maxWidth: 320,
   },
   trustBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    backgroundColor: 'rgba(5, 150, 105, 0.12)',
+    gap: 8,
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(5, 150, 105, 0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
   trustBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#34D399',
   },
-
-  // Sections
   colSection: {
     flex: 1,
-    minWidth: 190,
-    gap: 10,
+    minWidth: 170,
   },
   colTitle: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: '#F8FAFC',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    letterSpacing: 1.1,
+    marginBottom: 18,
   },
   linkItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 3,
-    cursor: 'pointer' as any,
+    paddingVertical: 6,
+    marginBottom: 4,
   },
   linkText: {
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#94A3B8',
-    fontWeight: '500',
-    ...Platform.select({
-      web: {
-        transition: 'color 0.2s ease',
-      },
-    }),
+    fontWeight: '400',
+    transitionDuration: '150ms' as any,
   },
   highlightLink: {
     color: '#34D399',
     fontWeight: '700',
+    marginTop: 4,
   },
-
-  // Contact Box
   contactBox: {
-    marginTop: 8,
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginTop: 16,
+    gap: 8,
   },
   contactItem: {
     flexDirection: 'row',
@@ -372,43 +414,36 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   contactText: {
-    fontSize: 12,
-    color: '#CBD5E1',
-    fontWeight: '600',
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
-
-  // Bottom bar
   bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 14,
+    marginTop: 48,
     paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
   },
   copyrightText: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#64748B',
-    fontWeight: '500',
   },
   legalLinksRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   legalLink: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: '#64748B',
-    fontWeight: '500',
-    cursor: 'pointer' as any,
-    ...Platform.select({
-      web: {
-        transition: 'color 0.2s ease',
-      },
-    }),
   },
   legalDivider: {
-    fontSize: 10,
     color: '#475569',
+    fontSize: 12,
   },
 });

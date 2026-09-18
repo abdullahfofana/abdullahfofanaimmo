@@ -183,9 +183,9 @@ export default function HomeScreen() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return t('greeting_morning') || (language === 'fr' ? 'Bonjour' : 'Good Morning');
-    if (hour < 18) return t('greeting_afternoon') || (language === 'fr' ? 'Bon après-midi' : 'Good Afternoon');
-    return t('greeting_evening') || (language === 'fr' ? 'Bonsoir' : 'Good Evening');
+    if (hour < 12) return t('greeting_morning');
+    if (hour < 18) return t('greeting_afternoon');
+    return t('greeting_evening');
   };
 
   useEffect(() => {
@@ -215,6 +215,12 @@ export default function HomeScreen() {
 
   const isWeb = Platform.OS === 'web';
   const { t, toggleLanguage, language } = useLanguage();
+
+  const loc = (fr: string, en: string, ar: string) => {
+    if (language === 'ar') return ar;
+    if (language === 'en') return en;
+    return fr;
+  };
   const { getApprovedSubmissions } = usePropertySubmissions();
 
   const approvedSubmissions = React.useMemo(() => {
@@ -301,7 +307,7 @@ export default function HomeScreen() {
 
   // Category filter chips data
   const categories = [
-    { key: 'all', label: language === 'fr' ? 'Tous les biens' : 'All Properties', icon: '✨' },
+    { key: 'all', label: loc('Tous les biens', 'All Properties', 'جميع العقارات'), icon: '✨' },
     { key: 'apartment', label: t('search_apartment') || 'Appartements', icon: '🏢' },
     { key: 'villa', label: t('search_villa') || 'Villas', icon: '🏖️' },
     { key: 'house', label: t('search_house') || 'Maisons', icon: '🏡' },
@@ -409,7 +415,7 @@ export default function HomeScreen() {
             >
               <MapPin size={15} color="#059669" />
               <View>
-                <Text style={styles.mobileLocationSub}>{language === 'fr' ? 'Explorer la zone' : 'Explore Area'}</Text>
+                <Text style={styles.mobileLocationSub}>{loc('Explorer la zone', 'Explore Area', 'استكشاف المنطقة')}</Text>
                 <Text style={styles.mobileLocationTitle} numberOfLines={1}>{selectedLocation}</Text>
               </View>
               <ChevronDown size={14} color="#64748B" />
@@ -444,10 +450,10 @@ export default function HomeScreen() {
             </View>
             <View style={styles.searchCapsuleTextWrap}>
               <Text style={styles.searchCapsuleTitle}>
-                {language === 'fr' ? 'Où souhaitez-vous habiter ?' : 'Where would you like to live?'}
+                {loc('Où souhaitez-vous habiter ?', 'Where would you like to live?', 'أين ترغب في السكن؟')}
               </Text>
               <Text style={styles.searchCapsuleSub}>
-                {language === 'fr' ? 'Cocody · Riviera · Plateau · Tous prix' : 'Cocody · Riviera · Plateau · Any price'}
+                {loc('Cocody · Riviera · Plateau · Tous prix', 'Cocody · Riviera · Plateau · Any price', 'كوكودي · ريفيرا · بلاتو · كافة الأسعار')}
               </Text>
             </View>
             <View style={styles.searchCapsuleFilterBtn}>
@@ -484,7 +490,7 @@ export default function HomeScreen() {
                 <View style={styles.heroBadge}>
                   <Building2 size={12} color="#059669" strokeWidth={2.4} />
                   <Text style={styles.heroBadgeText}>
-                    {language === 'fr' ? "N°1 DE L'IMMOBILIER EN CÔTE D'IVOIRE" : '#1 REAL ESTATE PLATFORM IN IVORY COAST'}
+                    {loc("N°1 DE L'IMMOBILIER EN CÔTE D'IVOIRE", '#1 REAL ESTATE PLATFORM IN IVORY COAST', 'المنصة العقارية الأولى في ساحل العاج')}
                   </Text>
                 </View>
               </FadeInView>
@@ -618,14 +624,14 @@ export default function HomeScreen() {
               <View style={[styles.sectionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.12)' }]}>
                 <MapPin size={11} color="#059669" />
                 <Text style={[styles.sectionBadgeText, { color: '#059669' }]}>
-                  {language === 'fr' ? 'ZONES TRÈS RECHERCHÉES' : 'POPULAR LOCATIONS'}
+                  {loc('ZONES TRÈS RECHERCHÉES', 'POPULAR LOCATIONS', 'مناطق ذات إقبال واسع')}
                 </Text>
               </View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? 'Quartiers Populaires' : 'Popular Areas'}
+                {loc('Quartiers Populaires', 'Popular Areas', 'أشهر الأحياء')}
               </Text>
               <Text style={styles.sectionSubtitle}>
-                {language === 'fr' ? 'Découvrez les zones les plus demandées d\'Abidjan' : 'Explore the most sought-after neighborhoods'}
+                {loc('Découvrez les zones les plus demandées d\'Abidjan', 'Explore the most sought-after neighborhoods', 'اكتشف أكثر المناطق والمدن طلباً في ساحل العاج')}
               </Text>
             </View>
             <TouchableOpacity
@@ -669,7 +675,7 @@ export default function HomeScreen() {
                         <View style={styles.popularAreaCountBadge}>
                           <Building2 size={11} color="#059669" />
                           <Text style={styles.popularAreaCountText}>
-                            {stats.totalCount} {language === 'fr' ? 'biens' : 'listings'}
+                            {stats.totalCount} {loc('biens', 'listings', 'عقار')}
                           </Text>
                         </View>
                         {stats.avgSalePrice ? (
@@ -693,7 +699,7 @@ export default function HomeScreen() {
               <View style={[styles.sectionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.1)' }]}>
                 <Building2 size={11} color="#059669" />
                 <Text style={[styles.sectionBadgeText, { color: '#059669' }]}>
-                  {language === 'fr' ? 'SÉLECTION PREMIUM' : 'PREMIUM SELECTION'}
+                  {loc('SÉLECTION PREMIUM', 'PREMIUM SELECTION', 'مجموعة فاخرة ومميزة')}
                 </Text>
               </View>
               <Text style={styles.sectionTitle}>{t('home_featured_title') || 'Biens en vedette'}</Text>
@@ -775,11 +781,11 @@ export default function HomeScreen() {
               <View style={[styles.sectionBadge, styles.sectionBadgeRecent]}>
                 <Building2 size={11} color="#059669" />
                 <Text style={[styles.sectionBadgeText, styles.sectionBadgeTextRecent]}>
-                  {language === 'fr' ? 'ANNONCES RÉCENTES' : 'RECENT ANNOUNCEMENTS'}
+                  {loc('ANNONCES RÉCENTES', 'RECENT ANNOUNCEMENTS', 'أحدث الإعلانات المضافة')}
                 </Text>
               </View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? 'Dernières Annonces' : 'Latest Property Ads'}
+                {loc('Dernières Annonces', 'Latest Property Ads', 'أحدث العروض العقارية')}
               </Text>
               <Text style={styles.sectionSubtitle}>
                 {homepageRecentProperties.length} {language === 'fr' ? `annonces récentes affichées · ${allMatchingProperties.length} biens au total sur ImmoCI` : `recent ads shown · ${allMatchingProperties.length} total available`}
@@ -1023,13 +1029,13 @@ export default function HomeScreen() {
                           >
                             <Phone size={15} color="#475569" strokeWidth={2.4} />
                             <Text style={styles.mobileCleanCallBtnText}>
-                              {language === 'fr' ? 'Appeler' : 'Call'}
+                              {loc('Appeler', 'Call', 'اتصال')}
                             </Text>
                           </TouchableOpacity>
 
                           <View style={styles.mobileCleanDetailPill}>
                             <Text style={styles.mobileCleanDetailPillText}>
-                              {language === 'fr' ? 'Détails' : 'Details'}
+                              {loc('Détails', 'Details', 'التفاصيل')}
                             </Text>
                             <ArrowRight size={13} color="#059669" strokeWidth={2.4} />
                           </View>
@@ -1089,10 +1095,10 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>
-                {language === 'fr' ? "Prix Moyen de l'Immobilier par Commune" : 'Average Property Price by Area'}
+                {loc("Prix Moyen de l'Immobilier par Commune", 'Average Property Price by Area', 'متوسط أسعار العقارات حسب البلدية')}
               </Text>
               <Text style={styles.sectionSubtitle}>
-                {language === 'fr' ? 'Estimations en temps réel calculées sur la base de nos annonces' : 'Live real estate market price statistics across Côte d\'Ivoire'}
+                {loc('Estimations en temps réel calculées sur la base de nos annonces', 'Live real estate market price statistics across Côte d\'Ivoire', 'إحصائيات مباشرة ودقيقة مستخلصة من واقع السوق العقاري')}
               </Text>
             </View>
             <TouchableOpacity
@@ -1100,7 +1106,7 @@ export default function HomeScreen() {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
               <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary }}>
-                {language === 'fr' ? 'Voir la carte' : 'View on map'}
+                {loc('Voir la carte', 'View on map', 'عرض الخريطة')}
               </Text>
               <ArrowRight size={14} color={colors.primary} />
             </TouchableOpacity>
@@ -1145,14 +1151,14 @@ export default function HomeScreen() {
                 <View style={[styles.sectionBadge, { backgroundColor: 'rgba(5, 150, 105, 0.12)' }]}>
                   <MapPin size={11} color="#059669" />
                   <Text style={[styles.sectionBadgeText, { color: '#059669' }]}>
-                    {language === 'fr' ? 'CARTE INTERACTIVE' : 'INTERACTIVE MAP'}
+                    {loc('CARTE INTERACTIVE', 'INTERACTIVE MAP', 'خريطة تفاعلية')}
                   </Text>
                 </View>
                 <Text style={styles.sectionTitle}>
-                  {language === 'fr' ? 'Explorer les biens sur la carte' : 'Explore Properties on Map'}
+                  {loc('Explorer les biens sur la carte', 'Explore Properties on Map', 'استكشف العقارات على الخريطة')}
                 </Text>
                 <Text style={styles.sectionSubtitle}>
-                  {language === 'fr' ? 'Repérez les logements par quartier avec les prix et services à proximité' : 'Find listings by neighborhood with prices and nearby services'}
+                  {loc('Repérez les logements par quartier avec les prix et services à proximité', 'Find listings by neighborhood with prices and nearby services', 'حدد مواقع العقارات حسب الأحياء مع الأسعار والخدمات المجاورة')}
                 </Text>
               </View>
             </View>
@@ -1196,7 +1202,7 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.mobileMapBannerBtn}>
                     <Text style={styles.mobileMapBannerBtnText}>
-                      {language === 'fr' ? 'Ouvrir' : 'Open'}
+                      {loc('Ouvrir', 'Open', 'فتح الخريطة')}
                     </Text>
                     <ArrowRight size={14} color="#FFFFFF" strokeWidth={2.5} />
                   </View>
@@ -1211,8 +1217,8 @@ export default function HomeScreen() {
           <>
             <View style={[styles.featuresSection, { maxWidth: maxContentWidth, alignSelf: 'center', width: '100%', paddingHorizontal: contentPadding }]} testID="features-grid">
               <View style={styles.featuresSectionHeader}>
-                <Text style={styles.featuresSectionTitle}>{language === 'fr' ? 'Pourquoi choisir ImmoCI ?' : 'Why Choose ImmoCI?'}</Text>
-                <Text style={styles.featuresSectionSubtitle}>{language === 'fr' ? 'La plateforme immobilière la plus fiable en Côte d\'Ivoire' : 'The most trusted real estate platform in Ivory Coast'}</Text>
+                <Text style={styles.featuresSectionTitle}>{loc('Pourquoi choisir ImmoCI ?', 'Why Choose ImmoCI?', 'لماذا تختار ImmoCI؟')}</Text>
+                <Text style={styles.featuresSectionSubtitle}>{loc('La plateforme immobilière la plus fiable en Côte d\'Ivoire', 'The most trusted real estate platform in Ivory Coast', 'المنصة العقارية الأكثر أماناً وموثوقية في ساحل العاج')}</Text>
               </View>
               <View style={styles.featuresGrid}>
                 {[

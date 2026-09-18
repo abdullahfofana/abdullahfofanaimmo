@@ -120,9 +120,16 @@ export default function SettingsScreen() {
             <SettingsItem
               icon={<Globe size={22} color={colors.primary} />}
               title={t('settings_language')}
-              subtitle={language === 'fr' ? 'Français' : 'English'}
+              subtitle={
+                language === 'ar'
+                  ? 'العربية'
+                  : language === 'fr'
+                  ? 'Français'
+                  : 'English'
+              }
               onPress={() => {
-                setLanguage(language === 'en' ? 'fr' : 'en');
+                const nextLang = language === 'fr' ? 'en' : language === 'en' ? 'ar' : 'fr';
+                setLanguage(nextLang);
               }}
               colors={colors}
             />

@@ -122,6 +122,7 @@ export default function PropertyMap({
 }: PropertyMapProps) {
   const colors = useColors();
   const { language, t } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
 
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const activeSearch = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
@@ -344,9 +345,11 @@ export default function PropertyMap({
     const cleanPhone = phone.replace(/[^0-9+]/g, '');
     const distText = distanceKm ? ` (je suis à environ ${distanceKm} km)` : '';
     const text = encodeURIComponent(
-      language === 'fr'
-        ? `Bonjour, je vous contacte concernant votre annonce '${title}' sur ImmoCI${distText}. Est-elle toujours disponible pour une visite ?`
-        : `Hello, I am contacting you regarding your listing '${title}' on ImmoCI${distText}. Is it available for a visit?`
+      loc(
+        `Bonjour, je vous contacte concernant votre annonce '${title}' sur ImmoCI${distText}. Est-elle toujours disponible pour une visite ?`,
+        `Hello, I am contacting you regarding your listing '${title}' on ImmoCI${distText}. Is it available for a visit?`,
+        `مرحباً، أتواصل معك بخصوص إعلانك '${title}' على ImmoCI${distText}. هل هو متاح لزيارة معاينة؟`
+      )
     );
     Linking.openURL(`https://wa.me/${cleanPhone}?text=${text}`);
   };
@@ -844,13 +847,13 @@ export default function PropertyMap({
             >
               <Compass size={13} color={showPOILayer ? '#FFFFFF' : '#64748B'} />
               <Text style={[styles.placeChipText, showPOILayer && { color: '#FFFFFF', fontWeight: '800' }]}>
-                {language === 'fr' ? 'Services & Écoles' : 'Nearby POIs'}
+                {loc('Services & Écoles', 'Nearby POIs', 'المرافق والمدارس')}
               </Text>
             </TouchableOpacity>
 
             {POPULAR_PLACES.map((place) => {
               const isActive = selectedPlaceId === place.id;
-              const placeLabel = language === 'fr' ? place.nameFr : place.name;
+              const placeLabel = language === 'fr' ? place.nameFr : language === 'ar' ? ((place as any).nameAr || place.name) : place.name;
               return (
                 <TouchableOpacity
                   key={place.id}
@@ -869,7 +872,7 @@ export default function PropertyMap({
           {/* Distance Proximity Filter */}
           <View style={styles.radiusRow}>
             <Text style={styles.radiusLabel}>
-              {language === 'fr' ? 'Rayon de distance :' : 'Distance radius:'}
+              {loc('Rayon de distance :', 'Distance radius:', 'نطاق المسافة :')}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.radiusScroll}>
               {RADIUS_OPTIONS.map((radius) => {
@@ -882,7 +885,7 @@ export default function PropertyMap({
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.radiusPillText, isSelected && styles.radiusPillTextActive]}>
-                      {language === 'fr' ? radius.labelFr : radius.labelEn}
+                      {language === 'fr' ? radius.labelFr : language === 'ar' ? ((radius as any).labelAr || radius.labelEn) : radius.labelEn}
                     </Text>
                   </TouchableOpacity>
                 );

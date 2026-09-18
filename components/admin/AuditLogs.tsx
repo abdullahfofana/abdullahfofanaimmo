@@ -41,12 +41,14 @@ import {
   loadAuditEvents,
 } from '@/utils/auditLogger';
 import { downloadExcelFile, ExcelSheet } from '@/utils/excelExport';
+import { useLanguage } from '@/providers/LanguageProvider';
 
 interface AuditLogsProps {
   isDark?: boolean;
 }
 
 export default function AuditLogs({ isDark = true }: AuditLogsProps) {
+  const { t, language } = useLanguage();
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,7 +188,7 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
       const filename = `ImmoCI_Audit_Security_Trail_${new Date().toISOString().slice(0, 10)}.xlsx`;
       const success = downloadExcelFile(filename, sheets);
       if (success) {
-        showToast('Journal d\'audit exporté avec succès en format Excel (.xlsx)');
+        showToast(t('audit_toast_exported'));
       } else {
         showToast('Erreur lors de l\'export du journal d\'audit');
       }
@@ -209,21 +211,21 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
   };
 
   const getActionFriendlyName = (action: AuditAction) => {
-    switch (action) {
-      case 'STAFF_CREATED': return 'Collaborateur Créé';
-      case 'STAFF_UPDATED': return 'Fiche Modifiée';
-      case 'STAFF_ROLE_CHANGED': return 'Rôle Modifié';
-      case 'STAFF_PERMISSIONS_CHANGED': return 'Permissions Révisées';
-      case 'STAFF_STATUS_CHANGED': return 'Statut Modifié';
-      case 'PROPERTY_APPROVED': return 'Bien Approuvé';
-      case 'PROPERTY_REJECTED': return 'Bien Rejeté';
-      case 'PROPERTY_DELETED': return 'Bien Supprimé';
-      case 'SETTINGS_CHANGED': return 'Paramètres Système';
-      case 'UNAUTHORIZED_ACCESS_ATTEMPT': return 'Sécurité : Accès Refusé';
-      case 'LOGIN_SUCCESS': return 'Connexion Réussie';
-      case 'LOGIN_FAILED': return 'Échec de Connexion';
-      default: return action;
-    }
+    const names: Record<AuditAction, { fr: string; en: string; ar: string }> = {
+      STAFF_CREATED: { fr: 'Collaborateur Créé', en: 'Staff Created', ar: 'إنشاء حساب موظف' },
+      STAFF_UPDATED: { fr: 'Fiche Modifiée', en: 'Staff Updated', ar: 'تحديث بيانات موظف' },
+      STAFF_ROLE_CHANGED: { fr: 'Rôle Modifié', en: 'Role Changed', ar: 'تعديل الدور الوظيفي' },
+      STAFF_PERMISSIONS_CHANGED: { fr: 'Permissions Révisées', en: 'Permissions Modified', ar: 'تعديل الصلاحيات' },
+      STAFF_STATUS_CHANGED: { fr: 'Statut Modifié', en: 'Status Changed', ar: 'تغيير حالة الحساب' },
+      PROPERTY_APPROVED: { fr: 'Bien Approuvé', en: 'Property Approved', ar: 'اعتماد العقار' },
+      PROPERTY_REJECTED: { fr: 'Bien Rejeté', en: 'Property Rejected', ar: 'رفض إعلان العقار' },
+      PROPERTY_DELETED: { fr: 'Bien Supprimé', en: 'Property Deleted', ar: 'حذف العقار نهائياً' },
+      SETTINGS_CHANGED: { fr: 'Paramètres Système', en: 'Settings Changed', ar: 'تعديل الإعدادات' },
+      UNAUTHORIZED_ACCESS_ATTEMPT: { fr: 'Sécurité : Accès Refusé', en: 'Security: Access Denied', ar: 'أمان: وصول مرفوض' },
+      LOGIN_SUCCESS: { fr: 'Connexion Réussie', en: 'Login Success', ar: 'تسجيل دخول ناجح' },
+      LOGIN_FAILED: { fr: 'Échec de Connexion', en: 'Login Failed', ar: 'فشل تسجيل الدخول' },
+    };
+    return names[action]?.[language] || names[action]?.fr || action;
   };
 
   const theme = {
@@ -254,9 +256,9 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
               <History size={22} color={theme.accent} />
             </View>
             <View>
-              <Text style={[styles.title, { color: theme.text }]}>Journal d'Audit & Sécurité</Text>
+              <Text style={[styles.title, { color: theme.text }]}>{t('audit_page_title')}</Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-                Traçabilité immuable des actions administratives, attributions de rôles et sécurité
+                {t('audit_page_sub')}
               </Text>
             </View>
           </View>
@@ -272,32 +274,32 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
           ) : (
             <FileSpreadsheet size={16} color="#FFFFFF" />
           )}
-          <Text style={styles.exportBtnText}>Exporter Audit (.xlsx)</Text>
+          <Text style={styles.exportBtnText}>{t('common_export_excel')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Stat Cards */}
       <View style={styles.kpiGrid}>
         <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Total Événements</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>{t('audit_kpi_total')}</Text>
           <Text style={[styles.kpiValue, { color: theme.text }]}>{stats.total}</Text>
           <Text style={styles.kpiSub}>Toutes actions confondues</Text>
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Gouvernance Équipe & Rôles</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>{t('audit_kpi_staff')}</Text>
           <Text style={[styles.kpiValue, { color: '#3B82F6' }]}>{stats.staffChanges}</Text>
           <Text style={styles.kpiSub}>Créations, rôles et permissions</Text>
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Vérifications Biens</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>{t('audit_kpi_properties')}</Text>
           <Text style={[styles.kpiValue, { color: '#10B981' }]}>{stats.propVerifs}</Text>
           <Text style={styles.kpiSub}>Validations et refus d'annonces</Text>
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>Sécurité & Accès Bloqués</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textMuted }]}>{t('audit_kpi_alerts')}</Text>
           <Text style={[styles.kpiValue, { color: stats.alerts > 0 ? '#EF4444' : '#10B981' }]}>
             {stats.alerts}
           </Text>
@@ -311,7 +313,7 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
           <Search size={16} color={theme.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Rechercher par auteur, email, action ou ressource..."
+            placeholder={t('audit_search_placeholder')}
             placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -321,7 +323,7 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
         {/* Action Category Filter */}
         <View style={styles.filterPillGroup}>
           {[
-            { id: 'ALL', label: 'Toutes les actions' },
+            { id: 'ALL', label: t('audit_filter_all_actions') },
             { id: 'STAFF', label: 'Équipe & RBAC' },
             { id: 'PROPERTY', label: 'Biens Immobiliers' },
             { id: 'SECURITY', label: 'Alertes Sécurité' },
@@ -351,11 +353,11 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
       {/* Events Table */}
       <View style={[styles.tableCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={[styles.tableHeader, { borderBottomColor: theme.border }]}>
-          <Text style={[styles.th, { flex: 2, color: theme.textMuted }]}>DATE & HEURE</Text>
-          <Text style={[styles.th, { flex: 2.5, color: theme.textMuted }]}>ACTION</Text>
-          <Text style={[styles.th, { flex: 3, color: theme.textMuted }]}>AUTEUR</Text>
-          <Text style={[styles.th, { flex: 3, color: theme.textMuted }]}>CIBLE / RESSOURCE</Text>
-          <Text style={[styles.th, { flex: 1.5, textAlign: 'center', color: theme.textMuted }]}>DÉTAILS</Text>
+          <Text style={[styles.th, { flex: 2, color: theme.textMuted }]}>{t('audit_col_time').toUpperCase()}</Text>
+          <Text style={[styles.th, { flex: 2.5, color: theme.textMuted }]}>{t('audit_col_action').toUpperCase()}</Text>
+          <Text style={[styles.th, { flex: 3, color: theme.textMuted }]}>{t('audit_col_actor').toUpperCase()}</Text>
+          <Text style={[styles.th, { flex: 3, color: theme.textMuted }]}>{t('audit_col_target').toUpperCase()}</Text>
+          <Text style={[styles.th, { flex: 1.5, textAlign: 'center', color: theme.textMuted }]}>{t('audit_col_details').toUpperCase()}</Text>
         </View>
 
         {isLoading ? (
@@ -436,7 +438,7 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
                     onPress={() => setInspectingEvent(ev)}
                   >
                     <Eye size={14} color={theme.accent} />
-                    <Text style={[styles.inspectBtnText, { color: theme.accent }]}>Détails</Text>
+                    <Text style={[styles.inspectBtnText, { color: theme.accent }]}>{t('audit_col_details')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -456,7 +458,7 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
                     <Shield size={20} color={theme.accent} />
                   </View>
                   <View>
-                    <Text style={[styles.modalTitle, { color: theme.text }]}>Piste d'Audit Détaillée</Text>
+                    <Text style={[styles.modalTitle, { color: theme.text }]}>{t('audit_inspect_title')}</Text>
                     <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
                       ID: {inspectingEvent.id}
                     </Text>

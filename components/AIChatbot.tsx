@@ -35,6 +35,7 @@ export default function AIChatbot() {
   const styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { t, language } = useLanguage();
+    const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
     const [isOpen, setIsOpen] = useState(false);
     const [inputMessage, setInputMessage] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
@@ -82,9 +83,11 @@ export default function AIChatbot() {
                     {
                         id: 'welcome',
                         role: 'assistant',
-                        content: language === 'fr'
-                            ? "Bonjour ! Je suis l'assistant IA d'ImmoCI. Je peux vous aider à trouver des biens, estimer des prix ou répondre à vos questions. Comment puis-je vous aider ?"
-                            : "Hello! I'm the ImmoCI AI assistant. I can help you find properties, estimate prices, or answer your questions. How can I help you?",
+                        content: loc(
+                            "Bonjour ! Je suis l'assistant IA d'ImmoCI. Je peux vous aider à trouver des biens, estimer des prix ou répondre à vos questions. Comment puis-je vous aider ?",
+                            "Hello! I'm the ImmoCI AI assistant. I can help you find properties, estimate prices, or answer your questions. How can I help you?",
+                            "مرحباً! أنا المساعد الذكي لمنصة ImmoCI. يمكنني مساعدتك في العثور على العقارات، تقدير الأسعار، أو الإجابة عن استفساراتك. كيف يمكنني مساعدتك اليوم؟"
+                        ),
                         timestamp: Date.now()
                     }
                 ]);
@@ -110,9 +113,11 @@ export default function AIChatbot() {
 
         try {
             // Prepare context for AI (system prompt)
-            const systemPrompt = language === 'fr'
-                ? "Tu es un assistant immobilier virtuel pour ImmoCI en Côte d'Ivoire. Sois poli, concis et utile. Aide à la recherche, l'estimation et les infos générales."
-                : "You are a virtual real estate assistant for ImmoCI in Ivory Coast. Be polite, concise, and helpful. Assist with search, estimation, and general info.";
+            const systemPrompt = loc(
+                "Tu es un assistant immobilier virtuel pour ImmoCI en Côte d'Ivoire. Sois poli, concis et utile. Aide à la recherche, l'estimation et les infos générales.",
+                "You are a virtual real estate assistant for ImmoCI in Ivory Coast. Be polite, concise, and helpful. Assist with search, estimation, and general info.",
+                "أنت المساعد العقاري الذكي لمنصة ImmoCI في كوت ديفوار. كن مهذباً وموجزاً ومفيداً، وساعد في البحث والتقديرات والاستفسارات العامة."
+            );
 
             const apiMessages = [
                 { role: 'system', content: systemPrompt },
@@ -125,7 +130,7 @@ export default function AIChatbot() {
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: response.message?.content || (language === 'fr' ? "Désolé, je n'ai pas compris." : "Sorry, I didn't understand."),
+                content: response.message?.content || loc("Désolé, je n'ai pas compris.", "Sorry, I didn't understand.", "عذراً، لم أتمكن من فهم ذلك."),
                 timestamp: Date.now()
             };
 
@@ -135,7 +140,7 @@ export default function AIChatbot() {
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: language === 'fr' ? "Désolé, une erreur est survenue. Veuillez réessayer." : "Sorry, something went wrong. Please try again.",
+                content: loc("Désolé, une erreur est survenue. Veuillez réessayer.", "Sorry, something went wrong. Please try again.", "عذراً، حدث خطأ ما. يرجى المحاولة مرة أخرى."),
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, errorMsg]);
@@ -190,7 +195,7 @@ export default function AIChatbot() {
                             <View>
                                 <Text style={styles.headerTitle}>ImmoCI AI</Text>
                                 <Text style={styles.headerSubtitle}>
-                                    {language === 'fr' ? 'Toujours là pour vous aider' : 'Always here to help'}
+                                    {loc('Toujours là pour vous aider', 'Always here to help', 'مستعد لمساعدتك دائماً')}
                                 </Text>
                             </View>
                         </View>
@@ -248,18 +253,18 @@ export default function AIChatbot() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsContainer} contentContainerStyle={styles.quickActionsContent}>
                         <QuickAction
                             icon={Search}
-                            label={language === 'fr' ? "Chercher une villa" : "Find a villa"}
-                            query={language === 'fr' ? "Je cherche une villa à Cocody avec piscine" : "I'm looking for a villa in Cocody with a pool"}
+                            label={loc("Chercher une villa", "Find a villa", "البحث عن فيلا")}
+                            query={loc("Je cherche une villa à Cocody avec piscine", "I'm looking for a villa in Cocody with a pool", "أبحث عن فيلا في كوكودي مع مسبح")}
                         />
                         <QuickAction
                             icon={DollarSign}
-                            label={language === 'fr' ? "Estimation prix" : "Price estimate"}
-                            query={language === 'fr' ? "Quel est le prix moyen d'un 3 pièces à Marcory ?" : "What's the average price for a 3-bedroom in Marcory?"}
+                            label={loc("Estimation prix", "Price estimate", "تقدير الأسعار")}
+                            query={loc("Quel est le prix moyen d'un 3 pièces à Marcory ?", "What's the average price for a 3-bedroom in Marcory?", "ما هو متوسط سعر شقة 3 غرف في ماركوري؟")}
                         />
                         <QuickAction
                             icon={HelpCircle}
-                            label={language === 'fr' ? "Aide" : "Help"}
-                            query={language === 'fr' ? "Comment déposer une annonce ?" : "How do I list a property?"}
+                            label={loc("Aide", "Help", "مساعدة")}
+                            query={loc("Comment déposer une annonce ?", "How do I list a property?", "كيف يمكنني إضافة إعلان عقاري؟")}
                         />
                     </ScrollView>
 
@@ -267,7 +272,7 @@ export default function AIChatbot() {
                     <View style={styles.inputArea}>
                         <TextInput
                             style={styles.input}
-                            placeholder={language === 'fr' ? "Posez une question..." : "Ask a question..."}
+                            placeholder={loc("Posez une question...", "Ask a question...", "اطرح سؤالك هنا...")}
                             placeholderTextColor={colors.textLight}
                             value={inputMessage}
                             onChangeText={setInputMessage}

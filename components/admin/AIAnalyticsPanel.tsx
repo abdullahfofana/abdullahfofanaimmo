@@ -19,6 +19,7 @@ export default function AIAnalyticsPanel({ data }: AIAnalyticsPanelProps) {
   const { activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
   const { t, language } = useLanguage();
+  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
 
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<string | null>(null);
@@ -32,17 +33,23 @@ export default function AIAnalyticsPanel({ data }: AIAnalyticsPanelProps) {
     setTimeout(() => {
       let response = '';
       if (q.includes('revenu') || q.includes('revenue') || q.includes('chiffre')) {
-        response = language === 'fr'
-          ? 'Le revenu total cumulé s’élève à 123.1M FCFA avec une croissance mensuelle moyenne de +12.5%. La catégorie Villas génère 62% du volume financier.'
-          : 'Total cumulative revenue stands at 123.1M CFA with average monthly growth of +12.5%. Villas contribute 62% of financial volume.';
+        response = loc(
+          'Le revenu total cumulé s’élève à 123.1M FCFA avec une croissance mensuelle moyenne de +12.5%. La catégorie Villas génère 62% du volume financier.',
+          'Total cumulative revenue stands at 123.1M CFA with average monthly growth of +12.5%. Villas contribute 62% of financial volume.',
+          'إجمالي الإيرادات المتراكمة يبلغ 123.1 مليون فرنك أفريقي مع متوسط نمو شهري قدره +12.5%. تساهم فئة الفلل بنسبة 62% من الحجم المالي.'
+        );
       } else if (q.includes('utilisateur') || q.includes('user') || q.includes('client')) {
-        response = language === 'fr'
-          ? 'La plateforme compte 538 utilisateurs actifs (+8.2% ce mois). Le ratio acheteurs/vendeurs est équilibré à 58% d’acquéreurs et 42% de propriétaires/agents.'
-          : 'The platform has 538 active users (+8.2% this month). Buyer-to-seller ratio is 58% buyers and 42% property owners/agents.';
+        response = loc(
+          'La plateforme compte 538 utilisateurs actifs (+8.2% ce mois). Le ratio acheteurs/vendeurs est équilibré à 58% d’acquéreurs et 42% de propriétaires/agents.',
+          'The platform has 538 active users (+8.2% this month). Buyer-to-seller ratio is 58% buyers and 42% property owners/agents.',
+          'تضم المنصة 538 مستخدماً نشطاً (+8.2% هذا الشهر). نسبة المشترين إلى البائعين متوازنة بنسبة 58% مشترين و42% ملاك ووكلاء.'
+        );
       } else {
-        response = language === 'fr'
-          ? 'Analyse IA : 212 propriétés actives répertoriées avec un délai moyen de clôture de 24 jours. 14 dossiers sont en attente de vérification juridique.'
-          : 'AI Analysis: 212 active properties listed with 24-day average closing time. 14 documents awaiting legal verification.';
+        response = loc(
+          'Analyse IA : 212 propriétés actives répertoriées avec un délai moyen de clôture de 24 jours. 14 dossiers sont en attente de vérification juridique.',
+          'AI Analysis: 212 active properties listed with 24-day average closing time. 14 documents awaiting legal verification.',
+          'تحليل الذكاء الاصطناعي: تم إدراج 212 عقاراً نشطاً بمتوسط مدة إغلاق 24 يوماً. هناك 14 ملفاً بانتظار الفحص القانوني.'
+        );
       }
 
       setAnswer(response);
@@ -69,26 +76,28 @@ export default function AIAnalyticsPanel({ data }: AIAnalyticsPanelProps) {
 
       <View style={styles.content}>
         <Text style={[styles.subtitle, { color: textSecondary }]}>
-          {language === 'fr'
-            ? 'Posez une question sur les performances, le chiffre d’affaires ou les conversions :'
-            : 'Ask anything about revenue, growth, conversions or property distribution:'}
+          {loc(
+            'Posez une question sur les performances, le chiffre d’affaires ou les conversions :',
+            'Ask anything about revenue, growth, conversions or property distribution:',
+            'اطرح سؤالاً حول الأداء التشغيلي، الإيرادات أو نسب التحويل :'
+          )}
         </Text>
 
         <View style={styles.quickQuestions}>
           <TouchableOpacity
             style={[styles.chip, { backgroundColor: chipBg, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }]}
-            onPress={() => handleAsk(language === 'fr' ? 'Quel est le revenu mensuel ?' : 'What is the monthly revenue?')}
+            onPress={() => handleAsk(loc('Quel est le revenu mensuel ?', 'What is the monthly revenue?', 'ما هو الدخل الشهري؟'))}
           >
             <Text style={styles.chipText}>
-              {language === 'fr' ? '📈 Revenu & Croissance' : '📈 Revenue & Growth'}
+              {loc('📈 Revenu & Croissance', '📈 Revenue & Growth', '📈 الإيرادات والنمو')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.chip, { backgroundColor: chipBg, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }]}
-            onPress={() => handleAsk(language === 'fr' ? 'Statistiques utilisateurs' : 'User statistics')}
+            onPress={() => handleAsk(loc('Statistiques utilisateurs', 'User statistics', 'إحصاءات المستخدمين'))}
           >
             <Text style={styles.chipText}>
-              {language === 'fr' ? '👥 Utilisateurs Actifs' : '👥 Active Users'}
+              {loc('👥 Utilisateurs Actifs', '👥 Active Users', '👥 المستخدمون النشطون')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -96,7 +105,7 @@ export default function AIAnalyticsPanel({ data }: AIAnalyticsPanelProps) {
         <View style={[styles.inputRow, { backgroundColor: inputBg, borderColor }]}>
           <TextInput
             style={[styles.input, { color: textPrimary }]}
-            placeholder={language === 'fr' ? 'Ex: Comment améliorer le taux de conversion ?' : 'E.g. How to increase conversion rate?'}
+            placeholder={loc('Ex: Comment améliorer le taux de conversion ?', 'E.g. How to increase conversion rate?', 'مثال: كيف يمكن تحسين معدل التحويل؟')}
             placeholderTextColor={textSecondary}
             value={question}
             onChangeText={setQuestion}
@@ -120,7 +129,7 @@ export default function AIAnalyticsPanel({ data }: AIAnalyticsPanelProps) {
             <View style={styles.answerHeader}>
               <Bot size={18} color="#10B981" />
               <Text style={[styles.answerTitle, { color: isDark ? '#34D399' : '#059669' }]}>
-                {language === 'fr' ? 'Analyse Stratégique ImmoCI' : 'ImmoCI Strategic Insight'}
+                {loc('Analyse Stratégique ImmoCI', 'ImmoCI Strategic Insight', 'رؤى استراتيجية من ImmoCI')}
               </Text>
             </View>
             <Text style={[styles.answerText, { color: textPrimary }]}>{answer}</Text>
