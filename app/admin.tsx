@@ -283,71 +283,85 @@ export const CASE_STATUSES: {
   id: CaseStatus;
   labelFr: string;
   labelEn: string;
+  labelAr: string;
   color: string;
   bgDark: string;
   bgLight: string;
   descFr: string;
   descEn: string;
+  descAr?: string;
 }[] = [
   {
     id: 'Open',
     labelFr: 'Ouvert',
     labelEn: 'Open',
+    labelAr: 'مفتوح',
     color: '#10B981',
     bgDark: 'rgba(16, 185, 129, 0.18)',
     bgLight: '#ECFDF5',
     descFr: 'Nouveau dossier non encore débuté',
     descEn: 'New case not started yet',
+    descAr: 'ملف جديد لم يبدأ بعد',
   },
   {
     id: 'In Progress',
     labelFr: 'En cours',
     labelEn: 'In Progress',
+    labelAr: 'قيد المعالجة',
     color: '#3B82F6',
     bgDark: 'rgba(59, 130, 246, 0.18)',
     bgLight: '#EFF6FF',
     descFr: 'Le support client traite activement la demande',
     descEn: 'Support is actively working on the case',
+    descAr: 'فريق الدعم يعالج الطلب بنشاط',
   },
   {
     id: 'Hold',
     labelFr: 'En attente',
     labelEn: 'On Hold',
+    labelAr: 'معلق',
     color: '#F59E0B',
     bgDark: 'rgba(245, 158, 11, 0.18)',
     bgLight: '#FFFBEB',
     descFr: 'En attente d’informations ou d’approbation',
     descEn: 'Waiting for info, approval, or action',
+    descAr: 'في انتظار معلومات أو موافقة',
   },
   {
     id: 'Solved',
     labelFr: 'Solutionné',
     labelEn: 'Solved',
+    labelAr: 'تم الحل',
     color: '#8B5CF6',
     bgDark: 'rgba(139, 92, 246, 0.18)',
     bgLight: '#F5F3FF',
     descFr: 'Une solution a été apportée au client',
     descEn: 'Solution has been provided to customer',
+    descAr: 'تم تقديم الحل للعميل',
   },
   {
     id: 'Resolved',
     labelFr: 'Résolu',
     labelEn: 'Resolved',
+    labelAr: 'مغلق نهائياً',
     color: '#64748B',
     bgDark: 'rgba(100, 116, 139, 0.18)',
     bgLight: '#F1F5F9',
     descFr: 'Dossier finalisé et clôturé',
     descEn: 'Case officially closed and completed',
+    descAr: 'ملف مكتمل ومغلق رسمياً',
   },
   {
     id: 'Reopen',
     labelFr: 'Réouvert',
     labelEn: 'Reopened',
+    labelAr: 'أعيد فتحه',
     color: '#F43F5E',
     bgDark: 'rgba(244, 63, 94, 0.18)',
     bgLight: '#FFF1F2',
     descFr: 'Dossier réouvert suite à une nouvelle question',
     descEn: 'Reopened due to continued or new issue',
+    descAr: 'أعيد فتح الملف لمتابعة المشكلة',
   },
 ];
 
@@ -974,9 +988,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     }
 
     showToast(
-      language === 'fr'
-        ? `Statut du dossier mis à jour : ${newStatus}`
-        : `Case status updated: ${newStatus}`
+      loc(
+        `Statut du dossier mis à jour : ${newStatus}`,
+        `Case status updated: ${newStatus}`,
+        `تم تحديث حالة الملف : ${newStatus}`
+      )
     );
   };
 
@@ -1087,10 +1103,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const activeTicket = tickets.find((t) => t.id === selectedTicketId) || tickets[0];
     if (!activeTicket) return;
 
-    const draft =
-      language === 'fr'
-        ? `Bonjour ${activeTicket.user}, notre service ${activeTicket.department} a bien pris en charge votre demande concernant "${activeTicket.subject}". Votre dossier est en cours de traitement prioritaire.`
-        : `Hello ${activeTicket.user}, our ${activeTicket.department} team has reviewed your request regarding "${activeTicket.subject}". We have prioritized your case for immediate resolution.`;
+    const draft = loc(
+      `Bonjour ${activeTicket.user}, notre service ${activeTicket.department} a bien pris en charge votre demande concernant "${activeTicket.subject}". Votre dossier est en cours de traitement prioritaire.`,
+      `Hello ${activeTicket.user}, our ${activeTicket.department} team has reviewed your request regarding "${activeTicket.subject}". We have prioritized your case for immediate resolution.`,
+      `مرحباً ${activeTicket.user}، لقد قام قسم ${activeTicket.department} باستلام طلبكم بخصوص "${activeTicket.subject}". ملفكم قيد المعالجة ذات الأولوية.`
+    );
 
     setReplyText(draft);
   };
@@ -1824,9 +1841,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {t('admin_tickets_title')}
             </Text>
             <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
-              {language === 'fr'
-                ? 'Gestion dédiée du support client et suivi en temps réel du statut des dossiers'
-                : 'Dedicated customer care desk with live case status tracking & management'}
+              {loc(
+                'Gestion dédiée du support client et suivi en temps réel du statut des dossiers',
+                'Dedicated customer care desk with live case status tracking & management',
+                'مكتب خدمة العملاء المخصص مع تتبع وإدارة حالة الملفات مباشرة'
+              )}
             </Text>
           </View>
           <View
@@ -1878,10 +1897,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               }}
             >
               {connectionStatus === 'connected'
-                ? (language === 'fr' ? 'Temps Réel Actif' : 'Real-time Live')
+                ? loc('Temps Réel Actif', 'Real-time Live', 'مباشر بالوقت الفعلي')
                 : connectionStatus === 'reconnecting'
-                ? (language === 'fr' ? 'Reconnexion...' : 'Reconnecting...')
-                : (language === 'fr' ? 'Hors ligne' : 'Offline')}
+                ? loc('Reconnexion...', 'Reconnecting...', 'جارٍ إعادة الاتصال...')
+                : loc('Hors ligne', 'Offline', 'غير متصل')}
             </Text>
           </View>
         </View>
@@ -1929,8 +1948,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   )}
                   <Text style={[styles.deptPillText, { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary }]}>
                     {filter === 'All'
-                      ? (language === 'fr' ? 'Tous' : 'All')
-                      : (language === 'fr' ? (statusDef?.labelFr || filter) : (statusDef?.labelEn || filter))}{' '}
+                      ? loc('Tous', 'All', 'الكل')
+                      : (statusDef ? (language === 'ar' ? (statusDef.labelAr || statusDef.labelEn) : language === 'fr' ? statusDef.labelFr : statusDef.labelEn) : filter)}{' '}
                     <Text style={{ opacity: 0.8, fontSize: 11 }}>({count})</Text>
                   </Text>
                 </TouchableOpacity>
@@ -2579,12 +2598,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       setShowStaffActionModal(false);
                       showToast(
                         selectedStaff.status === 'Active'
-                          ? language === 'fr'
-                            ? 'Membre désactivé'
-                            : 'Staff deactivated'
-                          : language === 'fr'
-                          ? 'Membre activé'
-                          : 'Staff activated'
+                          ? loc('Membre désactivé', 'Staff deactivated', 'تم إلغاء تنشيط الموظف')
+                          : loc('Membre activé', 'Staff activated', 'تم تنشيط الموظف')
                       );
                     }
                   }}
@@ -2937,7 +2952,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             >
               <LogOut size={16} color="#EF4444" />
               <Text style={[styles.backButtonText, { color: '#EF4444' }]}>
-                {language === 'fr' ? 'Déconnexion' : 'Log out'}
+                {loc('Déconnexion', 'Log out', 'تسجيل الخروج')}
               </Text>
             </TouchableOpacity>
           </View>
