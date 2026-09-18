@@ -74,7 +74,7 @@ export default function AdminIntegrations() {
   const { activeTheme } = useTheme();
   const isDark = activeTheme !== 'light';
   const { language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
 
   const stitch = {
     bg: isDark ? '#0B0F19' : '#F6F8FC',
@@ -116,13 +116,13 @@ export default function AdminIntegrations() {
   const [newKeyName, setNewKeyName] = useState('');
 
   const tabs: { id: IntegrationType | 'developer'; label: string; icon: any }[] = [
-    { id: 'payment', label: loc('Paiements', 'Payment', 'المدفوعات'), icon: CreditCard },
+    { id: 'payment', label: loc('Paiements', 'Payment'), icon: CreditCard },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'sms', label: 'SMS', icon: MessageSquare },
     { id: 'crm', label: 'CRM', icon: Database },
-    { id: 'storage', label: loc('Stockage', 'Storage', 'التخزين السحابي'), icon: HardDrive },
+    { id: 'storage', label: loc('Stockage', 'Storage'), icon: HardDrive },
     { id: 'automation', label: 'Automation', icon: Zap },
-    { id: 'developer', label: loc('Clés API', 'Developer API', 'واجهة المطورين API'), icon: Code },
+    { id: 'developer', label: loc('Clés API', 'Developer API'), icon: Code },
   ];
 
   const handleConnectClick = (def: IntegrationDefinition) => {
@@ -187,12 +187,12 @@ export default function AdminIntegrations() {
         <View style={styles.developerContainer}>
           <View style={[styles.createKeyCard, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
             <Text style={[styles.cardLabel, { color: stitch.textPrimary }]}>
-              {loc('Générer une Nouvelle Clé API', 'Create New API Key', 'إنشاء مفتاح API جديد')}
+              {loc('Générer une Nouvelle Clé API', 'Create New API Key')}
             </Text>
             <View style={styles.createKeyRow}>
               <TextInput
                 style={[styles.keyInput, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
-                placeholder={loc('Nom de la clé (ex: App Mobile, CRM)', 'Key Name (e.g. Mobile App, Website)', 'اسم المفتاح (مثال: تطبيق الجوال، CRM)')}
+                placeholder={loc('Nom de la clé (ex: App Mobile, CRM)', 'Key Name (e.g. Mobile App, Website)')}
                 placeholderTextColor={stitch.textMuted}
                 value={newKeyName}
                 onChangeText={setNewKeyName}
@@ -203,20 +203,20 @@ export default function AdminIntegrations() {
                 activeOpacity={0.85}
               >
                 <Plus size={16} color="#FFFFFF" />
-                <Text style={styles.generateButtonText}>{loc('Générer', 'Generate Key', 'توليد المفتاح')}</Text>
+                <Text style={styles.generateButtonText}>{loc('Générer', 'Generate Key')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.keysList}>
             <Text style={[styles.keysListTitle, { color: stitch.textPrimary }]}>
-              {loc('Clés API Actives', 'Active API Keys', 'مفاتيح API النشطة')}
+              {loc('Clés API Actives', 'Active API Keys')}
             </Text>
             {apiKeys.length === 0 ? (
               <View style={[styles.emptyKeys, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
                 <Code size={40} color={stitch.textMuted} />
                 <Text style={[styles.emptyKeysText, { color: stitch.textSecondary }]}>
-                  {loc('Aucune clé API active.', 'No API keys generated yet.', 'لا توجد مفاتيح API نشطة حتى الآن.')}
+                  {loc('Aucune clé API active.', 'No API keys generated yet.')}
                 </Text>
               </View>
             ) : (
@@ -254,7 +254,7 @@ export default function AdminIntegrations() {
       return (
         <View style={[styles.placeholder, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
           <Text style={[styles.placeholderText, { color: stitch.textSecondary }]}>
-            {loc(`Aucune intégration disponible pour ${activeTab}.`, `No integrations available for ${activeTab} yet.`, `لا توجد عمليات ربط متاحة لقسم ${activeTab} حالياً.`)}
+            {loc(`Aucune intégration disponible pour ${activeTab}.`, `No integrations available for ${activeTab} yet.`)}
           </Text>
         </View>
       );
@@ -281,14 +281,12 @@ export default function AdminIntegrations() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: stitch.textPrimary }]}>
-          {loc('Intégrations & Passerelles', 'Platform Integrations', 'عمليات الربط والبوابات')}
+          {loc('Intégrations & Passerelles', 'Platform Integrations')}
         </Text>
         <Text style={[styles.subtitle, { color: stitch.textSecondary }]}>
           {loc(
             'Connectez vos passerelles de paiement (Orange Money, MTN, Wave, Stripe) et services tiers',
-            'Connect and manage third-party services to enhance your platform capabilities',
-            'ربط وإدارة بوابات الدفع الإلكتروني (Orange Money, MTN, Wave, Stripe) والخدمات السحابية'
-          )}
+            'Connect and manage third-party services to enhance your platform capabilities')}
         </Text>
       </View>
 

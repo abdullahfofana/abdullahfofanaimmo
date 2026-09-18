@@ -24,7 +24,7 @@ export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { t, language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const { favoriteIds } = useFavorites();
   const { getApprovedSubmissions } = usePropertySubmissions();
   const colors = useColors();
@@ -83,7 +83,7 @@ export default function FavoritesScreen() {
             <Text style={styles.subtitle}>
               {favorites.length > 0
                 ? `${favorites.length} ${t('favorites_properties') || 'biens sauvegardés'}`
-                : loc('Aucun favori enregistré', 'No favorites saved', 'لا توجد عناصر مفضلة محفوظة')}
+                : loc('Aucun favori enregistré', 'No favorites saved')}
             </Text>
           </View>
           {favorites.length > 0 && (
@@ -115,19 +115,17 @@ export default function FavoritesScreen() {
                 <Heart size={40} color="#EF4444" strokeWidth={1.5} />
               </View>
               <Text style={styles.emptyTitle}>
-                {loc('Votre liste de favoris est vide', 'Your favorites list is empty', 'قائمة المفضلة فارغة')}
+                {loc('Votre liste de favoris est vide', 'Your favorites list is empty')}
               </Text>
               <Text style={styles.emptyText}>
                 {loc(
                   'Appuyez sur le cœur d’une annonce pour l’ajouter à vos favoris et la retrouver facilement.',
-                  'Tap the heart icon on any property to save it here for quick access.',
-                  'اضغط على رمز القلب في أي إعلان لحفظه هنا والوصول إليه بسهولة.'
-                )}
+                  'Tap the heart icon on any property to save it here for quick access.')}
               </Text>
               <Button
                 variant="primary"
                 size="md"
-                label={loc('Explorer les biens', 'Explore Properties', 'استكشف العقارات')}
+                label={loc('Explorer les biens', 'Explore Properties')}
                 leftIcon={<Search size={IconSizes.action} color="#FFFFFF" strokeWidth={IconStrokes.medium} />}
                 onPress={() => router.push('/(tabs)/search')}
                 style={{ marginTop: 8 }}

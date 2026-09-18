@@ -28,7 +28,7 @@ export default function UserManagement() {
   const { activeTheme } = useTheme();
   const isDark = activeTheme !== 'light';
   const { language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
 
   const stitch = {
     bg: isDark ? '#0B0F19' : '#F6F8FC',
@@ -153,10 +153,10 @@ export default function UserManagement() {
       <View style={styles.header}>
         <View>
           <Text style={[styles.title, { color: stitch.textPrimary }]}>
-            {loc('Gestion des Utilisateurs', 'User Management', 'إدارة المستخدمين')}
+            {loc('Gestion des Utilisateurs', 'User Management')}
           </Text>
           <Text style={[styles.subtitle, { color: stitch.textSecondary }]}>
-            {loc('Gérez les comptes acheteurs, vendeurs, bailleurs et locataires', 'Manage all users, permissions and roles', 'إدارة حسابات المشترين، البائعين، الملاك والمستأجرين')}
+            {loc('Gérez les comptes acheteurs, vendeurs, bailleurs et locataires', 'Manage all users, permissions and roles')}
           </Text>
         </View>
         <TouchableOpacity
@@ -169,7 +169,7 @@ export default function UserManagement() {
           activeOpacity={0.85}
         >
           <Plus size={16} color="#FFFFFF" />
-          <Text style={styles.addButtonText}>{loc('Ajouter Utilisateur', 'Add User', 'إضافة مستخدم')}</Text>
+          <Text style={styles.addButtonText}>{loc('Ajouter Utilisateur', 'Add User')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -178,7 +178,7 @@ export default function UserManagement() {
         <View style={[styles.searchContainer, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
           <Search size={18} color={stitch.textSecondary} />
           <TextInput
-            placeholder={loc('Rechercher un utilisateur...', 'Search users...', 'البحث عن مستخدم...')}
+            placeholder={loc('Rechercher un utilisateur...', 'Search users...')}
             style={[styles.searchInput, { color: stitch.textPrimary }]}
             placeholderTextColor={stitch.textMuted}
             value={searchQuery}
@@ -196,7 +196,7 @@ export default function UserManagement() {
         >
           <Filter size={16} color={typeFilter !== 'All' || statusFilter !== 'All' ? stitch.primary : stitch.textPrimary} />
           <Text style={[styles.filterButtonText, { color: typeFilter !== 'All' || statusFilter !== 'All' ? stitch.primary : stitch.textPrimary }]}>
-            {loc('Filtres', 'Filters', 'تصفية')}
+            {loc('Filtres', 'Filters')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -217,7 +217,7 @@ export default function UserManagement() {
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyStateText, { color: stitch.textSecondary }]}>
-              {loc('Aucun utilisateur trouvé.', 'No users found matching your criteria.', 'لم يتم العثور على مستخدمين يطابقون المعايير.')}
+              {loc('Aucun utilisateur trouvé.', 'No users found matching your criteria.')}
             </Text>
           </View>
         ) : (

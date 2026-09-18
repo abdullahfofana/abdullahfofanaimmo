@@ -24,7 +24,7 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
   const { activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
   const { language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
 
   const stitch = {
     bg: isDark ? '#0B0F19' : '#F6F8FC',
@@ -57,14 +57,10 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
         flags: [],
         reason: loc(
           'Conformité légale vérifiée : Titre foncier (ACD) authentique et photos sans watermark détecté.',
-          'Legal compliance verified: Authenticated land title (ACD) and verified original property images.',
-          'تم التحقق من الامتثال القانوني: سند ملكية عقاري معتمد (ACD) وصور أصلية بدون علامات مائية.'
-        ),
+          'Legal compliance verified: Authenticated land title (ACD) and verified original property images.'),
         summary: loc(
           'Le titre foncier et les photos correspondent aux normes de conformité ImmoCI.',
-          'Land title and photos comply with ImmoCI standards.',
-          'سند الملكية العقاري والصور متوافقة مع معايير منصة ImmoCI.'
-        ),
+          'Land title and photos comply with ImmoCI standards.'),
       });
       setIsLoading(false);
     }, 500);
@@ -106,7 +102,7 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
                 <Shield size={18} color={stitch.primary} />
               </View>
               <Text style={[styles.title, { color: stitch.textPrimary }]}>
-                {loc('Revue de Modération IA', 'AI Moderation Review', 'مراجعة الإشراف بالذكاء الاصطناعي')}
+                {loc('Revue de Modération IA', 'AI Moderation Review')}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose}>
@@ -119,10 +115,10 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={stitch.primary} />
                 <Text style={[styles.loadingText, { color: stitch.textPrimary }]}>
-                  {loc('Analyse du bien en cours...', 'Analyzing property details...', 'جارٍ تحليل بيانات العقار...')}
+                  {loc('Analyse du bien en cours...', 'Analyzing property details...')}
                 </Text>
                 <Text style={[styles.loadingSubtext, { color: stitch.textSecondary }]}>
-                  {loc('Vérification de l’authenticité des documents et anomalies de prix', 'Checking for spam, pricing anomalies, and title verification', 'فحص صحة المستندات واكتشاف أي فروقات غير طبيعية في الأسعار')}
+                  {loc('Vérification de l’authenticité des documents et anomalies de prix', 'Checking for spam, pricing anomalies, and title verification')}
                 </Text>
               </View>
             ) : analysis ? (
@@ -133,7 +129,7 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
                     {getStatusIcon(analysis.status)}
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.statusLabel, { color: stitch.textSecondary }]}>
-                        {loc('Évaluation IA', 'Risk Assessment', 'تقييم الذكاء الاصطناعي')}
+                        {loc('Évaluation IA', 'Risk Assessment')}
                       </Text>
                       <Text style={[styles.statusValue, { color: getStatusColor(analysis.status) }]}>
                         {analysis.status.toUpperCase()}
@@ -141,7 +137,7 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
                     </View>
                     <View style={[styles.confidenceBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
                       <Text style={[styles.confidenceText, { color: '#10B981' }]}>
-                        {analysis.confidence}% {loc('Confiance', 'Confidence', 'نسبة الثقة')}
+                        {analysis.confidence}% {loc('Confiance', 'Confidence')}
                       </Text>
                     </View>
                   </View>
@@ -152,7 +148,7 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
                 {property && (
                   <View style={[styles.propertySummary, { backgroundColor: stitch.inputBg, borderColor: stitch.cardBorder }]}>
                     <Text style={[styles.sectionTitle, { color: stitch.textPrimary }]}>
-                      {loc('Détails de l’Annonce', 'Property Details', 'تفاصيل الإعلان')}
+                      {loc('Détails de l’Annonce', 'Property Details')}
                     </Text>
                     <Text style={[styles.summaryText, { color: stitch.textSecondary }]}>
                       <Text style={{ fontWeight: '700', color: stitch.textPrimary }}>Titre: </Text> {property.title}
@@ -174,14 +170,14 @@ export default function AIModeration({ visible, onClose, property, onApprove, on
               style={[styles.actionButton, styles.rejectButton]}
               onPress={() => onReject(analysis?.reason || 'Rejeté par la modération')}
             >
-              <Text style={styles.rejectButtonText}>{loc('Rejeter', 'Reject', 'رفض')}</Text>
+              <Text style={styles.rejectButtonText}>{loc('Rejeter', 'Reject')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.actionButton, styles.approveButton, { backgroundColor: stitch.primary }]}
               onPress={onApprove}
             >
-              <Text style={styles.approveButtonText}>{loc('Approuver & Publier', 'Approve Listing', 'موافقة ونشر')}</Text>
+              <Text style={styles.approveButtonText}>{loc('Approuver & Publier', 'Approve Listing')}</Text>
             </TouchableOpacity>
           </View>
         </View>

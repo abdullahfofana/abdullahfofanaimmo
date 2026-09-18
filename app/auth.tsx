@@ -33,7 +33,7 @@ export default function AuthScreen() {
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const { language, t } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const [mode, setMode] = useState<AuthMode>('login');
   const [role, setRole] = useState<UserRole>('renter');
   const [showPassword, setShowPassword] = useState(false);
@@ -70,8 +70,8 @@ export default function AuthScreen() {
 
   const handleAuth = async () => {
     setLocalError('');
-    if (!email || !password) { setLocalError(loc('Veuillez remplir tous les champs', 'Please fill in all fields', 'يرجى ملء جميع الحقول')); return; }
-    if (mode === 'signup' && (!name || !phone)) { setLocalError(loc('Veuillez remplir tous les champs', 'Please fill in all fields', 'يرجى ملء جميع الحقول')); return; }
+    if (!email || !password) { setLocalError(loc('Veuillez remplir tous les champs', 'Please fill in all fields')); return; }
+    if (mode === 'signup' && (!name || !phone)) { setLocalError(loc('Veuillez remplir tous les champs', 'Please fill in all fields')); return; }
     setIsLoading(true);
     try {
       if (mode === 'login') { await signIn(email, password); }
@@ -81,12 +81,12 @@ export default function AuthScreen() {
       }
       router.replace('/(tabs)/home');
     } catch (err: any) {
-      setLocalError(err.message || loc('Une erreur s\'est produite', 'An error occurred', 'حدث خطأ غير متوقع'));
+      setLocalError(err.message || loc('Une erreur s\'est produite', 'An error occurred'));
     } finally { setIsLoading(false); }
   };
 
   const handleGoogleSignIn = async () => {
-    if (Platform.OS !== 'web') { setLocalError(loc('Disponible uniquement sur le web', 'Only available on web', 'متاح على الويب فقط')); return; }
+    if (Platform.OS !== 'web') { setLocalError(loc('Disponible uniquement sur le web', 'Only available on web')); return; }
     setLocalError(''); setIsLoading(true);
     try { await signInWithGoogle(); router.replace('/(tabs)/home'); }
     catch (err: any) { setLocalError(err.message || 'Erreur Google'); }
@@ -94,7 +94,7 @@ export default function AuthScreen() {
   };
 
   const handleFacebookSignIn = async () => {
-    if (Platform.OS !== 'web') { setLocalError(loc('Disponible uniquement sur le web', 'Only available on web', 'متاح على الويب فقط')); return; }
+    if (Platform.OS !== 'web') { setLocalError(loc('Disponible uniquement sur le web', 'Only available on web')); return; }
     setLocalError(''); setIsLoading(true);
     try { await signInWithFacebook(); router.replace('/(tabs)/home'); }
     catch (err: any) { setLocalError(err.message || 'Erreur Facebook'); }
@@ -125,9 +125,9 @@ export default function AuthScreen() {
       </View>
 
       {/* Title */}
-      <Text style={styles.formTitle}>{mode === 'login' ? loc('Bienvenue', 'Welcome back', 'مرحباً بك') : loc('Créer un compte', 'Create an Account', 'إنشاء حساب جديد')}</Text>
+      <Text style={styles.formTitle}>{mode === 'login' ? loc('Bienvenue', 'Welcome back') : loc('Créer un compte', 'Create an Account')}</Text>
       <Text style={styles.formSubtitle}>
-        {mode === 'login' ? loc('Connectez-vous pour continuer', 'Sign in to your account', 'سجّل الدخول للمتابعة') : loc('Rejoignez des milliers d\'acheteurs', 'Join thousands of buyers & renters', 'انضم إلى آلاف الباحثين عن عقارات')}
+        {mode === 'login' ? loc('Connectez-vous pour continuer', 'Sign in to your account') : loc('Rejoignez des milliers d\'acheteurs', 'Join thousands of buyers & renters')}
       </Text>
 
       {/* Error */}
@@ -148,7 +148,7 @@ export default function AuthScreen() {
               onPress={() => setRole(r)}
             >
               <Text style={[styles.roleTabText, role === r && styles.roleTabTextActive]}>
-                {r === 'renter' ? loc('Acheteur', 'Buyer / Renter', 'مشتري / مستأجر') : loc('Agent', 'Agent', 'وكيل عقاري')}
+                {r === 'renter' ? loc('Acheteur', 'Buyer / Renter') : loc('Agent', 'Agent')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -162,7 +162,7 @@ export default function AuthScreen() {
             <User size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder={loc("Nom complet", "Full Name", "الاسم الكامل")}
+              placeholder={loc("Nom complet", "Full Name")}
               placeholderTextColor={colors.textLight}
               value={name}
               onChangeText={(v) => { setName(v); setLocalError(''); }}
@@ -173,7 +173,7 @@ export default function AuthScreen() {
             <Phone size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder={loc("Téléphone", "Phone Number", "رقم الهاتف")}
+              placeholder={loc("Téléphone", "Phone Number")}
               placeholderTextColor={colors.textLight}
               value={phone}
               onChangeText={(v) => { setPhone(v); setLocalError(''); }}
@@ -188,7 +188,7 @@ export default function AuthScreen() {
         <Mail size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
-          placeholder={loc("Adresse email", "Email Address", "البريد الإلكتروني")}
+          placeholder={loc("Adresse email", "Email Address")}
           placeholderTextColor={colors.textLight}
           value={email}
           onChangeText={(v) => { setEmail(v); setLocalError(''); }}
@@ -202,7 +202,7 @@ export default function AuthScreen() {
         <Lock size={18} color={colors.textSecondary} strokeWidth={1.8} style={styles.inputIcon} />
         <TextInput
           style={[styles.input, { flex: 1 }]}
-          placeholder={loc("Mot de passe", "Password", "كلمة المرور")}
+          placeholder={loc("Mot de passe", "Password")}
           placeholderTextColor={colors.textLight}
           value={password}
           onChangeText={(v) => { setPassword(v); setLocalError(''); }}
@@ -218,7 +218,7 @@ export default function AuthScreen() {
 
       {mode === 'login' && (
         <TouchableOpacity style={styles.forgotRow}>
-          <Text style={styles.forgotText}>{loc("Mot de passe oublié ?", "Forgot password?", "نسيت كلمة المرور؟")}</Text>
+          <Text style={styles.forgotText}>{loc("Mot de passe oublié ?", "Forgot password?")}</Text>
         </TouchableOpacity>
       )}
 
@@ -232,35 +232,35 @@ export default function AuthScreen() {
         {isLoading
           ? <ActivityIndicator color="#fff" />
           : <Text style={styles.primaryBtnText}>
-              {mode === 'login' ? loc('Se connecter', 'Sign In', 'تسجيل الدخول') : loc('Créer mon compte', 'Create Account', 'إنشاء حساب')}
+              {mode === 'login' ? loc('Se connecter', 'Sign In') : loc('Créer mon compte', 'Create Account')}
             </Text>}
       </TouchableOpacity>
 
       {/* Divider */}
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerLabel}>{loc("ou", "or", "أو")}</Text>
+        <Text style={styles.dividerLabel}>{loc("ou", "or")}</Text>
         <View style={styles.dividerLine} />
       </View>
 
       {/* Social */}
       <TouchableOpacity style={styles.socialBtn} onPress={handleGoogleSignIn} disabled={isLoading}>
         <Globe size={18} color={colors.text} strokeWidth={1.8} />
-        <Text style={styles.socialBtnText}>{loc("Continuer avec Google", "Continue with Google", "المتابعة باستخدام Google")}</Text>
+        <Text style={styles.socialBtnText}>{loc("Continuer avec Google", "Continue with Google")}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.socialBtn} onPress={handleFacebookSignIn} disabled={isLoading}>
         <ExternalLink size={18} color={colors.text} strokeWidth={1.8} />
-        <Text style={styles.socialBtnText}>{loc("Continuer avec Facebook", "Continue with Facebook", "المتابعة باستخدام Facebook")}</Text>
+        <Text style={styles.socialBtnText}>{loc("Continuer avec Facebook", "Continue with Facebook")}</Text>
       </TouchableOpacity>
 
       {/* Toggle */}
       <View style={styles.switchRow}>
         <Text style={styles.switchText}>
-          {mode === 'login' ? loc('Pas encore de compte ? ', "Don't have an account? ", 'ليس لديك حساب؟ ') : loc('Déjà un compte ? ', 'Already have an account? ', 'لديك حساب بالفعل؟ ')}
+          {mode === 'login' ? loc('Pas encore de compte ? ', "Don't have an account? ") : loc('Déjà un compte ? ', 'Already have an account? ')}
         </Text>
         <TouchableOpacity onPress={toggleMode}>
           <Text style={styles.switchLink}>
-            {mode === 'login' ? loc("S'inscrire", 'Sign Up', 'إنشاء حساب') : loc('Se connecter', 'Sign In', 'تسجيل الدخول')}
+            {mode === 'login' ? loc("S'inscrire", 'Sign Up') : loc('Se connecter', 'Sign In')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -273,7 +273,7 @@ export default function AuthScreen() {
         testID="skip-dev-mode-btn"
       >
         <Text style={styles.skipText}>
-          loc('⚡ Passer (Mode Développeur)', '⚡ Skip (Developer Mode)', '⚡ تخطي (وضع المطور)')
+          loc('⚡ Passer (Mode Développeur)', '⚡ Skip (Developer Mode)')
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -301,14 +301,12 @@ export default function AuthScreen() {
               <Text style={styles.webBrandName}>ImmoCI</Text>
             </View>
             <View style={styles.webLeftBottom}>
-              <Text style={styles.webEyebrow}>{loc("N° 1 EN CÔTE D'IVOIRE", "#1 IN CÔTE D'IVOIRE", "المنصة الأولى في كوت ديفوار")}</Text>
+              <Text style={styles.webEyebrow}>{loc("N° 1 EN CÔTE D'IVOIRE", "#1 IN CÔTE D'IVOIRE")}</Text>
               <Text style={styles.webHero}>Trouvez votre{'\n'}bien idéal.</Text>
               <Text style={styles.webHeroSub}>
                 {loc(
                   "Des milliers de propriétés à Abidjan et partout en Côte d'Ivoire.",
-                  "Thousands of verified properties in Abidjan and across Côte d'Ivoire.",
-                  "آلاف العقارات الموثقة في أبيدجان وجميع أنحاء كوت ديفوار."
-                )}
+                  "Thousands of verified properties in Abidjan and across Côte d'Ivoire.")}
               </Text>
             </View>
           </View>

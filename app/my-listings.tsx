@@ -15,7 +15,7 @@ export default function MyListingsScreen() {
   const styles = createStyles(colors);
   const { submissions } = usePropertySubmissions();
   const { language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const { isDesktop } = useResponsive();
 
   const handleBack = () => {
@@ -33,7 +33,7 @@ export default function MyListingsScreen() {
           bg: '#ECFDF5',
           border: '#A7F3D0',
           text: '#059669',
-          label: loc('Publiée', 'Approved', 'موافق عليه'),
+          label: loc('Publiée', 'Approved'),
           icon: <CheckCircle2 size={12} color="#059669" />,
         };
       case 'rejected':
@@ -41,7 +41,7 @@ export default function MyListingsScreen() {
           bg: '#FEF2F2',
           border: '#FECACA',
           text: '#DC2626',
-          label: loc('Refusée', 'Rejected', 'مرفوض'),
+          label: loc('Refusée', 'Rejected'),
           icon: <AlertCircle size={12} color="#DC2626" />,
         };
       default:
@@ -49,7 +49,7 @@ export default function MyListingsScreen() {
           bg: '#FFFBEB',
           border: '#FDE68A',
           text: '#D97706',
-          label: loc('En vérification (24h)', 'Pending Review', 'قيد الفحص (24 ساعة)'),
+          label: loc('En vérification (24h)', 'Pending Review'),
           icon: <Clock size={12} color="#D97706" />,
         };
     }
@@ -60,7 +60,7 @@ export default function MyListingsScreen() {
       {isDesktop && <WebNavbar />}
       <Stack.Screen
         options={{
-          title: loc('Mes Annonces', 'My Listings', 'إعلاناتي'),
+          title: loc('Mes Annonces', 'My Listings'),
           headerLeft: () => (
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <ChevronLeft size={24} color="#0F172A" />
@@ -92,14 +92,12 @@ export default function MyListingsScreen() {
               <Building2 size={36} color="#059669" strokeWidth={1.8} />
             </View>
             <Text style={styles.emptyTitle}>
-              {loc('Aucune annonce publiée', 'No properties listed yet', 'لم يتم نشر أي إعلان بعد')}
+              {loc('Aucune annonce publiée', 'No properties listed yet')}
             </Text>
             <Text style={styles.emptyText}>
               {loc(
                 'Publiez votre bien immobilier et touchez des milliers d’acheteurs et locataires à Abidjan.',
-                'Publish your real estate property and reach thousands of buyers and renters in Ivory Coast.',
-                'انشر عقارك واستقطب آلاف المشترين والمستأجرين في كوت ديفوار.'
-              )}
+                'Publish your real estate property and reach thousands of buyers and renters in Ivory Coast.')}
             </Text>
             <TouchableOpacity
               style={styles.ctaButton}
@@ -108,7 +106,7 @@ export default function MyListingsScreen() {
             >
               <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
               <Text style={styles.ctaButtonText}>
-                {loc('Ajouter une annonce', 'Add New Property', 'إضافة عقار جديد')}
+                {loc('Ajouter une annonce', 'Add New Property')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -157,13 +155,13 @@ export default function MyListingsScreen() {
 
                 <View style={styles.footerRow}>
                   <Text style={styles.cardDate}>
-                    {loc('Publié le ', 'Listed on ', 'تاريخ النشر ')}
+                    {loc('Publié le ', 'Listed on ')}
                     {new Date(item.submittedAt).toLocaleDateString()}
                   </Text>
                   <View style={styles.viewLink}>
                     <Eye size={13} color="#059669" />
                     <Text style={styles.viewLinkText}>
-                      {loc('Voir', 'View', 'عرض')}
+                      {loc('Voir', 'View')}
                     </Text>
                   </View>
                 </View>

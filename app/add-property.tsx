@@ -117,60 +117,48 @@ const PROPERTY_TYPES_CONFIG: {
   type: PropertyType;
   labelFr: string;
   labelEn: string;
-  labelAr: string;
   subFr: string;
   subEn: string;
-  subAr: string;
   icon: any;
 }[] = [
   {
     type: 'apartment',
     labelFr: 'Appartement',
     labelEn: 'Apartment',
-    labelAr: 'شقة',
     subFr: 'Immeuble / Résidence',
     subEn: 'Building / Complex',
-    subAr: 'عمارة / مجمع سكني',
     icon: Building2,
   },
   {
     type: 'villa',
     labelFr: 'Villa',
     labelEn: 'Villa',
-    labelAr: 'فيلا',
     subFr: 'Maison avec cour / standing',
     subEn: 'Luxury detached house',
-    subAr: 'منزل مستقل / راقٍ',
     icon: Home,
   },
   {
     type: 'house',
     labelFr: 'Maison',
     labelEn: 'House',
-    labelAr: 'منزل',
     subFr: 'Maison basse / duplex',
     subEn: 'Townhouse / Duplex',
-    subAr: 'منزل أرضي / دوبلكس',
     icon: Building,
   },
   {
     type: 'land',
     labelFr: 'Terrain',
     labelEn: 'Land',
-    labelAr: 'أرض',
     subFr: 'Parcelle / Titre foncier',
     subEn: 'Plot / Land title',
-    subAr: 'قطعة أرض / سند عقاري',
     icon: Trees,
   },
   {
     type: 'commercial',
     labelFr: 'Commercial',
     labelEn: 'Commercial',
-    labelAr: 'تجاري',
     subFr: 'Bureaux / Magasin / Entrepôt',
     subEn: 'Offices / Retail / Warehouse',
-    subAr: 'مكاتب / متجر / مستودع',
     icon: Briefcase,
   },
 ];
@@ -191,7 +179,7 @@ const POPULAR_ABIDJAN_DISTRICTS = [
 export default function AddPropertyStandaloneScreen() {
   const insets = useSafeAreaInsets();
   const { t, language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'ar' ? ar : language === 'fr' ? fr : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const colors = useColors();
   const { user, session, isLoading: isAuthLoading } = useAuth();
   const { addSubmission } = usePropertySubmissions();
@@ -280,8 +268,8 @@ export default function AddPropertyStandaloneScreen() {
 
   const handleGenerateDescription = async () => {
     if (!formData.type || !formData.city) {
-      if (Platform.OS === 'web') alert(loc('Veuillez d\'abord choisir le type et la ville.', 'Please select property type and location first.', 'يرجى اختيار نوع العقار والمدينة أولاً.'));
-      else Alert.alert(loc('Info manquante', 'Missing Info', 'معلومات ناقصة'), loc('Veuillez d\'abord choisir le type et la ville.', 'Please select property type and location first.', 'يرجى اختيار نوع العقار والمدينة أولاً.'));
+      if (Platform.OS === 'web') alert(loc('Veuillez d\'abord choisir le type et la ville.', 'Please select property type and location first.'));
+      else Alert.alert(loc('Info manquante', 'Missing Info'), loc('Veuillez d\'abord choisir le type et la ville.', 'Please select property type and location first.'));
       return;
     }
 
@@ -308,25 +296,23 @@ export default function AddPropertyStandaloneScreen() {
 
     const typeLabel =
       formData.type === 'villa'
-        ? loc('Magnifique Villa de standing', 'Stunning Luxury Villa', 'فيلا راقية رائعة')
+        ? loc('Magnifique Villa de standing', 'Stunning Luxury Villa')
         : formData.type === 'apartment'
-        ? loc('Superbe Appartement moderne', 'Superb Modern Apartment', 'شقة عصرية رائعة')
+        ? loc('Superbe Appartement moderne', 'Superb Modern Apartment')
         : formData.type === 'land'
-        ? loc('Terrain viabilisé avec ACD', 'Serviced Land with Clear Title', 'أرض مجهزة مع سند ملكية (ACD)')
+        ? loc('Terrain viabilisé avec ACD', 'Serviced Land with Clear Title')
         : formData.type === 'house'
-        ? loc('Belle Maison familiale', 'Beautiful Family Home', 'منزل عائلي جميل')
-        : loc('Propriété d’exception', 'Exceptional Property', 'عقار استثنائي');
+        ? loc('Belle Maison familiale', 'Beautiful Family Home')
+        : loc('Propriété d’exception', 'Exceptional Property');
 
     const locLabel = formData.district ? `${formData.district}, ${formData.city}` : formData.city;
     const amenitiesText = formData.features.length > 0
-      ? loc(` Prestations de qualité : ${formData.features.join(', ')}.`, ` Key amenities include: ${formData.features.join(', ')}.`, ` تشمل المزايا الرئيسية: ${formData.features.join(', ')}.`)
+      ? loc(` Prestations de qualité : ${formData.features.join(', ')}.`, ` Key amenities include: ${formData.features.join(', ')}.`)
       : '';
 
     const desc = loc(
       `${typeLabel} idéalement situé(e) à ${locLabel}. Offrant ${formData.bedrooms || '3'} chambres spacieuses, ${formData.bathrooms || '2'} salles d'eau modernes, et un cadre de vie sécurisé et recherché.${amenitiesText} Titre de propriété en règle (ACD / Certificat de propriété). Visite possible sur rendez-vous.`,
-      `${typeLabel} ideally located in ${locLabel}. Featuring ${formData.bedrooms || '3'} spacious bedrooms, ${formData.bathrooms || '2'} modern bathrooms, within a secure and prestigious neighbourhood.${amenitiesText} Valid land title (ACD / Ownership Certificate). Visits available by appointment.`,
-      `${typeLabel} بموقع مثالي في ${locLabel}. يضم ${formData.bedrooms || '3'} غرف نوم فسيحة، و${formData.bathrooms || '2'} حمامات عصرية، في بيئة سكنية آمنة وراقية.${amenitiesText} سند ملكية سليم (ACD / شهادة ملكية). المعاينة متاحة بموعد مسبق.`
-    );
+      `${typeLabel} ideally located in ${locLabel}. Featuring ${formData.bedrooms || '3'} spacious bedrooms, ${formData.bathrooms || '2'} modern bathrooms, within a secure and prestigious neighbourhood.${amenitiesText} Valid land title (ACD / Ownership Certificate). Visits available by appointment.`);
 
     updateField('description', desc);
   };
@@ -460,11 +446,11 @@ export default function AddPropertyStandaloneScreen() {
         }));
 
         if (Platform.OS === 'web') {
-          alert(loc('Position GPS détectée avec succès !', 'GPS Location detected successfully!', 'تم تحديد الموقع الجغرافي بنجاح!'));
+          alert(loc('Position GPS détectée avec succès !', 'GPS Location detected successfully!'));
         } else {
           Alert.alert(
-            loc('Succès', 'Success', 'نجاح'),
-            loc('Votre position a été détectée et appliquée.', 'Your location has been detected and applied.', 'تم تحديد وتطبيق موقعك بنجاح.'),
+            loc('Succès', 'Success'),
+            loc('Votre position a été détectée et appliquée.', 'Your location has been detected and applied.'),
             [{ text: 'OK' }]
           );
         }
@@ -489,7 +475,7 @@ export default function AddPropertyStandaloneScreen() {
     try {
       const remaining = 3 - formData.photos.length;
       if (remaining <= 0) {
-        const msg = loc('Maximum 3 photos autorisées', 'Maximum 3 photos allowed', 'الحد الأقصى المسموح به 3 صور');
+        const msg = loc('Maximum 3 photos autorisées', 'Maximum 3 photos allowed');
         if (Platform.OS === 'web') alert(msg);
         else Alert.alert(msg);
         return;
@@ -627,23 +613,23 @@ export default function AddPropertyStandaloneScreen() {
       !formData.agentName ||
       !formData.agentPhone
     ) {
-      const msg = loc('Veuillez remplir tous les champs obligatoires du formulaire.', 'Please fill in all required fields.', 'يرجى ملء جميع الحقول الإلزامية في النموذج.');
+      const msg = loc('Veuillez remplir tous les champs obligatoires du formulaire.', 'Please fill in all required fields.');
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert(loc('Champs incomplets', 'Missing Information', 'حقول غير مكتملة'), msg);
+      else Alert.alert(loc('Champs incomplets', 'Missing Information'), msg);
       return;
     }
 
     if (formData.photos.length !== 3 || !formData.document) {
-      const msg = loc('Veuillez ajouter exactement 3 photos et un justificatif de propriété (ACD/Titre).', 'Please provide exactly 3 photos and a land title document.', 'يرجى إضافة 3 صور بالضبط وإثبات الملكية (سند ACD أو وثيقة عقارية).');
+      const msg = loc('Veuillez ajouter exactement 3 photos et un justificatif de propriété (ACD/Titre).', 'Please provide exactly 3 photos and a land title document.');
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert(loc('Médias requis', 'Media Required', 'الوسائط مطلوبة'), msg);
+      else Alert.alert(loc('Médias requis', 'Media Required'), msg);
       return;
     }
 
     if (!formData.paymentMethod || !formData.transactionId) {
-      const msg = loc("Veuillez sélectionner un moyen de paiement mobile et saisir l'ID de transaction.", 'Please select a payment method and enter the transaction ID.', 'يرجى اختيار طريقة الدفع الإلكتروني وإدخال معرف المعاملة.');
+      const msg = loc("Veuillez sélectionner un moyen de paiement mobile et saisir l'ID de transaction.", 'Please select a payment method and enter the transaction ID.');
       if (Platform.OS === 'web') alert(msg);
-      else Alert.alert(loc('Paiement requis', 'Payment Required', 'الدفع مطلوب'), msg);
+      else Alert.alert(loc('Paiement requis', 'Payment Required'), msg);
       return;
     }
 
@@ -679,7 +665,7 @@ export default function AddPropertyStandaloneScreen() {
         },
       };
 
-      setUploadProgress(loc('Envoi des fichiers en cours...', 'Uploading files...', 'جارٍ رفع الملفات...'));
+      setUploadProgress(loc('Envoi des fichiers en cours...', 'Uploading files...'));
       const result = await addSubmission(payload);
       setUploadProgress('');
       setSuccessPropertyId(result.id);
@@ -709,7 +695,7 @@ export default function AddPropertyStandaloneScreen() {
       });
     } catch (error) {
       console.error('[Submit] Error:', error);
-      let errMsg = loc('Échec de la soumission de l\'annonce.', 'Failed to submit property.', 'فشل إرسال الإعلان.');
+      let errMsg = loc('Échec de la soumission de l\'annonce.', 'Failed to submit property.');
       if (error instanceof Error) errMsg = error.message;
       if (Platform.OS === 'web') alert(errMsg);
       else Alert.alert('Error', errMsg);
@@ -784,7 +770,7 @@ export default function AddPropertyStandaloneScreen() {
       <View style={[styles.container, styles.centerContainer, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color="#059669" />
         <Text style={styles.loadingText}>
-          {loc('Chargement sécurisé...', 'Securing workspace...', 'جارٍ تأمين مساحة العمل...')}
+          {loc('Chargement sécurisé...', 'Securing workspace...')}
         </Text>
       </View>
     );
@@ -836,7 +822,7 @@ export default function AddPropertyStandaloneScreen() {
               >
                 <Zap size={20} color="#FFFFFF" fill="#FFFFFF" />
                 <Text style={styles.instantAccessText}>
-                  {loc('⚡ Accès Direct — Publier sans Compte (1-Clic)', '⚡ Direct Access — Post Without Login (1-Click)', '⚡ دخول مباشر — نشر بدون حساب (بنقرة واحدة)')}
+                  {loc('⚡ Accès Direct — Publier sans Compte (1-Clic)', '⚡ Direct Access — Post Without Login (1-Click)')}
                 </Text>
                 <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.5} />
               </LinearGradient>
@@ -893,7 +879,7 @@ export default function AddPropertyStandaloneScreen() {
                 activeOpacity={0.85}
               >
                 <Text style={styles.guestAccessBtnText}>
-                  {loc('⚡ Accéder directement au formulaire d\'annonce', '⚡ Go directly to property submission form', '⚡ الانتقال مباشرة لنموذج الإعلان')}
+                  {loc('⚡ Accéder directement au formulaire d\'annonce', '⚡ Go directly to property submission form')}
                 </Text>
               </TouchableOpacity>
 
@@ -964,7 +950,7 @@ export default function AddPropertyStandaloneScreen() {
                 <View style={styles.stitchBadgePill}>
                   <Building2 size={12} color="#059669" />
                   <Text style={styles.stitchBadgePillText}>
-                    {loc('ESPACE PUBLICATION', 'LISTING STUDIO', 'استوديو نشر العقارات')}
+                    {loc('ESPACE PUBLICATION', 'LISTING STUDIO')}
                   </Text>
                 </View>
                 <Text style={styles.stitchPageTitle}>{t('add_property_title') || 'Publier une annonce'}</Text>
@@ -979,7 +965,7 @@ export default function AddPropertyStandaloneScreen() {
             >
               <Sparkles size={14} color="#059669" />
               <Text style={styles.quickFillButtonText}>
-                {loc('Auto-Remplir', 'Quick Fill', 'تعبئة سريعة')}
+                {loc('Auto-Remplir', 'Quick Fill')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -988,12 +974,12 @@ export default function AddPropertyStandaloneScreen() {
           <View style={styles.progressTrackerContainer}>
             <View style={styles.progressHeaderRow}>
               <Text style={styles.progressStepCountText}>
-                {loc(`Complété à ${formProgress.percentage}% (${formProgress.completed}/${formProgress.total} étapes)`, `${formProgress.percentage}% Complete (${formProgress.completed}/${formProgress.total} steps)`, `مكتمل بنسبة ${formProgress.percentage}% (${formProgress.completed}/${formProgress.total} خطوات)`)}
+                {loc(`Complété à ${formProgress.percentage}% (${formProgress.completed}/${formProgress.total} étapes)`, `${formProgress.percentage}% Complete (${formProgress.completed}/${formProgress.total} steps)`)}
               </Text>
               <Text style={styles.progressStatusTag}>
                 {formProgress.percentage === 100
-                  ? loc('Prêt à publier ✓', 'Ready to publish ✓', 'جاهز للنشر ✓')
-                  : loc('En cours de saisie', 'Drafting', 'قيد الصياغة')}
+                  ? loc('Prêt à publier ✓', 'Ready to publish ✓')
+                  : loc('En cours de saisie', 'Drafting')}
               </Text>
             </View>
             <View style={styles.progressBarTrack}>
@@ -1030,7 +1016,7 @@ export default function AddPropertyStandaloneScreen() {
                   <Text style={styles.cardStepNumber}>ÉTAPE 1</Text>
                   <Text style={styles.cardTitle}>{t('add_property_basic_info') || 'Informations de base'}</Text>
                   <Text style={styles.cardSubtitle}>
-                    {loc("Type de bien, modalité d'offre et titre principal", 'Property classification, transaction type and title', 'نوع العقار، صيغة العرض وسند الملكية الرئيسي')}
+                    {loc("Type de bien, modalité d'offre et titre principal", 'Property classification, transaction type and title')}
                   </Text>
                 </View>
               </View>
@@ -1071,10 +1057,10 @@ export default function AddPropertyStandaloneScreen() {
                               isSelected && styles.typeCardTitleActive,
                             ]}
                           >
-                            {language === 'ar' ? item.labelAr : language === 'fr' ? item.labelFr : item.labelEn}
+                            {language === 'fr' ? item.labelFr : item.labelEn}
                           </Text>
                           <Text style={styles.typeCardSub}>
-                            {language === 'ar' ? item.subAr : language === 'fr' ? item.subFr : item.subEn}
+                            {language === 'fr' ? item.subFr : item.subEn}
                           </Text>
                         </View>
                         {isSelected && (
@@ -1106,7 +1092,7 @@ export default function AddPropertyStandaloneScreen() {
                         formData.status === 'sale' && styles.segmentOptionTextActive,
                       ]}
                     >
-                      🏷️ {loc('À Vendre (Vente)', 'For Sale', 'للبيع')}
+                      🏷️ {loc('À Vendre (Vente)', 'For Sale')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -1123,7 +1109,7 @@ export default function AddPropertyStandaloneScreen() {
                         formData.status === 'rent' && styles.segmentOptionTextActive,
                       ]}
                     >
-                      🔑 {loc('À Louer (Location)', 'For Rent', 'للإيجار')}
+                      🔑 {loc('À Louer (Location)', 'For Rent')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1167,8 +1153,8 @@ export default function AddPropertyStandaloneScreen() {
                       )}
                       <Text style={styles.aiMagicPillText}>
                         {generateDescMutation.isPending
-                          ? loc('Génération IA...', 'Generating...', 'توليد بالذكاء الاصطناعي...')
-                          : loc('✨ Rédiger avec IA', '✨ AI Assist', '✨ الصياغة بالذكاء الاصطناعي')}
+                          ? loc('Génération IA...', 'Generating...')
+                          : loc('✨ Rédiger avec IA', '✨ AI Assist')}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -1186,7 +1172,7 @@ export default function AddPropertyStandaloneScreen() {
                   />
                 </View>
                 <Text style={styles.fieldHint}>
-                  {loc('💡 Astuce : Mentionnez la proximité des commerces, écoles et la sécurité du quartier.', '💡 Tip: Mention nearby shops, schools and neighbourhood security.', '💡 نصيحة: اذكر القرب من المتاجر والمدارس والأمان في الحي.')}
+                  {loc('💡 Astuce : Mentionnez la proximité des commerces, écoles et la sécurité du quartier.', '💡 Tip: Mention nearby shops, schools and neighbourhood security.')}
                 </Text>
               </View>
             </View>
@@ -1203,7 +1189,7 @@ export default function AddPropertyStandaloneScreen() {
                   <Text style={[styles.cardStepNumber, { color: '#D97706' }]}>ÉTAPE 2</Text>
                   <Text style={styles.cardTitle}>{t('add_property_details') || 'Caractéristiques & Prix'}</Text>
                   <Text style={styles.cardSubtitle}>
-                    {loc('Tarif, superficie, pièces et équipements inclus', 'Pricing, square meters, rooms and included amenities', 'السعر والمساحة وعدد الغرف والتجهيزات المشمولة')}
+                    {loc('Tarif, superficie, pièces et équipements inclus', 'Pricing, square meters, rooms and included amenities')}
                   </Text>
                 </View>
               </View>
@@ -1315,12 +1301,12 @@ export default function AddPropertyStandaloneScreen() {
                   {t('add_property_features_label') || 'Équipements & Commodités'}
                 </Text>
                 <Text style={styles.fieldHint}>
-                  {loc('Sélectionnez les commodités disponibles pour valoriser votre annonce :', 'Tap to select amenities included with this property:', 'حدد المرافق والتجهيزات المتوفرة لتعزيز إعلانك:')}
+                  {loc('Sélectionnez les commodités disponibles pour valoriser votre annonce :', 'Tap to select amenities included with this property:')}
                 </Text>
 
                 <View style={styles.amenitiesGrid}>
                   {POPULAR_AMENITIES.map(amenity => {
-                    const label = language === 'ar' ? (amenity as any).labelAr || amenity.labelEn : language === 'fr' ? amenity.labelFr : amenity.labelEn;
+                    const label = language === 'fr' ? amenity.labelFr : amenity.labelEn;
                     const isSelected = formData.features.includes(label);
                     return (
                       <TouchableOpacity
@@ -1353,7 +1339,7 @@ export default function AddPropertyStandaloneScreen() {
                 <View style={styles.customAmenityRow}>
                   <TextInput
                     style={styles.customAmenityInput}
-                    placeholder={loc('+ Ajouter un équipement personnalisé...', '+ Add custom feature...', '+ إضافة ميزة مخصصة...')}
+                    placeholder={loc('+ Ajouter un équipement personnalisé...', '+ Add custom feature...')}
                     placeholderTextColor="#94A3B8"
                     value={featureInput}
                     onChangeText={setFeatureInput}
@@ -1366,16 +1352,16 @@ export default function AddPropertyStandaloneScreen() {
                   >
                     <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
                     <Text style={styles.customAmenityAddBtnText}>
-                      {loc('Ajouter', 'Add', 'إضافة')}
+                      {loc('Ajouter', 'Add')}
                     </Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* Active Custom Tags */}
-                {formData.features.filter(f => !POPULAR_AMENITIES.some(a => (language === 'ar' ? (a as any).labelAr : language === 'fr' ? a.labelFr : a.labelEn) === f)).length > 0 && (
+                {formData.features.filter(f => !POPULAR_AMENITIES.some(a => (language === 'fr' ? a.labelFr : a.labelEn) === f)).length > 0 && (
                   <View style={styles.customTagsList}>
                     {formData.features
-                      .filter(f => !POPULAR_AMENITIES.some(a => (language === 'ar' ? (a as any).labelAr : language === 'fr' ? a.labelFr : a.labelEn) === f))
+                      .filter(f => !POPULAR_AMENITIES.some(a => (language === 'fr' ? a.labelFr : a.labelEn) === f))
                       .map((customFeature, idx) => (
                         <View key={idx} style={styles.customTagPill}>
                           <Text style={styles.customTagPillText}>{customFeature}</Text>
@@ -1407,7 +1393,7 @@ export default function AddPropertyStandaloneScreen() {
                   <Text style={[styles.cardStepNumber, { color: '#2563EB' }]}>ÉTAPE 3</Text>
                   <Text style={styles.cardTitle}>{t('add_property_location') || 'Localisation'}</Text>
                   <Text style={styles.cardSubtitle}>
-                    {loc('Ville, commune / quartier et adresse exacte', 'City, neighborhood and precise street address', 'المدينة، المنطقة / الحي والعنوان الدقيق')}
+                    {loc('Ville, commune / quartier et adresse exacte', 'City, neighborhood and precise street address')}
                   </Text>
                 </View>
               </View>
@@ -1428,7 +1414,7 @@ export default function AddPropertyStandaloneScreen() {
                       <>
                         <Navigation size={13} color="#059669" strokeWidth={2.4} />
                         <Text style={styles.gpsLocationBtnText}>
-                          {loc('Ma Position GPS', 'Use My GPS', 'موقعي الجغرافي')}
+                          {loc('Ma Position GPS', 'Use My GPS')}
                         </Text>
                       </>
                     )}
@@ -1448,7 +1434,7 @@ export default function AddPropertyStandaloneScreen() {
                         {formData.city || 'Abidjan'}
                       </Text>
                       <Text style={styles.locationSelectorDistrict}>
-                        {formData.district || loc('Sélectionner un quartier...', 'Select district...', 'اختر الحى...')}
+                        {formData.district || loc('Sélectionner un quartier...', 'Select district...')}
                       </Text>
                     </View>
                   </View>
@@ -1457,7 +1443,7 @@ export default function AddPropertyStandaloneScreen() {
 
                 {/* Quick Abidjan district pills */}
                 <View style={styles.quickDistrictsRow}>
-                  <Text style={styles.quickDistrictsLabel}>{loc('Populaires :', 'Popular:', 'الشائعة:')}</Text>
+                  <Text style={styles.quickDistrictsLabel}>{loc('Populaires :', 'Popular:')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickDistrictsScroll}>
                     {POPULAR_ABIDJAN_DISTRICTS.map(district => (
                       <TouchableOpacity
@@ -1508,7 +1494,7 @@ export default function AddPropertyStandaloneScreen() {
               >
                 <MapPin size={17} color="#059669" strokeWidth={2.4} />
                 <Text style={{ color: '#059669', fontSize: 13, fontWeight: '800' }}>
-                  {loc('📍 Pointer l\'emplacement exact sur la carte', '📍 Drop Pin on Interactive Map', '📍 تحديد الموقع بدقة على الخريطة')}
+                  {loc('📍 Pointer l\'emplacement exact sur la carte', '📍 Drop Pin on Interactive Map')}
                 </Text>
               </TouchableOpacity>
 
@@ -1516,7 +1502,7 @@ export default function AddPropertyStandaloneScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginBottom: 10 }}>
                   <CheckCircle2 size={13} color="#059669" />
                   <Text style={{ fontSize: 11.5, color: '#059669', fontWeight: '700' }}>
-                    {loc('Coordonnées GPS enregistrées :', 'GPS Coordinates saved:', 'إحداثيات GPS المسجلة:')} {formData.coordinates.latitude.toFixed(4)}, {formData.coordinates.longitude.toFixed(4)}
+                    {loc('Coordonnées GPS enregistrées :', 'GPS Coordinates saved:')} {formData.coordinates.latitude.toFixed(4)}, {formData.coordinates.longitude.toFixed(4)}
                   </Text>
                 </View>
               )}
@@ -1549,7 +1535,7 @@ export default function AddPropertyStandaloneScreen() {
                   <Text style={[styles.cardStepNumber, { color: '#7C3AED' }]}>ÉTAPE 4</Text>
                   <Text style={styles.cardTitle}>{t('add_property_media') || 'Photos & Documents Officiels'}</Text>
                   <Text style={styles.cardSubtitle}>
-                    {loc('3 photos obligatoires, vidéo optionnelle et titre foncier (ACD)', '3 required photos, optional video and land title ownership proof', '3 صور إلزامية، فيديو اختياري وسند الملكية العقاري (ACD)')}
+                    {loc('3 photos obligatoires, vidéo optionnelle et titre foncier (ACD)', '3 required photos, optional video and land title ownership proof')}
                   </Text>
                 </View>
               </View>
@@ -1593,7 +1579,7 @@ export default function AddPropertyStandaloneScreen() {
                             <View style={styles.coverPhotoBadge}>
                               <Sparkles size={10} color="#FFFFFF" />
                               <Text style={styles.coverPhotoBadgeText}>
-                                {loc('Photo Principale', 'Cover Photo', 'الصورة الرئيسية')}
+                                {loc('Photo Principale', 'Cover Photo')}
                               </Text>
                             </View>
                           )}
@@ -1623,11 +1609,11 @@ export default function AddPropertyStandaloneScreen() {
                         </View>
                         <Text style={styles.photoSlotEmptyTitle}>
                           {isCover
-                            ? loc('Photo Principale *', 'Cover Photo *', 'الصورة الرئيسية *')
-                            : loc(`Photo N°${index + 1} *`, `Photo #${index + 1} *`, `صورة رقم ${index + 1} *`)}
+                            ? loc('Photo Principale *', 'Cover Photo *')
+                            : loc(`Photo N°${index + 1} *`, `Photo #${index + 1} *`)}
                         </Text>
                         <Text style={styles.photoSlotEmptySub}>
-                          {loc('Appuyez pour ajouter', 'Tap to upload', 'اضغط للإضافة')}
+                          {loc('Appuyez pour ajouter', 'Tap to upload')}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -1672,7 +1658,7 @@ export default function AddPropertyStandaloneScreen() {
                     >
                       <Video size={22} color="#64748B" />
                       <Text style={styles.mediaUploadBoxText}>
-                        {loc('+ Ajouter un clip vidéo', '+ Add property video', '+ إضافة مقطع فيديو')}
+                        {loc('+ Ajouter un clip vidéo', '+ Add property video')}
                       </Text>
                       <Text style={styles.mediaUploadBoxHint}>MP4 / MOV jusqu'à 50 Mo</Text>
                     </TouchableOpacity>
@@ -1716,10 +1702,10 @@ export default function AddPropertyStandaloneScreen() {
                     >
                       <FileText size={22} color="#2563EB" />
                       <Text style={[styles.mediaUploadBoxText, { color: '#2563EB' }]}>
-                        {loc('+ Joindre ACD ou Titre Foncier *', '+ Attach Land Title Document *', '+ إرفاق سند الملكية العقاري (ACD) *')}
+                        {loc('+ Joindre ACD ou Titre Foncier *', '+ Attach Land Title Document *')}
                       </Text>
                       <Text style={styles.mediaUploadBoxHint}>
-                        {loc('Garantie d\'authenticité pour les acheteurs', 'Confidential verification guarantee', 'ضمان الموثوقية للمشترين')}
+                        {loc('Garantie d\'authenticité pour les acheteurs', 'Confidential verification guarantee')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -1739,7 +1725,7 @@ export default function AddPropertyStandaloneScreen() {
                   <Text style={styles.cardStepNumber}>ÉTAPE 5</Text>
                   <Text style={styles.cardTitle}>{t('add_property_contact') || 'Contact & Frais de Publication'}</Text>
                   <Text style={styles.cardSubtitle}>
-                    {loc("Coordonnées de l'annonceur et règlement des frais de dossier (10 000 FCFA)", 'Publisher contact and 10,000 FCFA listing fee', 'بيانات المعلن ودفع رسوم دراسة الملف (10,000 فرنك غرب أفريقي)')}
+                    {loc("Coordonnées de l'annonceur et règlement des frais de dossier (10 000 FCFA)", 'Publisher contact and 10,000 FCFA listing fee')}
                   </Text>
                 </View>
               </View>
@@ -1783,10 +1769,10 @@ export default function AddPropertyStandaloneScreen() {
                     <ShieldCheck size={18} color="#059669" />
                     <View>
                       <Text style={styles.feeBannerTitle}>
-                        {loc('Frais de publication vérifiée', 'Verified listing fee', 'رسوم النشر الموثق')}
+                        {loc('Frais de publication vérifiée', 'Verified listing fee')}
                       </Text>
                       <Text style={styles.feeBannerSub}>
-                        {loc('Audit du bien + Diffusion prioritaire 60 jours', 'Property audit + 60 days priority promotion', 'تدقيق العقار + نشر متميز لمدة 60 يوماً')}
+                        {loc('Audit du bien + Diffusion prioritaire 60 jours', 'Property audit + 60 days priority promotion')}
                       </Text>
                     </View>
                   </View>
@@ -1869,7 +1855,7 @@ export default function AddPropertyStandaloneScreen() {
                     />
                   </View>
                   <Text style={styles.fieldHint}>
-                    {loc('ℹ️ Entrez la référence reçue par SMS après avoir transféré les 10 000 FCFA.', 'ℹ️ Enter the reference code received via SMS upon transferring 10,000 FCFA.', 'ℹ️ أدخل الرمز المرجعي المستلم عبر الرسائل النصية بعد تحويل المبلغ.')}
+                    {loc('ℹ️ Entrez la référence reçue par SMS après avoir transféré les 10 000 FCFA.', 'ℹ️ Enter the reference code received via SMS upon transferring 10,000 FCFA.')}
                   </Text>
                 </View>
               </View>
@@ -1894,7 +1880,7 @@ export default function AddPropertyStandaloneScreen() {
             )}
             <View style={{ flex: 1 }}>
               <AnimatedSubmitButton
-                label={loc('Publier mon annonce', 'Publish My Listing', 'نشر إعلاني')}
+                label={loc('Publier mon annonce', 'Publish My Listing')}
                 onPress={handleSubmit}
                 isLoading={isSubmitting}
                 isSuccess={showSuccessModal}
@@ -1922,7 +1908,7 @@ export default function AddPropertyStandaloneScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <MapPin size={20} color="#059669" />
                 <Text style={styles.modalTitle}>
-                  {loc('Choisir la ville et le quartier', 'Select City & District', 'اختر المدينة والحي')}
+                  {loc('Choisir la ville et le quartier', 'Select City & District')}
                 </Text>
               </View>
               <TouchableOpacity
@@ -1938,7 +1924,7 @@ export default function AddPropertyStandaloneScreen() {
               <Search size={16} color="#94A3B8" />
               <TextInput
                 style={styles.modalSearchInput}
-                placeholder={loc('Rechercher Cocody, Marcory, Yamoussoukro...', 'Search neighborhood or city...', 'البحث في كوكودي، ماركوري، ياموسوكرو...')}
+                placeholder={loc('Rechercher Cocody, Marcory, Yamoussoukro...', 'Search neighborhood or city...')}
                 placeholderTextColor="#94A3B8"
                 value={locationSearchQuery}
                 onChangeText={setLocationSearchQuery}

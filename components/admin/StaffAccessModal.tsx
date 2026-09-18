@@ -312,7 +312,7 @@ export default function StaffAccessModal({
               {/* Status Toggle */}
               <View style={{ flex: 1 }}>
                 <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-                  {language === 'ar' ? 'حالة الحساب' : language === 'en' ? 'ACCOUNT STATUS' : 'STATUT DU COMPTE'}
+                  {language === 'en' ? 'ACCOUNT STATUS' : 'STATUT DU COMPTE'}
                 </Text>
                 <View
                   style={[
@@ -515,7 +515,7 @@ export default function StaffAccessModal({
           {/* ── FOOTER ── */}
           <View style={[styles.modalFooter, { borderTopColor: theme.border }]}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={isSaving}>
-              <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>{language === 'ar' ? 'إلغاء' : language === 'en' ? 'Cancel' : 'Annuler'}</Text>
+              <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>{language === 'en' ? 'Cancel' : 'Annuler'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

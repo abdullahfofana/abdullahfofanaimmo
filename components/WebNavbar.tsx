@@ -176,9 +176,7 @@ export default function WebNavbar() {
                 <Text style={styles.brandTitleCI}>CI</Text>
               </View>
               <Text style={styles.brandTagline}>
-                {language === 'ar'
-                  ? 'عقارات ساحل العاج'
-                  : language === 'en'
+                {language === 'en'
                   ? 'Ivory Coast Real Estate'
                   : "Immobilier Côte d'Ivoire"}
               </Text>
@@ -347,17 +345,6 @@ export default function WebNavbar() {
                     ]}
                   >
                     EN
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.langDivider}>|</Text>
-                <TouchableOpacity onPress={() => setLanguage('ar')} activeOpacity={0.7}>
-                  <Text
-                    style={[
-                      styles.langText,
-                      language === 'ar' ? styles.langTextActive : styles.langTextInactive,
-                    ]}
-                  >
-                    عربي
                   </Text>
                 </TouchableOpacity>
               </View>

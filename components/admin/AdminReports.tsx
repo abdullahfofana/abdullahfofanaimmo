@@ -532,11 +532,11 @@ export default function AdminReports({ isDark = true, canExport = true }: AdminR
               <BarChart3 size={20} color="#059669" strokeWidth={2.4} />
             </View>
             <Text style={[styles.title, { color: theme.textPrimary }]}>
-              {language === 'ar' ? 'مركز التقارير وتصدير إكسيل' : language === 'en' ? 'Reports & Excel Export Center' : 'Centre de Rapports & Exports Excel'}
+              {language === 'en' ? 'Reports & Excel Export Center' : 'Centre de Rapports & Exports Excel'}
             </Text>
           </View>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {language === 'ar' ? 'بيانات تشغيلية ومالية حقيقية مستخرجة مباشرة من قاعدة بيانات ImmoCI.' : language === 'en' ? 'Live operational and financial records from ImmoCI database.' : 'Données opérationnelles et financières réelles issues de la base ImmoCI.'}
+            {language === 'en' ? 'Live operational and financial records from ImmoCI database.' : 'Données opérationnelles et financières réelles issues de la base ImmoCI.'}
           </Text>
         </View>
 
@@ -553,14 +553,14 @@ export default function AdminReports({ isDark = true, canExport = true }: AdminR
               <FileSpreadsheet size={17} color="#FFFFFF" strokeWidth={2.2} />
             )}
             <Text style={styles.exportBtnText}>
-              {isExporting ? (language === 'ar' ? 'جاري توليد الملف...' : language === 'en' ? 'Generating file...' : 'Génération du fichier...') : (language === 'ar' ? 'تصدير إلى إكسيل (.xlsx)' : language === 'en' ? 'Export to Excel (.xlsx)' : 'Exporter en Excel (.xlsx)')}
+              {isExporting ? (language === 'en' ? 'Generating file...' : 'Génération du fichier...') : (language === 'en' ? 'Export to Excel (.xlsx)' : 'Exporter en Excel (.xlsx)')}
             </Text>
           </TouchableOpacity>
         ) : (
           <View style={[styles.exportBtn, { backgroundColor: isDark ? '#1E293B' : '#E2E8F0', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#CBD5E1' }]}>
             <Lock size={15} color={isDark ? '#94A3B8' : '#64748B'} />
             <Text style={[styles.exportBtnText, { color: isDark ? '#94A3B8' : '#64748B' }]}>
-              {language === 'ar' ? 'التصدير مقيد (صلاحية مطلوبة)' : language === 'en' ? 'Export Restricted (Admin Required)' : 'Export restreint (Admin requis)'}
+              {language === 'en' ? 'Export Restricted (Admin Required)' : 'Export restreint (Admin requis)'}
             </Text>
           </View>
         )}
@@ -569,12 +569,12 @@ export default function AdminReports({ isDark = true, canExport = true }: AdminR
       {/* ── REPORT CATEGORY TABS ── */}
       <View style={[styles.tabBar, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         {[
-          { key: 'revenue', label: language === 'ar' ? 'التقرير المالي (XOF)' : language === 'en' ? 'Financial Report (XOF)' : 'Rapport Financier (XOF)', icon: DollarSign },
-          { key: 'properties', label: language === 'ar' ? 'المخزون العقاري' : language === 'en' ? 'Property Inventory' : 'Activité Immobilière', icon: Building2 },
-          { key: 'inquiries', label: language === 'ar' ? 'الطلبات والاستفسارات' : language === 'en' ? 'Inquiries & Leads' : 'Demandes & Leads', icon: FileSpreadsheet },
-          { key: 'chat', label: language === 'ar' ? 'الدعم والمحادثات المباشرة' : language === 'en' ? 'Support & Live Chat' : 'Support & Chat Live', icon: MessageSquare },
-          { key: 'customers', label: language === 'ar' ? 'دليل العملاء' : language === 'en' ? 'Customers & Buyers' : 'Clients & Acheteurs', icon: Users },
-          { key: 'staff_activity', label: language === 'ar' ? 'نشاط فريق العمل' : language === 'en' ? 'Staff Activity' : 'Activité de l’Équipe', icon: Shield },
+          { key: 'revenue', label: language === 'en' ? 'Financial Report (XOF)' : 'Rapport Financier (XOF)', icon: DollarSign },
+          { key: 'properties', label: language === 'en' ? 'Property Inventory' : 'Activité Immobilière', icon: Building2 },
+          { key: 'inquiries', label: language === 'en' ? 'Inquiries & Leads' : 'Demandes & Leads', icon: FileSpreadsheet },
+          { key: 'chat', label: language === 'en' ? 'Support & Live Chat' : 'Support & Chat Live', icon: MessageSquare },
+          { key: 'customers', label: language === 'en' ? 'Customers & Buyers' : 'Clients & Acheteurs', icon: Users },
+          { key: 'staff_activity', label: language === 'en' ? 'Staff Activity' : 'Activité de l’Équipe', icon: Shield },
         ].map((tab) => {
           const isSelected = activeReport === tab.key;
           const Icon = tab.icon;

@@ -268,13 +268,13 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
                 <Sparkles size={13} color="#60A5FA" />
-                <Text style={styles.badgeText}>{language === 'ar' ? 'بوابة الإدارة والأمان' : language === 'en' ? 'ADMINISTRATION PORTAL' : "PORTAIL D'ADMINISTRATION"}</Text>
+                <Text style={styles.badgeText}>{language === 'en' ? 'ADMINISTRATION PORTAL' : "PORTAIL D'ADMINISTRATION"}</Text>
               </View>
             </View>
 
-            <Text style={styles.title}>{language === 'ar' ? 'بوابة إدارة ImmoCI' : 'ImmoCI Admin Portal'}</Text>
+            <Text style={styles.title}>{'ImmoCI Admin Portal'}</Text>
             <Text style={styles.subtitle}>
-              {language === 'ar' ? 'وصول آمن لمركز التحكم، وتدقيق الإعلانات بالذكاء الاصطناعي، والامتثال القانوني.' : language === 'en' ? 'Secure access to control center, AI moderation, and legal compliance.' : 'Accès sécurisé au centre de contrôle, modération IA et conformité légale.'}
+              {language === 'en' ? 'Secure access to control center, AI moderation, and legal compliance.' : 'Accès sécurisé au centre de contrôle, modération IA et conformité légale.'}
             </Text>
           </View>
 
@@ -290,7 +290,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             ) : null}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{language === 'ar' ? 'البريد الإلكتروني للإدارة' : language === 'en' ? 'Staff / Admin Email' : 'Email Administrateur'}</Text>
+              <Text style={styles.label}>{language === 'en' ? 'Staff / Admin Email' : 'Email Administrateur'}</Text>
               <View style={styles.inputContainer}>
                 <Mail size={18} color="#94A3B8" style={styles.inputIcon} />
                 <TextInput
@@ -307,7 +307,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>{language === 'ar' ? 'كلمة المرور' : language === 'en' ? 'Password' : 'Mot de passe'}</Text>
+              <Text style={styles.label}>{language === 'en' ? 'Password' : 'Mot de passe'}</Text>
               <View style={styles.inputContainer}>
                 <Lock size={18} color="#94A3B8" style={styles.inputIcon} />
                 <TextInput
@@ -343,7 +343,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
               {isLoading ? (
                 <ActivityIndicator color="#0F172A" size="small" />
               ) : (
-                <Text style={styles.loginButtonText}>{language === 'ar' ? 'تسجيل الدخول إلى لوحة التحكم' : language === 'en' ? 'Sign In to Dashboard' : 'Connexion au Dashboard Admin'}</Text>
+                <Text style={styles.loginButtonText}>{language === 'en' ? 'Sign In to Dashboard' : 'Connexion au Dashboard Admin'}</Text>
               )}
             </TouchableOpacity>
 
@@ -417,7 +417,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
               activeOpacity={0.7}
             >
               <Home size={15} color="#93C5FD" />
-              <Text style={styles.footerLinkText}>{language === 'ar' ? 'العودة للرئيسية' : language === 'en' ? 'Back to Home' : "Retour à l'accueil"}</Text>
+              <Text style={styles.footerLinkText}>{language === 'en' ? 'Back to Home' : "Retour à l'accueil"}</Text>
             </TouchableOpacity>
           </View>
 

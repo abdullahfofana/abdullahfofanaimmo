@@ -143,7 +143,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { isDesktop } = useResponsive();
   const { language, t } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -157,7 +157,7 @@ export default function ProfileScreen() {
   const [showRequestsModal, setShowRequestsModal] = useState(false);
 
   const isMobile = Platform.OS !== 'web';
-  const userName = user?.name || loc('Client ImmoCI', 'ImmoCI Client', 'عميل ImmoCI');
+  const userName = user?.name || loc('Client ImmoCI', 'ImmoCI Client');
   const userEmail = user?.email || 'client@immoci.ci';
   const userRole = user?.role || 'renter';
 
@@ -171,19 +171,19 @@ export default function ProfileScreen() {
       return [
         {
           value: `${submissions?.length || 0}`,
-          label: loc('Mes Biens', 'Listings', 'عقاراتي'),
+          label: loc('Mes Biens', 'Listings'),
           icon: <Building2 size={16} color={colors.primary} strokeWidth={2} />,
           onPress: () => router.push('/my-listings'),
         },
         {
           value: `${conversations?.length || 0}`,
-          label: loc('Demandes', 'Inquiries', 'الاستفسارات'),
+          label: loc('Demandes', 'Inquiries'),
           icon: <MessageSquare size={16} color="#3B82F6" strokeWidth={2} />,
           onPress: () => router.push('/dashboard'),
         },
         {
           value: '4.9 ★',
-          label: loc('Note Pro', 'Rating', 'التقييم'),
+          label: loc('Note Pro', 'Rating'),
           icon: <Star size={16} color={colors.accent} strokeWidth={2} fill={colors.accent} />,
           onPress: () => setShowRatingModal(true),
         },
@@ -194,19 +194,19 @@ export default function ProfileScreen() {
       return [
         {
           value: 'Web',
-          label: loc('Portail', 'Portal', 'البوابة'),
+          label: loc('Portail', 'Portal'),
           icon: <Monitor size={16} color="#D97706" strokeWidth={2} />,
           onPress: () => Linking.openURL('https://abdullahfofanaimmo.vercel.app/admin').catch(() => {}),
         },
         {
           value: '0',
-          label: loc('Admin Mobile', 'Mobile Admin', 'إدارة الجوال'),
+          label: loc('Admin Mobile', 'Mobile Admin'),
           icon: <Shield size={16} color="#EF4444" strokeWidth={2} />,
           onPress: () => {},
         },
         {
           value: 'Admin',
-          label: loc('Rôle Système', 'System Role', 'دور النظام'),
+          label: loc('Rôle Système', 'System Role'),
           icon: <Shield size={16} color={colors.primary} strokeWidth={2} />,
           onPress: () => {},
         },
@@ -217,19 +217,19 @@ export default function ProfileScreen() {
     return [
       {
         value: `${favoriteIds?.length || 0}`,
-        label: loc('Favoris', 'Saved', 'المفضلة'),
+        label: loc('Favoris', 'Saved'),
         icon: <Heart size={16} color="#EF4444" strokeWidth={2} fill="#EF4444" />,
         onPress: () => router.push('/(tabs)/favorites'),
       },
       {
         value: `${conversations?.length || 0}`,
-        label: loc('Demandes', 'Inquiries', 'الطلبات'),
+        label: loc('Demandes', 'Inquiries'),
         icon: <MessageSquare size={16} color="#10B981" strokeWidth={2} />,
         onPress: () => setShowRequestsModal(true),
       },
       {
         value: '24/7',
-        label: loc('Support', 'Support', 'الدعم'),
+        label: loc('Support', 'Support'),
         icon: <Headphones size={16} color="#059669" strokeWidth={2} />,
         onPress: () => {
           if (openSupportChat) openSupportChat();
@@ -239,14 +239,12 @@ export default function ProfileScreen() {
   }, [isBusiness, isAdmin, submissions, conversations, favoriteIds, language, colors, openSupportChat]);
 
   const handleLogout = () => {
-    const title = loc('Déconnexion', 'Log Out', 'تسجيل الخروج');
+    const title = loc('Déconnexion', 'Log Out');
     const message = loc(
       'Êtes-vous sûr de vouloir vous déconnecter de votre compte ImmoCI ?',
-      'Are you sure you want to log out from ImmoCI?',
-      'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك في ImmoCI؟'
-    );
-    const confirmText = loc('Se déconnecter', 'Log Out', 'تسجيل الخروج');
-    const cancelText = loc('Annuler', 'Cancel', 'إلغاء');
+      'Are you sure you want to log out from ImmoCI?');
+    const confirmText = loc('Se déconnecter', 'Log Out');
+    const cancelText = loc('Annuler', 'Cancel');
 
     if (Platform.OS === 'web') {
       if (window.confirm(`${title}\n${message}`)) {
@@ -328,10 +326,10 @@ export default function ProfileScreen() {
             )}
             <Text style={styles.verifiedText}>
               {isBusiness
-                ? loc('Compte Pro • Agent / Agence', 'Business Account • Agent', 'حساب أعمال • وكيل عقاري')
+                ? loc('Compte Pro • Agent / Agence', 'Business Account • Agent')
                 : isAdmin
-                ? loc('Compte Administrateur (Web Exclusif)', 'Admin Account (Web Only)', 'حساب مدير النظام (ويب حصري)')
-                : loc('Compte Client • Acheteur / Locataire', 'Customer Account • Buyer / Renter', 'حساب عميل • مشتري / مستأجر')}
+                ? loc('Compte Administrateur (Web Exclusif)', 'Admin Account (Web Only)')
+                : loc('Compte Client • Acheteur / Locataire', 'Customer Account • Buyer / Renter')}
             </Text>
           </View>
         </View>
@@ -588,7 +586,7 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Bell size={20} color="#059669" />
                 <Text style={styles.modalTitle}>
-                  {loc('Alertes & Notifications', 'Alerts & Notifications', 'التنبيهات والإشعارات')}
+                  {loc('Alertes & Notifications', 'Alerts & Notifications')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
@@ -598,16 +596,14 @@ export default function ProfileScreen() {
             <Text style={styles.modalBodyText}>
               {loc(
                 '🔔 Vos alertes de recherche pour Abidjan et Cocody sont actives. Vous recevrez instantanément une notification dès qu’un bien correspondant à vos critères est publié.',
-                '🔔 Your search alerts for Abidjan & Cocody are active. You will receive instant notifications when matching properties are listed.',
-                '🔔 تنبيهات البحث الخاصة بك في أبيدجان وكوكودي مفعلة. ستتلقى إشعاراً فورياً عند نشر عقار يتطابق مع معاييرك.'
-              )}
+                '🔔 Your search alerts for Abidjan & Cocody are active. You will receive instant notifications when matching properties are listed.')}
             </Text>
             <TouchableOpacity
               style={styles.modalPrimaryBtn}
               onPress={() => setShowNotificationsModal(false)}
             >
               <Text style={styles.modalPrimaryBtnText}>
-                {loc('D’accord', 'Got it', 'حسناً')}
+                {loc('D’accord', 'Got it')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -627,7 +623,7 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Star size={20} color="#D97706" fill="#D97706" />
                 <Text style={styles.modalTitle}>
-                  {loc('Score de Confiance : 4.9/5', 'Trust Score: 4.9/5', 'معدل الموثوقية: 4.9/5')}
+                  {loc('Score de Confiance : 4.9/5', 'Trust Score: 4.9/5')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowRatingModal(false)}>
@@ -637,16 +633,14 @@ export default function ProfileScreen() {
             <Text style={styles.modalBodyText}>
               {loc(
                 '⭐ Ce score est basé sur la vérification des titres fonciers (ACD), la réactivité aux messages et les avis des acheteurs vérifiés sur la plateforme ImmoCI.',
-                '⭐ This score is calculated from deed verifications (ACD), message responsiveness, and feedback from verified buyers on ImmoCI.',
-                '⭐ يتم احتساب هذا التقييم بناءً على التحقق من سندات الملكية (ACD)، وسرعة الاستجابة للرسائل، وتقييمات المشترين المعتمدين على منصة ImmoCI.'
-              )}
+                '⭐ This score is calculated from deed verifications (ACD), message responsiveness, and feedback from verified buyers on ImmoCI.')}
             </Text>
             <TouchableOpacity
               style={styles.modalPrimaryBtn}
               onPress={() => setShowRatingModal(false)}
             >
               <Text style={styles.modalPrimaryBtnText}>
-                {loc('Fermer', 'Close', 'إغلاق')}
+                {loc('Fermer', 'Close')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -715,7 +709,7 @@ export default function ProfileScreen() {
               style={styles.modalPrimaryBtn}
               onPress={() => setShowRequestsModal(false)}
             >
-              <Text style={styles.modalPrimaryBtnText}>{loc('Fermer', 'Close', 'إغلاق')}</Text>
+              <Text style={styles.modalPrimaryBtnText}>{loc('Fermer', 'Close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

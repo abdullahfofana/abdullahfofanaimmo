@@ -26,92 +26,74 @@ export default function WebFooter() {
     brandTagline: {
       fr: "Immobilier Côte d'Ivoire",
       en: "Ivory Coast Real Estate",
-      ar: "عقارات ساحل العاج",
     },
     brandDesc: {
       fr: "La plateforme de référence pour l'achat, la vente et la location de biens immobiliers certifiés à Abidjan et dans toute la Côte d'Ivoire.",
       en: "The premier platform for buying, renting, and selling verified real estate in Abidjan and across Ivory Coast.",
-      ar: "المنصة الرائدة والمعتمدة لبيع وشراء وتأجير العقارات الموثقة في أبيدجان وكافة أنحاء ساحل العاج.",
     },
     trustBadge: {
       fr: "Annonces 100% Vérifiées & Sécurisées",
       en: "100% Verified & Secure Listings",
-      ar: "إعلانات موثقة وآمنة بنسبة 100%",
     },
     colRealEstate: {
       fr: "Immobilier",
       en: "Real Estate",
-      ar: "عقارات",
     },
     forSale: {
       fr: "Biens à Vendre (Acheter)",
       en: "Properties for Sale (Buy)",
-      ar: "عقارات للبيع (شراء)",
     },
     forRent: {
       fr: "Biens à Louer (Location)",
       en: "Properties for Rent (Rent)",
-      ar: "عقارات للإيجار",
     },
     luxuryVillas: {
       fr: "Villas de Prestige",
       en: "Luxury Villas",
-      ar: "فيلات فاخرة",
     },
     apartments: {
       fr: "Appartements Meublés & Non Meublés",
       en: "Furnished & Unfurnished Apartments",
-      ar: "شقق مفروشة وغير مفروشة",
     },
     addListing: {
       fr: "+ Publier une Annonce",
       en: "+ List a Property",
-      ar: "+ نشر إعلان عقاري",
     },
     colLocations: {
       fr: "Quartiers Prisés",
       en: "Top Locations",
-      ar: "أشهر الأحياء والمناطق",
     },
     colSupport: {
       fr: "Support & Contact",
       en: "Support & Contact",
-      ar: "الدعم والمساعدة",
     },
     helpCenter: {
       fr: "Centre d'Aide & FAQ",
       en: "Help Center & FAQ",
-      ar: "مركز المساعدة والأسئلة الشائعة",
     },
     myFavorites: {
       fr: "Mes Favoris Sauvegardés",
       en: "My Saved Favorites",
-      ar: "عقاراتي المفضلة",
     },
     adminPortal: {
       fr: "Espace Professionnel & Admin",
       en: "Agent & Admin Portal",
-      ar: "بوابة الوكلاء والإدارة",
     },
     copyright: {
       fr: `© ${new Date().getFullYear()} ImmoCI. Tous droits réservés.`,
       en: `© ${new Date().getFullYear()} ImmoCI. All rights reserved.`,
-      ar: `© ${new Date().getFullYear()} ImmoCI. جميع الحقوق محفوظة.`,
     },
     legalNotice: {
       fr: "Mentions Légales",
       en: "Legal Notice",
-      ar: "الشروط القانونية",
     },
     privacyPolicy: {
       fr: "Confidentialité",
       en: "Privacy Policy",
-      ar: "سياسة الخصوصية",
     },
     termsOfService: {
       fr: "Conditions d'Utilisation",
       en: "Terms of Service",
-      ar: "شروط الاستخدام",
     },
   };
 

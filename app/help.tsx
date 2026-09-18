@@ -18,10 +18,8 @@ interface FAQItem {
   id: string;
   questionFr: string;
   questionEn: string;
-  questionAr: string;
   answerFr: string;
   answerEn: string;
-  answerAr: string;
 }
 
 const faqs: FAQItem[] = [
@@ -29,37 +27,29 @@ const faqs: FAQItem[] = [
     id: '1',
     questionFr: 'Comment publier une annonce immobilière ?',
     questionEn: 'How do I submit a property?',
-    questionAr: 'كيف يمكنني نشر إعلان عقاري؟',
     answerFr: 'Rendez-vous sur l’onglet "Publier", remplissez le formulaire avec vos photos, l’adresse et le prix. Notre équipe valide l’annonce sous 24 heures.',
     answerEn: 'Go to the "Add" tab, fill in the details including photos and location, and submit. Our team will verify it within 24 hours.',
-    answerAr: 'توجه إلى تبويب "إضافة عقار"، واملأ النموذج بالصور والعنوان والسعر. يقوم فريقنا بمراجعة الإعلان واعتماده خلال 24 ساعة.',
   },
   {
     id: '2',
     questionFr: 'La publication est-elle gratuite ?',
     questionEn: 'Is there a fee for listing?',
-    questionAr: 'هل نشر العقارات مجاني؟',
     answerFr: 'La publication de base est 100% gratuite. Des options de mise en vedette sont disponibles pour booster la visibilité.',
     answerEn: 'Basic listings are completely free. Featured listing boosts are available via Mobile Money.',
-    answerAr: 'النشر الأساسي مجاني 100%. وتتوفر خيارات تمييز الإعلانات لزيادة الوصول والمشاهدات عبر الدفع بالهاتف المحمول.',
   },
   {
     id: '3',
     questionFr: 'Comment contacter un agent ou vendeur ?',
     questionEn: 'How do I contact an agent?',
-    questionAr: 'كيف يمكنني التواصل مع الوكيل أو البائع؟',
     answerFr: 'Sur chaque fiche de propriété, vous disposez de boutons directs pour Appeler, envoyer un message WhatsApp ou discuter via le Chat en direct.',
     answerEn: 'On any property details page, you will find direct buttons to Call, WhatsApp, or Live Chat with the agent.',
-    answerAr: 'في صفحة تفاصيل أي عقار، تتوفر أزرار مباشرة للاتصال الهاتفي، المراسلة عبر واتساب، أو المحادثة الحية المباشرة.',
   },
   {
     id: '4',
     questionFr: 'Les documents (ACD / Titre foncier) sont-ils vérifiés ?',
     questionEn: 'Are property deeds verified?',
-    questionAr: 'هل يتم فحص سندات الملكية ووثائق الأراضي (ACD)؟',
     answerFr: 'Oui, notre équipe vérifie l’authenticité des actes de cession et documents cadastraux pour chaque annonce certifiée.',
     answerEn: 'Yes, our verification team validates deed authenticity and cadastral records for verified listings.',
-    answerAr: 'نعم، يقوم فريق التوثيق لدينا بفحص صحة سندات التنازل والوثائق المساحية لجميع الإعلانات المعتمدة.',
   },
 ];
 
@@ -73,8 +63,8 @@ function FAQAccordion({ item, language }: { item: FAQItem; language: string }) {
     setExpanded(!expanded);
   };
 
-  const question = language === 'fr' ? item.questionFr : language === 'ar' ? item.questionAr : item.questionEn;
-  const answer = language === 'fr' ? item.answerFr : language === 'ar' ? item.answerAr : item.answerEn;
+  const question = language === 'fr' ? item.questionFr : item.questionEn;
+  const answer = language === 'fr' ? item.answerFr : item.answerEn;
 
   return (
     <View style={styles.faqItem}>
@@ -101,7 +91,7 @@ export default function HelpScreen() {
   const [showFAQs, setShowFAQs] = useState(false);
   const { startSupportConversation } = useChat();
   const { language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
 
   const handleSupportChat = async () => {
     try {
@@ -140,7 +130,7 @@ export default function HelpScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: showFAQs ? loc('Questions Fréquentes', 'FAQs', 'الأسئلة الشائعة') : loc('Aide & Support', 'Help & Support', 'المساعدة والدعم'),
+          title: showFAQs ? loc('Questions Fréquentes', 'FAQs') : loc('Aide & Support', 'Help & Support'),
           headerLeft: () => (
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <ChevronLeft size={24} color="#0F172A" />
@@ -159,14 +149,12 @@ export default function HelpScreen() {
                 <Headphones size={28} color="#059669" />
               </View>
               <Text style={styles.headerText}>
-                {loc('Comment pouvons-nous vous aider ?', 'How can we help you?', 'كيف يمكننا مساعدتك اليوم؟')}
+                {loc('Comment pouvons-nous vous aider ?', 'How can we help you?')}
               </Text>
               <Text style={styles.headerSub}>
                 {loc(
                   'Notre équipe d’assistance client ImmoCI est disponible 7j/7 pour vous accompagner.',
-                  'Our ImmoCI support team is available 7 days a week to assist you.',
-                  'فريق دعم العملاء في ImmoCI متاح 7 أيام في الأسبوع لمساعدتك ومرافقتك.'
-                )}
+                  'Our ImmoCI support team is available 7 days a week to assist you.')}
               </Text>
             </View>
 
@@ -176,10 +164,10 @@ export default function HelpScreen() {
                   <MessageCircle size={24} color="#059669" />
                 </View>
                 <Text style={styles.optionTitle}>
-                  {loc('Chat en direct', 'Live Support Chat', 'المحادثة الحية المباشرة')}
+                  {loc('Chat en direct', 'Live Support Chat')}
                 </Text>
                 <Text style={styles.optionDescription}>
-                  {loc('Discutez instantanément avec notre équipe', 'Start a live chat with our team', 'تحدث فوراً مع فريق خدمة العملاء')}
+                  {loc('Discutez instantanément avec notre équipe', 'Start a live chat with our team')}
                 </Text>
               </TouchableOpacity>
 
@@ -188,7 +176,7 @@ export default function HelpScreen() {
                   <Phone size={24} color="#2563EB" />
                 </View>
                 <Text style={styles.optionTitle}>
-                  {loc('Appelez-nous', 'Call Us', 'اتصل بنا')}
+                  {loc('Appelez-nous', 'Call Us')}
                 </Text>
                 <Text style={styles.optionDescription}>+225 07 48 22 19 00</Text>
               </TouchableOpacity>
@@ -198,7 +186,7 @@ export default function HelpScreen() {
                   <Mail size={24} color="#D97706" />
                 </View>
                 <Text style={styles.optionTitle}>
-                  {loc('Email Support', 'Email Support', 'البريد الإلكتروني للدعم')}
+                  {loc('Email Support', 'Email Support')}
                 </Text>
                 <Text style={styles.optionDescription}>support@immoci.ci</Text>
               </TouchableOpacity>
@@ -208,10 +196,10 @@ export default function HelpScreen() {
                   <BookOpen size={24} color="#7C3AED" />
                 </View>
                 <Text style={styles.optionTitle}>
-                  {loc('Foire aux Questions (FAQ)', 'Frequently Asked Questions', 'الأسئلة الشائعة (FAQ)')}
+                  {loc('Foire aux Questions (FAQ)', 'Frequently Asked Questions')}
                 </Text>
                 <Text style={styles.optionDescription}>
-                  {loc('Trouvez les réponses aux questions courantes', 'Find answers to common questions', 'اعثر على إجابات سريعة للأسئلة المتكررة')}
+                  {loc('Trouvez les réponses aux questions courantes', 'Find answers to common questions')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -219,7 +207,7 @@ export default function HelpScreen() {
         ) : (
           <View style={styles.faqContainer}>
             <Text style={styles.sectionTitle}>
-              {loc('Questions Fréquentes', 'Frequently Asked Questions', 'الأسئلة الأكثر شيوعاً')}
+              {loc('Questions Fréquentes', 'Frequently Asked Questions')}
             </Text>
             {faqs.map((faq) => (
               <FAQAccordion key={faq.id} item={faq} language={language} />

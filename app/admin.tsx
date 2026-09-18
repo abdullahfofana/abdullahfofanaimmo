@@ -283,85 +283,71 @@ export const CASE_STATUSES: {
   id: CaseStatus;
   labelFr: string;
   labelEn: string;
-  labelAr: string;
   color: string;
   bgDark: string;
   bgLight: string;
   descFr: string;
   descEn: string;
-  descAr?: string;
 }[] = [
   {
     id: 'Open',
     labelFr: 'Ouvert',
     labelEn: 'Open',
-    labelAr: 'مفتوح',
     color: '#10B981',
     bgDark: 'rgba(16, 185, 129, 0.18)',
     bgLight: '#ECFDF5',
     descFr: 'Nouveau dossier non encore débuté',
     descEn: 'New case not started yet',
-    descAr: 'ملف جديد لم يبدأ بعد',
   },
   {
     id: 'In Progress',
     labelFr: 'En cours',
     labelEn: 'In Progress',
-    labelAr: 'قيد المعالجة',
     color: '#3B82F6',
     bgDark: 'rgba(59, 130, 246, 0.18)',
     bgLight: '#EFF6FF',
     descFr: 'Le support client traite activement la demande',
     descEn: 'Support is actively working on the case',
-    descAr: 'فريق الدعم يعالج الطلب بنشاط',
   },
   {
     id: 'Hold',
     labelFr: 'En attente',
     labelEn: 'On Hold',
-    labelAr: 'معلق',
     color: '#F59E0B',
     bgDark: 'rgba(245, 158, 11, 0.18)',
     bgLight: '#FFFBEB',
     descFr: 'En attente d’informations ou d’approbation',
     descEn: 'Waiting for info, approval, or action',
-    descAr: 'في انتظار معلومات أو موافقة',
   },
   {
     id: 'Solved',
     labelFr: 'Solutionné',
     labelEn: 'Solved',
-    labelAr: 'تم الحل',
     color: '#8B5CF6',
     bgDark: 'rgba(139, 92, 246, 0.18)',
     bgLight: '#F5F3FF',
     descFr: 'Une solution a été apportée au client',
     descEn: 'Solution has been provided to customer',
-    descAr: 'تم تقديم الحل للعميل',
   },
   {
     id: 'Resolved',
     labelFr: 'Résolu',
     labelEn: 'Resolved',
-    labelAr: 'مغلق نهائياً',
     color: '#64748B',
     bgDark: 'rgba(100, 116, 139, 0.18)',
     bgLight: '#F1F5F9',
     descFr: 'Dossier finalisé et clôturé',
     descEn: 'Case officially closed and completed',
-    descAr: 'ملف مكتمل ومغلق رسمياً',
   },
   {
     id: 'Reopen',
     labelFr: 'Réouvert',
     labelEn: 'Reopened',
-    labelAr: 'أعيد فتحه',
     color: '#F43F5E',
     bgDark: 'rgba(244, 63, 94, 0.18)',
     bgLight: '#FFF1F2',
     descFr: 'Dossier réouvert suite à une nouvelle question',
     descEn: 'Reopened due to continued or new issue',
-    descAr: 'أعيد فتح الملف لمتابعة المشكلة',
   },
 ];
 
@@ -762,7 +748,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   } = usePropertySubmissions();
 
   const { t, language, setLanguage } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const { activeTheme, setTheme } = useTheme();
   const isDark = activeTheme !== 'light';
 
@@ -860,15 +846,15 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       const dept = conv.department || (isSupport ? 'Customer Care' : 'Sales & Commercial');
 
       const subject = isSupport
-        ? loc('Demande d’assistance directe (Support Client)', 'Direct Customer Support Request', 'طلب دعم فني مباشر')
+        ? loc('Demande d’assistance directe (Support Client)', 'Direct Customer Support Request')
         : conv.property
-        ? loc(`Demande : ${conv.property.title}`, `Inquiry: ${conv.property.title}`, `استفسار: ${conv.property.title}`)
-        : loc('Demande client', 'Customer inquiry', 'استفسار العميل');
+        ? loc(`Demande : ${conv.property.title}`, `Inquiry: ${conv.property.title}`)
+        : loc('Demande client', 'Customer inquiry');
 
       const diffMs = Date.now() - new Date(conv.lastMessageAt).getTime();
       const diffMins = Math.floor(diffMs / 60000);
       const timeStr = diffMins < 1
-        ? loc('À l’instant', 'Just now', 'الآن')
+        ? loc('À l’instant', 'Just now')
         : diffMins < 60
         ? `${diffMins} min ago`
         : `${Math.floor(diffMins / 60)}h ago`;
@@ -953,12 +939,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     // Check role permission
     const isAuthorized = activeRole === 'Super Admin' || activeRole === 'Sales Agent' || activeRole === 'Operations Manager' || user?.role === 'support' || user?.role === 'admin';
     if (!isAuthorized) {
-      showToast(loc('Action réservée aux agents Support & Admins', 'Authorized for Support & Admin agents only', 'الإجراء مخصص لفرق الدعم والمديرين فقط'));
+      showToast(loc('Action réservée aux agents Support & Admins', 'Authorized for Support & Admin agents only'));
       return;
     }
 
     const changerName = user?.name || activeRole || 'Agent Support';
-    const note = loc(`Statut passé à "${newStatus}" par ${changerName}`, `Status updated to "${newStatus}" by ${changerName}`, `تم تغيير الحالة إلى "${newStatus}" بواسطة ${changerName}`);
+    const note = loc(`Statut passé à "${newStatus}" par ${changerName}`, `Status updated to "${newStatus}" by ${changerName}`);
 
     if (ticket.conversationId && updateCaseStatus) {
       await updateCaseStatus(ticket.conversationId, newStatus, note);
@@ -990,9 +976,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     showToast(
       loc(
         `Statut du dossier mis à jour : ${newStatus}`,
-        `Case status updated: ${newStatus}`,
-        `تم تحديث حالة الملف : ${newStatus}`
-      )
+        `Case status updated: ${newStatus}`)
     );
   };
 
@@ -1013,7 +997,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const handleDeleteStaff = (id: string) => {
     setStaff((prev) => prev.filter((s) => s.id !== id));
     setShowStaffActionModal(false);
-    showToast(loc('Membre du personnel supprimé', 'Staff member removed', 'تم حذف الموظف بنجاح'));
+    showToast(loc('Membre du personnel supprimé', 'Staff member removed'));
   };
 
   const handleAddStaff = () => {
@@ -1046,7 +1030,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       role: 'Agent',
       department: 'Operations & Logistics',
     });
-    showToast(loc('Nouveau membre ajouté avec succès', 'New staff member added', 'تمت إضافة عضو جديد بنجاح'));
+    showToast(loc('Nouveau membre ajouté avec succès', 'New staff member added'));
   };
 
   const handleRoleChange = (role: AdminRoleType) => {
@@ -1056,7 +1040,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     if (def && !def.allowedSections.includes(activeSection)) {
       setActiveSection(def.allowedSections[0]);
     }
-    showToast(`${loc('Mode changé :', 'Access switched:', 'تم تغيير الوضع إلى:')} ${role}`);
+    showToast(`${loc('Mode changé :', 'Access switched:')} ${role}`);
   };
 
   const handleSendTicketReply = async () => {
@@ -1096,7 +1080,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setTimeout(() => {
       supportMessagesScrollRef.current?.scrollToEnd({ animated: true });
     }, 80);
-    showToast(loc('Réponse envoyée au client', 'Reply sent to customer', 'تم إرسال الرد إلى العميل'));
+    showToast(loc('Réponse envoyée au client', 'Reply sent to customer'));
   };
 
   const handleAIGenerateReply = () => {
@@ -1105,15 +1089,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
     const draft = loc(
       `Bonjour ${activeTicket.user}, notre service ${activeTicket.department} a bien pris en charge votre demande concernant "${activeTicket.subject}". Votre dossier est en cours de traitement prioritaire.`,
-      `Hello ${activeTicket.user}, our ${activeTicket.department} team has reviewed your request regarding "${activeTicket.subject}". We have prioritized your case for immediate resolution.`,
-      `مرحباً ${activeTicket.user}، لقد قام قسم ${activeTicket.department} باستلام طلبكم بخصوص "${activeTicket.subject}". ملفكم قيد المعالجة ذات الأولوية.`
-    );
+      `Hello ${activeTicket.user}, our ${activeTicket.department} team has reviewed your request regarding "${activeTicket.subject}". We have prioritized your case for immediate resolution.`);
 
     setReplyText(draft);
   };
 
   const handleDownloadReport = (reportName: string) => {
-    showToast(loc(`Téléchargement de ${reportName}`, `Downloading ${reportName}`, `جارٍ تنزيل ${reportName}`));
+    showToast(loc(`Téléchargement de ${reportName}`, `Downloading ${reportName}`));
   };
 
   const handleLogout = async () => {
@@ -1121,7 +1103,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       if (signOut) await signOut();
     } catch {}
     onLogout();
-    showToast(loc('Déconnexion réussie', 'Logged out successfully', 'تم تسجيل الخروج بنجاح'));
+    showToast(loc('Déconnexion réussie', 'Logged out successfully'));
   };
 
   // Stitch Tonal Metric Cards
@@ -1534,7 +1516,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               isDark={isDark}
               onApprove={() => {
                 if (!hasPermission(currentStaff, 'properties.approve')) {
-                  showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
+                  showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required'));
                   return;
                 }
                 updateSubmissionStatus(submission.id, 'approved');
@@ -1550,11 +1532,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   target: `${submission.title} (${submission.id})`,
                   details: { propertyId: submission.id, title: submission.title },
                 });
-                showToast(loc('Document approuvé avec succès', 'Document verified and approved', 'تمت الموافقة على الوثيقة بنجاح'));
+                showToast(loc('Document approuvé avec succès', 'Document verified and approved'));
               }}
               onReject={() => {
                 if (!hasPermission(currentStaff, 'properties.reject')) {
-                  showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
+                  showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required'));
                   return;
                 }
                 updateSubmissionStatus(submission.id, 'rejected', 'Document invalid');
@@ -1570,7 +1552,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   target: `${submission.title} (${submission.id})`,
                   details: { propertyId: submission.id, title: submission.title, reason: 'Document invalid' },
                 });
-                showToast(loc('Document rejeté', 'Document rejected', 'تم رفض الوثيقة'));
+                showToast(loc('Document rejeté', 'Document rejected'));
               }}
               onViewDocs={() => setAttachmentView({ type: 'document', submission })}
               onViewMedia={() => setAttachmentView({ type: 'media', submission })}
@@ -1692,7 +1674,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary },
                     ]}
                   >
-                    {dept === 'All' ? loc('Tous les départements', 'All Departments', 'كافة الأقسام') : dept}
+                    {dept === 'All' ? loc('Tous les départements', 'All Departments') : dept}
                   </Text>
                 </TouchableOpacity>
               );
@@ -1722,7 +1704,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
           <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
             <View style={styles.staffStatHeader}>
-              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{loc('Juridique', 'Legal', 'الشؤون القانونية')}</Text>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{loc('Juridique', 'Legal')}</Text>
               <Scale size={18} color="#F59E0B" />
             </View>
             <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -1732,7 +1714,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
           <View style={[styles.staffStatCard, { backgroundColor: stitchTheme.surface, borderColor: stitchTheme.cardBorder }]}>
             <View style={styles.staffStatHeader}>
-              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{loc('Commercial', 'Sales', 'المبيعات')}</Text>
+              <Text style={[styles.staffStatLabel, { color: stitchTheme.textSecondary }]}>{loc('Commercial', 'Sales')}</Text>
               <Briefcase size={18} color="#8B5CF6" />
             </View>
             <Text style={[styles.staffStatValue, { color: stitchTheme.textPrimary }]}>
@@ -1843,9 +1825,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <Text style={[styles.pageHeaderSubtitle, { color: stitchTheme.textSecondary }]}>
               {loc(
                 'Gestion dédiée du support client et suivi en temps réel du statut des dossiers',
-                'Dedicated customer care desk with live case status tracking & management',
-                'مكتب خدمة العملاء المخصص مع تتبع وإدارة حالة الملفات مباشرة'
-              )}
+                'Dedicated customer care desk with live case status tracking & management')}
             </Text>
           </View>
           <View
@@ -1897,10 +1877,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               }}
             >
               {connectionStatus === 'connected'
-                ? loc('Temps Réel Actif', 'Real-time Live', 'مباشر بالوقت الفعلي')
+                ? loc('Temps Réel Actif', 'Real-time Live')
                 : connectionStatus === 'reconnecting'
-                ? loc('Reconnexion...', 'Reconnecting...', 'جارٍ إعادة الاتصال...')
-                : loc('Hors ligne', 'Offline', 'غير متصل')}
+                ? loc('Reconnexion...', 'Reconnecting...')
+                : loc('Hors ligne', 'Offline')}
             </Text>
           </View>
         </View>
@@ -1948,8 +1928,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   )}
                   <Text style={[styles.deptPillText, { color: isSelected ? '#FFFFFF' : stitchTheme.textSecondary }]}>
                     {filter === 'All'
-                      ? loc('Tous', 'All', 'الكل')
-                      : (statusDef ? (language === 'ar' ? (statusDef.labelAr || statusDef.labelEn) : language === 'fr' ? statusDef.labelFr : statusDef.labelEn) : filter)}{' '}
+                      ? loc('Tous', 'All')
+                      : (statusDef ? (language === 'fr' ? statusDef.labelFr : statusDef.labelEn) : filter)}{' '}
                     <Text style={{ opacity: 0.8, fontSize: 11 }}>({count})</Text>
                   </Text>
                 </TouchableOpacity>
@@ -1966,7 +1946,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <View style={{ padding: 24, alignItems: 'center' }}>
                 <Headphones size={32} color={stitchTheme.textSecondary} style={{ marginBottom: 8, opacity: 0.5 }} />
                 <Text style={{ color: stitchTheme.textSecondary, fontSize: 13, textAlign: 'center' }}>
-                  {loc('Aucun dossier dans cette catégorie', 'No cases in this status category', 'لا توجد ملفات في هذا التصنيف')}
+                  {loc('Aucun dossier dans cette catégorie', 'No cases in this status category')}
                 </Text>
               </View>
             ) : (
@@ -2023,7 +2003,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     </View>
                     {t.assignedAgent && (
                       <Text style={{ fontSize: 11, color: stitchTheme.textSecondary, marginTop: 4 }} numberOfLines={1}>
-                        👤 {loc('Assigné à :', 'Assigned to:', 'مُسند إلى :')} <Text style={{ fontWeight: '600' }}>{t.assignedAgent}</Text>
+                        👤 {loc('Assigné à :', 'Assigned to:')} <Text style={{ fontWeight: '600' }}>{t.assignedAgent}</Text>
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -2091,7 +2071,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Sliders size={14} color={stitchTheme.textSecondary} />
                   <Text style={{ fontSize: 12, fontWeight: '700', color: stitchTheme.textSecondary }}>
-                    {loc('Changer le statut du dossier :', 'Change Case Status:', 'تغيير حالة الملف :')}
+                    {loc('Changer le statut du dossier :', 'Change Case Status:')}
                   </Text>
                 </View>
 
@@ -2154,11 +2134,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 >
                   <CheckCircle size={12} color="#059669" />
                   <Text style={{ fontSize: 11, color: stitchTheme.textSecondary }} numberOfLines={1}>
-                    {loc('Dernière modification :', 'Last status transition:', 'آخر تحديث :')}{' '}
+                    {loc('Dernière modification :', 'Last status transition:')}{' '}
                     <Text style={{ fontWeight: '700', color: stitchTheme.textPrimary }}>
                       {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].status}
                     </Text>
-                    {' '}{loc('par', 'by', 'بواسطة')}{' '}
+                    {' '}{loc('par', 'by')}{' '}
                     <Text style={{ fontWeight: '600', color: stitchTheme.textPrimary }}>
                       {activeTicket.statusHistory[activeTicket.statusHistory.length - 1].changedBy}
                     </Text>
@@ -2598,8 +2578,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                       setShowStaffActionModal(false);
                       showToast(
                         selectedStaff.status === 'Active'
-                          ? loc('Membre désactivé', 'Staff deactivated', 'تم إلغاء تنشيط الموظف')
-                          : loc('Membre activé', 'Staff activated', 'تم تنشيط الموظف')
+                          ? loc('Membre désactivé', 'Staff deactivated')
+                          : loc('Membre activé', 'Staff activated')
                       );
                     }
                   }}
@@ -2767,7 +2747,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           }}
           onApprove={() => {
             if (!hasPermission(currentStaff, 'properties.approve')) {
-              showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
+              showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required'));
               return;
             }
             updateSubmissionStatus(moderationProperty.id, 'approved');
@@ -2785,11 +2765,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             });
             setShowAIModeration(false);
             setModerationProperty(null);
-            showToast(loc('Annonce validée par IA', 'Listing approved via AI', 'تمت الموافقة على الإعلان بالذكاء الاصطناعي'));
+            showToast(loc('Annonce validée par IA', 'Listing approved via AI'));
           }}
           onReject={(reason) => {
             if (!hasPermission(currentStaff, 'properties.reject')) {
-              showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required', 'إجراء غير مصرح به: الصلاحية مطلوبة'));
+              showToast(loc('Action non autorisée : permission requise', 'Unauthorized action: permission required'));
               return;
             }
             updateSubmissionStatus(moderationProperty.id, 'rejected', reason);
@@ -2807,7 +2787,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             });
             setShowAIModeration(false);
             setModerationProperty(null);
-            showToast(loc('Annonce rejetée par IA', 'Listing rejected via AI', 'تم رفض الإعلان بالذكاء الاصطناعي'));
+            showToast(loc('Annonce rejetée par IA', 'Listing rejected via AI'));
           }}
         />
       )}
@@ -2854,7 +2834,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <TouchableOpacity
                       style={[styles.primaryButton, { backgroundColor: '#10B981', alignSelf: 'center', marginTop: 16 }]}
                       onPress={() => {
-                        showToast(loc('Document ACD conforme', 'Cadastral deed verified', 'سند الملكية العقاري (ACD) سليم ومطابق'));
+                        showToast(loc('Document ACD conforme', 'Cadastral deed verified'));
                         setAttachmentView(null);
                       }}
                     >
@@ -2952,7 +2932,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             >
               <LogOut size={16} color="#EF4444" />
               <Text style={[styles.backButtonText, { color: '#EF4444' }]}>
-                {loc('Déconnexion', 'Log out', 'تسجيل الخروج')}
+                {loc('Déconnexion', 'Log out')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -3019,14 +2999,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   },
                 ]}
                 onPress={() => {
-                  const nextLang = language === 'fr' ? 'en' : language === 'en' ? 'ar' : 'fr';
-                  setLanguage(nextLang);
+                  setLanguage(language === 'fr' ? 'en' : 'fr');
                 }}
                 activeOpacity={0.8}
               >
                 <Globe size={15} color={stitchTheme.textSecondary} />
                 <Text style={[styles.langText, { color: stitchTheme.textPrimary }]}>
-                  {language === 'ar' ? 'عربي' : language.toUpperCase()}
+                  {language.toUpperCase()}
                 </Text>
               </TouchableOpacity>
 

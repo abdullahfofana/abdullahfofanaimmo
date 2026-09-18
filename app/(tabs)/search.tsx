@@ -57,7 +57,7 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { t, language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const params = useLocalSearchParams<{
     status?: string;
     type?: string;
@@ -715,7 +715,7 @@ export default function SearchScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <SearchIcon size={14} color="#059669" style={{ marginRight: 6 }} />
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669' }}>
-                {loc('Recherche par description détaillée', 'Detailed description search', 'البحث بالوصف المفصل')}
+                {loc('Recherche par description détaillée', 'Detailed description search')}
               </Text>
             </View>
             <TextInput
@@ -748,7 +748,7 @@ export default function SearchScreen() {
             <>
               <SearchIcon size={18} color={colors.white} />
               <Text style={[styles.searchCTAText, { color: colors.white }]}>
-                {isAIMode ? (parseSearchMutation.isPending ? loc('Recherche en cours...', 'Searching...', 'جارٍ البحث...') : loc('Lancer la recherche', 'Search', 'بدء البحث')) : t('search_for_properties')}
+                {isAIMode ? (parseSearchMutation.isPending ? loc('Recherche en cours...', 'Searching...') : loc('Lancer la recherche', 'Search')) : t('search_for_properties')}
               </Text>
             </>
           )}
@@ -771,8 +771,8 @@ export default function SearchScreen() {
       >
         <Text style={{ color: '#059669', fontWeight: '600', fontSize: 13 }}>
           {isAIMode
-            ? loc('← Revenir aux filtres standards', '← Switch to standard filters', '← العودة إلى الفلاتر القياسية')
-            : loc('Recherche par phrase / description détaillée', 'Search by description', 'البحث بجملة / وصف مفصل')}
+            ? loc('← Revenir aux filtres standards', '← Switch to standard filters')
+            : loc('Recherche par phrase / description détaillée', 'Search by description')}
         </Text>
       </TouchableOpacity>
 
@@ -881,7 +881,7 @@ export default function SearchScreen() {
                       onPress={() => setSortBy(mode)}
                     >
                       <Text style={{ fontSize: 12, fontWeight: sortBy === mode ? '700' : '500', color: sortBy === mode ? colors.text : colors.textSecondary }}>
-                        {mode === 'newest' ? loc('Récents', 'Newest', 'الأحدث') : mode === 'price_asc' ? loc('Prix ↑', 'Price ↑', 'السعر ↑') : mode === 'price_desc' ? loc('Prix ↓', 'Price ↓', 'السعر ↓') : loc('Distance', 'Distance', 'المسافة')}
+                        {mode === 'newest' ? loc('Récents', 'Newest') : mode === 'price_asc' ? loc('Prix ↑', 'Price ↑') : mode === 'price_desc' ? loc('Prix ↓', 'Price ↓') : loc('Distance', 'Distance')}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -921,9 +921,7 @@ export default function SearchScreen() {
                       <Text style={{ fontSize: 13.5, fontWeight: '700', color: '#059669' }}>
                         {loc(
                           `Afficher plus de biens (${sortedProperties.length - displayedCount} restants)`,
-                          `Load More Properties (${sortedProperties.length - displayedCount} remaining)`,
-                          `عرض المزيد من العقارات (${sortedProperties.length - displayedCount} متبقية)`
-                        )}
+                          `Load More Properties (${sortedProperties.length - displayedCount} remaining)`)}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -992,7 +990,7 @@ export default function SearchScreen() {
                           onPress={() => setSortBy(mode)}
                         >
                           <Text style={{ fontSize: 11, fontWeight: sortBy === mode ? '700' : '500', color: sortBy === mode ? colors.text : colors.textSecondary }}>
-                            {mode === 'newest' ? loc('Récents', 'Newest', 'الأحدث') : mode === 'price_asc' ? loc('Prix ↑', 'Price ↑', 'السعر ↑') : mode === 'price_desc' ? loc('Prix ↓', 'Price ↓', 'السعر ↓') : loc('Distance', 'Distance', 'المسافة')}
+                            {mode === 'newest' ? loc('Récents', 'Newest') : mode === 'price_asc' ? loc('Prix ↑', 'Price ↑') : mode === 'price_desc' ? loc('Prix ↓', 'Price ↓') : loc('Distance', 'Distance')}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -1029,9 +1027,7 @@ export default function SearchScreen() {
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#059669' }}>
                       {loc(
                         `Afficher plus d'annonces (${sortedProperties.length - displayedCount} restantes)`,
-                        `Load More Listings (${sortedProperties.length - displayedCount} remaining)`,
-                        `عرض المزيد من الإعلانات (${sortedProperties.length - displayedCount} متبقية)`
-                      )}
+                        `Load More Listings (${sortedProperties.length - displayedCount} remaining)`)}
                     </Text>
                   </TouchableOpacity>
                 ) : null

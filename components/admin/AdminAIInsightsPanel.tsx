@@ -57,7 +57,7 @@ export default function AdminAIInsightsPanel() {
   const { activeTheme } = useTheme();
   const isDark = activeTheme === 'dark';
   const { t, language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
 
   const [report, setReport] = useState<InsightsReport | null>(DEFAULT_REPORT);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -76,7 +76,7 @@ export default function AdminAIInsightsPanel() {
 
   const formatTime = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleString(language === 'fr' ? 'fr-CI' : language === 'ar' ? 'ar-SA' : 'en-US', {
+    return d.toLocaleString(language === 'fr' ? 'fr-CI' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
       day: '2-digit',
@@ -135,7 +135,7 @@ export default function AdminAIInsightsPanel() {
             <View style={styles.sectionHeader}>
               <BarChart2 size={16} color="#10B981" />
               <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                {loc('Synthèse Exécutive', 'Executive Summary', 'ملخص تنفيذي')}
+                {loc('Synthèse Exécutive', 'Executive Summary')}
               </Text>
             </View>
             <Text style={[styles.summaryText, { color: textSecondary }]}>{report.summary}</Text>
@@ -157,7 +157,7 @@ export default function AdminAIInsightsPanel() {
               <View style={styles.sectionHeader}>
                 <TrendingUp size={16} color="#6366F1" />
                 <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                  {loc('Tendances du Marché', 'Market Trends', 'اتجاهات السوق')}
+                  {loc('Tendances du Marché', 'Market Trends')}
                 </Text>
               </View>
               {report.trends.map((trend, i) => (
@@ -175,7 +175,7 @@ export default function AdminAIInsightsPanel() {
               <View style={styles.sectionHeader}>
                 <AlertTriangle size={16} color="#F59E0B" />
                 <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                  {loc('Points de Vigilance', 'Watch Points', 'نقاط المتابعة والتدقيق')}
+                  {loc('Points de Vigilance', 'Watch Points')}
                 </Text>
               </View>
               {report.anomalies.map((anom, i) => (
@@ -193,7 +193,7 @@ export default function AdminAIInsightsPanel() {
               <View style={styles.sectionHeader}>
                 <Lightbulb size={16} color="#10B981" />
                 <Text style={[styles.sectionTitle, { color: textPrimary }]}>
-                  {loc('Recommandations Stratégiques', 'Strategic Recommendations', 'توصيات استراتيجية')}
+                  {loc('Recommandations Stratégiques', 'Strategic Recommendations')}
                 </Text>
               </View>
               {report.recommendations.map((rec, i) => (
@@ -206,7 +206,7 @@ export default function AdminAIInsightsPanel() {
           )}
 
           <Text style={[styles.timestamp, { color: textSecondary }]}>
-            {loc('Dernière mise à jour :', 'Last updated:', 'آخر تحديث :')} {formatTime(report.generatedAt)}
+            {loc('Dernière mise à jour :', 'Last updated:')} {formatTime(report.generatedAt)}
           </Text>
         </ScrollView>
       ) : null}

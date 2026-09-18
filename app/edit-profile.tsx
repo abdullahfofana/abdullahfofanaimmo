@@ -23,7 +23,7 @@ import { UserRole } from '@/types/property';
 export default function EditProfileScreen() {
   const { user, skipAuth } = useAuth();
   const { language, t } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
   const colors = useColors();
 
   const [name, setName] = useState(user?.name || 'Jean Kouassi');
@@ -52,7 +52,7 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      const msg = loc('Veuillez saisir votre nom', 'Please enter your name', 'يرجى إدخال اسمك');
+      const msg = loc('Veuillez saisir votre nom', 'Please enter your name');
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Erreur', msg);
       return;
@@ -82,7 +82,7 @@ export default function EditProfileScreen() {
       }, 700);
     } catch (e: any) {
       console.warn('[EditProfile] Save error:', e);
-      const msg = loc('Erreur lors de la sauvegarde', 'Failed to save changes', 'حدث خطأ أثناء حفظ التعديلات');
+      const msg = loc('Erreur lors de la sauvegarde', 'Failed to save changes');
       if (Platform.OS === 'web') alert(msg);
       else Alert.alert('Error', msg);
     } finally {
@@ -94,7 +94,7 @@ export default function EditProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          title: loc('Modifier le Profil', 'Edit Profile', 'تعديل الملف الشخصي'),
+          title: loc('Modifier le Profil', 'Edit Profile'),
           headerLeft: () => (
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <ChevronLeft size={24} color={colors.text} />
@@ -124,14 +124,14 @@ export default function EditProfileScreen() {
         {/* Role Toggle */}
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>
-            {loc('Type de profil', 'Profile Type', 'نوع الحساب')}
+            {loc('Type de profil', 'Profile Type')}
           </Text>
           <View style={[styles.roleRow, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             {(['renter', 'agent'] as UserRole[]).map((r) => {
               const isSelected = role === r;
               const rLabel = r === 'agent'
-                ? loc('🏢 Agent / Vendeur', '🏢 Agent / Seller', '🏢 وكيل / بائع')
-                : loc('🏠 Acheteur / Locataire', '🏠 Buyer / Renter', '🏠 مشتري / مستأجر');
+                ? loc('🏢 Agent / Vendeur', '🏢 Agent / Seller')
+                : loc('🏠 Acheteur / Locataire', '🏠 Buyer / Renter');
               return (
                 <TouchableOpacity
                   key={r}
@@ -151,7 +151,7 @@ export default function EditProfileScreen() {
         {/* Name */}
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>
-            {loc('Nom et prénom', 'Full Name', 'الاسم الكامل')}
+            {loc('Nom et prénom', 'Full Name')}
           </Text>
           <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <User size={18} color="#64748B" style={styles.inputIcon} />
@@ -169,7 +169,7 @@ export default function EditProfileScreen() {
         {/* Email */}
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>
-            {loc('Adresse email', 'Email Address', 'البريد الإلكتروني')}
+            {loc('Adresse email', 'Email Address')}
           </Text>
           <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Mail size={18} color="#64748B" style={styles.inputIcon} />
@@ -188,7 +188,7 @@ export default function EditProfileScreen() {
         {/* Phone */}
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>
-            {loc('Numéro de téléphone (WhatsApp)', 'Phone Number (WhatsApp)', 'رقم الهاتف (واتساب)')}
+            {loc('Numéro de téléphone (WhatsApp)', 'Phone Number (WhatsApp)')}
           </Text>
           <View style={[styles.inputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Phone size={18} color="#64748B" style={styles.inputIcon} />
@@ -216,12 +216,12 @@ export default function EditProfileScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Check size={18} color="#FFFFFF" strokeWidth={2.5} />
               <Text style={styles.saveButtonText}>
-                {loc('Enregistré !', 'Saved!', 'تم الحفظ!')}
+                {loc('Enregistré !', 'Saved!')}
               </Text>
             </View>
           ) : (
             <Text style={styles.saveButtonText}>
-              {loc('Enregistrer les modifications', 'Save Changes', 'حفظ التغييرات')}
+              {loc('Enregistrer les modifications', 'Save Changes')}
             </Text>
           )}
         </TouchableOpacity>

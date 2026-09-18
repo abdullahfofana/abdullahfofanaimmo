@@ -211,21 +211,21 @@ export default function AuditLogs({ isDark = true }: AuditLogsProps) {
   };
 
   const getActionFriendlyName = (action: AuditAction) => {
-    const names: Record<AuditAction, { fr: string; en: string; ar: string }> = {
-      STAFF_CREATED: { fr: 'Collaborateur Créé', en: 'Staff Created', ar: 'إنشاء حساب موظف' },
-      STAFF_UPDATED: { fr: 'Fiche Modifiée', en: 'Staff Updated', ar: 'تحديث بيانات موظف' },
-      STAFF_ROLE_CHANGED: { fr: 'Rôle Modifié', en: 'Role Changed', ar: 'تعديل الدور الوظيفي' },
-      STAFF_PERMISSIONS_CHANGED: { fr: 'Permissions Révisées', en: 'Permissions Modified', ar: 'تعديل الصلاحيات' },
-      STAFF_STATUS_CHANGED: { fr: 'Statut Modifié', en: 'Status Changed', ar: 'تغيير حالة الحساب' },
-      PROPERTY_APPROVED: { fr: 'Bien Approuvé', en: 'Property Approved', ar: 'اعتماد العقار' },
-      PROPERTY_REJECTED: { fr: 'Bien Rejeté', en: 'Property Rejected', ar: 'رفض إعلان العقار' },
-      PROPERTY_DELETED: { fr: 'Bien Supprimé', en: 'Property Deleted', ar: 'حذف العقار نهائياً' },
-      SETTINGS_CHANGED: { fr: 'Paramètres Système', en: 'Settings Changed', ar: 'تعديل الإعدادات' },
-      UNAUTHORIZED_ACCESS_ATTEMPT: { fr: 'Sécurité : Accès Refusé', en: 'Security: Access Denied', ar: 'أمان: وصول مرفوض' },
-      LOGIN_SUCCESS: { fr: 'Connexion Réussie', en: 'Login Success', ar: 'تسجيل دخول ناجح' },
-      LOGIN_FAILED: { fr: 'Échec de Connexion', en: 'Login Failed', ar: 'فشل تسجيل الدخول' },
+    const names: Record<AuditAction, { fr: string; en: string }> = {
+      STAFF_CREATED: { fr: 'Collaborateur Créé', en: 'Staff Created' },
+      STAFF_UPDATED: { fr: 'Fiche Modifiée', en: 'Staff Updated' },
+      STAFF_ROLE_CHANGED: { fr: 'Rôle Modifié', en: 'Role Changed' },
+      STAFF_PERMISSIONS_CHANGED: { fr: 'Permissions Révisées', en: 'Permissions Modified' },
+      STAFF_STATUS_CHANGED: { fr: 'Statut Modifié', en: 'Status Changed' },
+      PROPERTY_APPROVED: { fr: 'Bien Approuvé', en: 'Property Approved' },
+      PROPERTY_REJECTED: { fr: 'Bien Rejeté', en: 'Property Rejected' },
+      PROPERTY_DELETED: { fr: 'Bien Supprimé', en: 'Property Deleted' },
+      SETTINGS_CHANGED: { fr: 'Paramètres Système', en: 'Settings Changed' },
+      UNAUTHORIZED_ACCESS_ATTEMPT: { fr: 'Sécurité : Accès Refusé', en: 'Security: Access Denied' },
+      LOGIN_SUCCESS: { fr: 'Connexion Réussie', en: 'Login Success' },
+      LOGIN_FAILED: { fr: 'Échec de Connexion', en: 'Login Failed' },
     };
-    return names[action]?.[language] || names[action]?.fr || action;
+    return (language === 'en' ? names[action]?.en : names[action]?.fr) || names[action]?.fr || action;
   };
 
   const theme = {

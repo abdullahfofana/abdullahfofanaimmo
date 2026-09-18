@@ -10,7 +10,7 @@ export default function AdminSettings() {
   const { activeTheme } = useTheme();
   const isDark = activeTheme !== 'light';
   const { t, language } = useLanguage();
-  const loc = (fr: string, en: string, ar: string) => language === 'fr' ? fr : language === 'ar' ? ar : en;
+  const loc = (fr: string, en: string, _ar?: string) => language === 'fr' ? fr : en;
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -36,12 +36,12 @@ export default function AdminSettings() {
   };
 
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
-    { id: 'general', label: loc('Général', 'General', 'عام'), icon: Globe },
-    { id: 'security', label: loc('Sécurité', 'Security', 'الأمان'), icon: Lock },
-    { id: 'notifications', label: loc('Notifications', 'Notifications', 'الإشعارات'), icon: Bell },
-    { id: 'email', label: loc('Email', 'Email', 'البريد الإلكتروني'), icon: Mail },
-    { id: 'appearance', label: loc('Apparence', 'Appearance', 'المظهر'), icon: Palette },
-    { id: 'advanced', label: loc('Avancé', 'Advanced', 'متقدم'), icon: Terminal },
+    { id: 'general', label: loc('Général', 'General'), icon: Globe },
+    { id: 'security', label: loc('Sécurité', 'Security'), icon: Lock },
+    { id: 'notifications', label: loc('Notifications', 'Notifications'), icon: Bell },
+    { id: 'email', label: loc('Email', 'Email'), icon: Mail },
+    { id: 'appearance', label: loc('Apparence', 'Appearance'), icon: Palette },
+    { id: 'advanced', label: loc('Avancé', 'Advanced'), icon: Terminal },
   ];
 
   const handleSave = () => {
@@ -56,26 +56,26 @@ export default function AdminSettings() {
           <Globe size={18} color={stitch.primary} />
         </View>
         <Text style={[styles.cardTitle, { color: stitch.textPrimary }]}>
-          {loc('Paramètres Généraux de la Plateforme', 'General Platform Settings', 'إعدادات المنصة العامة')}
+          {loc('Paramètres Généraux de la Plateforme', 'General Platform Settings')}
         </Text>
       </View>
 
       <View style={styles.formGrid}>
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: stitch.textPrimary }]}>
-            {loc('Nom du Site / Marque', 'Site Name', 'اسم الموقع / العلامة التجارية')}
+            {loc('Nom du Site / Marque', 'Site Name')}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
             defaultValue="ImmoCI"
-            placeholder={loc('Nom de la plateforme', 'Enter site name', 'أدخل اسم المنصة')}
+            placeholder={loc('Nom de la plateforme', 'Enter site name')}
             placeholderTextColor={stitch.textMuted}
           />
         </View>
 
         <View style={styles.formGroup}>
           <Text style={[styles.label, { color: stitch.textPrimary }]}>
-            {loc('Email de Contact Officiel', 'Contact Email', 'البريد الإلكتروني الرسمي للتواصل')}
+            {loc('Email de Contact Officiel', 'Contact Email')}
           </Text>
           <TextInput
             style={[styles.input, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
@@ -87,12 +87,12 @@ export default function AdminSettings() {
 
         <View style={[styles.formGroup, styles.fullWidth]}>
           <Text style={[styles.label, { color: stitch.textPrimary }]}>
-            {loc('Description de la Plateforme', 'Site Description', 'وصف المنصة')}
+            {loc('Description de la Plateforme', 'Site Description')}
           </Text>
           <TextInput
             style={[styles.input, styles.textArea, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder, color: stitch.textPrimary }]}
             defaultValue="Plateforme immobilière N°1 en Côte d'Ivoire. Vente, location et gestion certifiée avec titres fonciers sécurisés."
-            placeholder={loc('Description courte', 'Enter site description', 'أدخل وصفاً مختصراً للمنصة')}
+            placeholder={loc('Description courte', 'Enter site description')}
             placeholderTextColor={stitch.textMuted}
             multiline
             numberOfLines={3}
@@ -102,10 +102,10 @@ export default function AdminSettings() {
         <View style={[styles.formGroup, styles.fullWidth, styles.rowGroup, { borderTopColor: stitch.cardBorder }]}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={[styles.label, { color: stitch.textPrimary }]}>
-              {loc('Mode Maintenance', 'Maintenance Mode', 'وضع الصيانة')}
+              {loc('Mode Maintenance', 'Maintenance Mode')}
             </Text>
             <Text style={[styles.helperText, { color: stitch.textSecondary }]}>
-              {loc('Désactiver temporairement l’accès public aux clients', 'Disable public access to the site', 'تعطيل الوصول العام للعملاء مؤقتاً')}
+              {loc('Désactiver temporairement l’accès public aux clients', 'Disable public access to the site')}
             </Text>
           </View>
           <Switch
@@ -119,10 +119,10 @@ export default function AdminSettings() {
         <View style={[styles.formGroup, styles.fullWidth, styles.rowGroup, { borderTopColor: stitch.cardBorder }]}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={[styles.label, { color: stitch.textPrimary }]}>
-              {loc('Validation Automatique IA (Annonces ACD)', 'Auto-Approve Verified Listings', 'الموافقة التلقائية بالذكاء الاصطناعي (عقارات ACD)')}
+              {loc('Validation Automatique IA (Annonces ACD)', 'Auto-Approve Verified Listings')}
             </Text>
             <Text style={[styles.helperText, { color: stitch.textSecondary }]}>
-              {loc('Publier immédiatement les annonces avec score IA > 95%', 'Publish listings with high AI confidence score', 'نشر الإعلانات فوراً إذا تجاوزت نسبة الثقة 95%')}
+              {loc('Publier immédiatement les annonces avec score IA > 95%', 'Publish listings with high AI confidence score')}
             </Text>
           </View>
           <Switch
@@ -143,7 +143,7 @@ export default function AdminSettings() {
           <Terminal size={18} color={stitch.primary} />
         </View>
         <Text style={[styles.cardTitle, { color: stitch.textPrimary }]}>
-          {loc('Configuration API & Webhooks', 'API & Webhook Configuration', 'إعدادات واجهة البرمجة (API) ونقاط الربط (Webhooks)')}
+          {loc('Configuration API & Webhooks', 'API & Webhook Configuration')}
         </Text>
       </View>
 
@@ -153,7 +153,7 @@ export default function AdminSettings() {
           <Text style={[styles.sectionTitle, { color: stitch.textPrimary }]}>API Key (Production)</Text>
         </View>
         <Text style={[styles.sectionDesc, { color: stitch.textSecondary }]}>
-          {loc('Clé d’accès sécurisée pour connecter vos applications tierces.', 'Manage your secret API keys for external integrations.', 'مفتاح وصول آمن لربط تطبيقاتك والأنظمة الخارجية.')}
+          {loc('Clé d’accès sécurisée pour connecter vos applications tierces.', 'Manage your secret API keys for external integrations.')}
         </Text>
 
         <View style={[styles.apiKeyContainer, { backgroundColor: stitch.inputBg, borderColor: stitch.inputBorder }]}>
@@ -175,7 +175,7 @@ export default function AdminSettings() {
           <Text style={[styles.sectionTitle, { color: stitch.textPrimary }]}>Webhook Endpoint</Text>
         </View>
         <Text style={[styles.sectionDesc, { color: stitch.textSecondary }]}>
-          {loc('URL de notification pour recevoir les événements de paiement et de soumission.', 'Receive real-time notifications for submissions and payments.', 'رابط الإشعارات الفورية لأحداث الدفع وإرسال الإعلانات.')}
+          {loc('URL de notification pour recevoir les événements de paiement et de soumission.', 'Receive real-time notifications for submissions and payments.')}
         </Text>
 
         <View style={styles.formGroup}>
@@ -194,10 +194,10 @@ export default function AdminSettings() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: stitch.textPrimary }]}>
-          {loc('Paramètres du Système', 'System Settings', 'إعدادات النظام')}
+          {loc('Paramètres du Système', 'System Settings')}
         </Text>
         <Text style={[styles.subtitle, { color: stitch.textSecondary }]}>
-          {loc('Configurez les préférences, politiques et intégrations de la plateforme', 'Configure platform settings and preferences', 'تخصيص التفضيلات، السياسات وعمليات ربط المنصة')}
+          {loc('Configurez les préférences, politiques et intégrations de la plateforme', 'Configure platform settings and preferences')}
         </Text>
       </View>
 
@@ -238,7 +238,7 @@ export default function AdminSettings() {
           <View style={[styles.card, styles.placeholder, { backgroundColor: stitch.surface, borderColor: stitch.cardBorder }]}>
             <Palette size={32} color={stitch.textMuted} />
             <Text style={[styles.placeholderText, { color: stitch.textSecondary }]}>
-              {loc(`Options pour "${activeTab}" actives par défaut.`, `Settings for ${activeTab} are active with default policies.`, `خيارات "${activeTab}" مفعلة بالقيم الافتراضية.`)}
+              {loc(`Options pour "${activeTab}" actives par défaut.`, `Settings for ${activeTab} are active with default policies.`)}
             </Text>
           </View>
         )}
@@ -254,8 +254,8 @@ export default function AdminSettings() {
           {savedSuccess ? <Check size={18} color="#FFFFFF" /> : <Save size={18} color="#FFFFFF" />}
           <Text style={styles.saveButtonText}>
             {savedSuccess
-              ? loc('Modifications Enregistrées !', 'Saved Successfully!', 'تم حفظ التعديلات بنجاح!')
-              : loc('Enregistrer les Modifications', 'Save All Settings', 'حفظ كافة التعديلات')}
+              ? loc('Modifications Enregistrées !', 'Saved Successfully!')
+              : loc('Enregistrer les Modifications', 'Save All Settings')}
           </Text>
         </TouchableOpacity>
       </View>

@@ -239,7 +239,7 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
             </Text>
           </View>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {language === 'ar' ? 'التحكم في وصول الموظفين والأدوار والصلاحيات الدقيقة لفريق ImmoCI.' : language === 'en' ? 'Role-based access control and granular permissions for ImmoCI team.' : "Contrôle d'accès basé sur les rôles et permissions granulaires pour les collaborateurs ImmoCI."}
+            {language === 'en' ? 'Role-based access control and granular permissions for ImmoCI team.' : "Contrôle d'accès basé sur les rôles et permissions granulaires pour les collaborateurs ImmoCI."}
           </Text>
         </View>
 
@@ -249,14 +249,14 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
           activeOpacity={0.85}
         >
           <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
-          <Text style={styles.addBtnText}>{language === 'ar' ? 'إضافة موظف جديد' : language === 'en' ? 'Add Staff Member' : 'Ajouter un collaborateur'}</Text>
+          <Text style={styles.addBtnText}>{language === 'en' ? 'Add Staff Member' : 'Ajouter un collaborateur'}</Text>
         </TouchableOpacity>
       </View>
 
       {/* ── KPI METRICS SUMMARY ROW ── */}
       <View style={styles.kpiRow}>
         <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'ar' ? 'إجمالي الموظفين' : language === 'en' ? 'TOTAL STAFF' : 'TOTAL COLLABORATEURS'}</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'en' ? 'TOTAL STAFF' : 'TOTAL COLLABORATEURS'}</Text>
           <Text style={[styles.kpiValue, { color: theme.textPrimary }]}>{staffList.length}</Text>
           <Text style={[styles.kpiSub, { color: '#059669' }]}>
             {staffList.filter((s) => s.status === 'Active').length} actifs • 100% sécurisé
@@ -264,7 +264,7 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'ar' ? 'خدمة العملاء' : 'CUSTOMER CARE'}</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{'CUSTOMER CARE'}</Text>
           <Text style={[styles.kpiValue, { color: '#10B981' }]}>
             {staffList.filter((s) => s.role === 'Customer Care').length}
           </Text>
@@ -274,7 +274,7 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'ar' ? 'مديرو العقارات' : language === 'en' ? 'PROPERTY MANAGERS' : 'GESTIONNAIRES IMMOBILIERS'}</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'en' ? 'PROPERTY MANAGERS' : 'GESTIONNAIRES IMMOBILIERS'}</Text>
           <Text style={[styles.kpiValue, { color: '#3B82F6' }]}>
             {staffList.filter((s) => s.role === 'Property Manager').length}
           </Text>
@@ -284,7 +284,7 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'ar' ? 'الإدارة والإشراف' : language === 'en' ? 'ADMINISTRATORS' : 'ADMINISTRATEURS'}</Text>
+          <Text style={[styles.kpiLabel, { color: theme.textSecondary }]}>{language === 'en' ? 'ADMINISTRATORS' : 'ADMINISTRATEURS'}</Text>
           <Text style={[styles.kpiValue, { color: '#F59E0B' }]}>
             {staffList.filter((s) => s.role === 'Admin' || s.role === 'Super Admin').length}
           </Text>
@@ -301,7 +301,7 @@ export default function StaffManagement({ isDark = true }: StaffManagementProps)
           <Search size={16} color={theme.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: theme.textPrimary }]}
-            placeholder={language === 'ar' ? 'بحث بالاسم، البريد، أو الدور...' : language === 'en' ? 'Search by name, email, or role...' : 'Rechercher par nom, email ou rôle...'}
+            placeholder={language === 'en' ? 'Search by name, email, or role...' : 'Rechercher par nom, email ou rôle...'}
             placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
